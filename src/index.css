@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================
+   ZMIENNE DOMYŚLNE
+   =========================== */
+:root {
+  --bg: #f5f5f4;
+  --surface: #ffffff;
+  --surface-hover: #fafaf9;
+  --text: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #78716c;
+  --text-light: #a8a29e;
+  --primary: #1c1917;
+  --primary-hover: #292524;
+  --primary-text: #ffffff;
+  --border: #e7e5e4;
+  --divider: #f5f5f4;
+  --bar-bg: #e7e5e4;
+  --bar-fill: #1c1917;
+  --font-family: system-ui, -apple-system, sans-serif;
+  --radius: 0.5rem;
+}
+
+/* TELEGAZETA TVP */
+[data-theme="teletext"] {
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-hover: #1a1a1a;
+  --text: #fbbf24;
+  --text-secondary: #f59e0b;
+  --text-muted: #a16207;
+  --text-light: #78350f;
+  --primary: #22c55e;
+  --primary-hover: #16a34a;
+  --primary-text: #000000;
+  --border: #404040;
+  --divider: #262626;
+  --bar-bg: #262626;
+  --bar-fill: #22c55e;
+  --font-family: 'VT323', 'Courier New', monospace;
+  --radius: 0;
+  [data-theme="teletext"] body {
+  font-size: 1.15rem;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+}
+
+[data-theme="teletext"] h1,
+[data-theme="teletext"] h2,
+[data-theme="teletext"] h3,
+[data-theme="teletext"] .font-bold {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+}
+
+/* GAZETA WYBORCZA */
+[data-theme="newspaper"] {
+  --bg: #f0e8d5;
+  --surface: #faf5e8;
+  --surface-hover: #e8dfc8;
+  --text: #1a1a1a;
+  --text-secondary: #3d3d3d;
+  --text-muted: #666666;
+  --text-light: #999999;
+  --primary: #1a1a1a;
+  --primary-hover: #333333;
+  --primary-text: #f0e8d5;
+  --border: #d4c9b3;
+  --divider: #e6dcc7;
+  --bar-bg: #d4c9b3;
+  --bar-fill: #8b0000;
+  --font-family: Georgia, 'Times New Roman', serif;
+  --radius: 0;
+}
+
+/* GADU-GADU */
+[data-theme="gg"] {
+  --bg: #d4d0c8;
+  --surface: #ffffff;
+  --surface-hover: #f0f0f0;
+  --text: #000000;
+  --text-secondary: #333333;
+  --text-muted: #666666;
+  --text-light: #999999;
+  --primary: #316ac5;
+  --primary-hover: #2550a0;
+  --primary-text: #ffffff;
+  --border: #a0a0a0;
+  --divider: #c0bdb5;
+  --bar-bg: #c0bdb5;
+  --bar-fill: #316ac5;
+  --font-family: Tahoma, 'MS Sans Serif', sans-serif;
+  --radius: 0;
+}
+
+/* BRAT */
+[data-theme="brat"] {
+  --bg: #8ace00;
+  --surface: #8ace00;
+  --surface-hover: #9adc15;
+  --text: #000000;
+  --text-secondary: #1a1a1a;
+  --text-muted: #1a1a1a;
+  --text-light: #333333;
+  --primary: #000000;
+  --primary-hover: #1a1a1a;
+  --primary-text: #8ace00;
+  --border: #000000;
+  --divider: #6b9e00;
+  --bar-bg: #6b9e00;
+  --bar-fill: #000000;
+  --font-family: Arial, Helvetica, sans-serif;
+  --radius: 0;
+}
+
+/* ===========================
+   GLOBALNE USTAWIENIA
+   =========================== */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-family);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Nadpisania klas Tailwinda */
+.bg-stone-100 { background-color: var(--bg) !important; }
+.bg-white { background-color: var(--surface) !important; }
+.bg-stone-50 { background-color: var(--surface-hover) !important; }
+.bg-stone-900 { background-color: var(--primary) !important; color: var(--primary-text) !important; }
+.bg-stone-800 { background-color: var(--primary-hover) !important; }
+.bg-stone-200 { background-color: var(--bar-bg) !important; }
+.bg-stone-300 { background-color: var(--text-light) !important; }
+.bg-stone-400 { background-color: var(--text-muted) !important; }
+
+.text-stone-900,
+.text-stone-800,
+.text-stone-700 { color: var(--text) !important; }
+.text-stone-600 { color: var(--text-secondary) !important; }
+.text-stone-500 { color: var(--text-muted) !important; }
+.text-stone-400 { color: var(--text-light) !important; }
+
+.border-stone-100 { border-color: var(--divider) !important; }
+.border-stone-200 { border-color: var(--border) !important; }
+.border-stone-300 { border-color: var(--text-light) !important; }
+
+/* Zaokrąglenia */
+.rounded, .rounded-lg, .rounded-md { border-radius: var(--radius) !important; }

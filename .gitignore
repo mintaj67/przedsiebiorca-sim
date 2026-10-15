@@ -1,0 +1,27 @@
+# Zależności
+node_modules
+
+# Build (zbudowana wersja gry)
+dist
+dist-ssr
+
+# Logi
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cache
+.vite
+.cache
+
+# Zmienne środowiskowe (jeśli kiedyś będą)
+.env
+.env.local
+
+# Pliki systemowe i edytora
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea

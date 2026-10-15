@@ -1,0 +1,12 @@
+[
+  { "id": "sld",  "name": "SLD", "ideology": "moderate_left", "size": "large",  "economicView": -1, "socialView": -1, "activeFrom": 1990, "activeTo": 2005 },
+  { "id": "uw",   "name": "Unia Wolności", "ideology": "center", "size": "medium", "economicView": 1, "socialView": 1, "activeFrom": 1994, "activeTo": 2005 },
+  { "id": "aws",  "name": "AWS", "ideology": "center_right", "size": "large", "economicView": 1, "socialView": 0, "activeFrom": 1996, "activeTo": 2001 },
+  { "id": "psl",  "name": "PSL", "ideology": "center", "size": "medium", "economicView": 0, "socialView": 0, "activeFrom": 1989, "activeTo": 9999, "isPSL": true, "special": "Istnieje na każdym etapie. Poglądy generowane losowo. Ma tajne zakończenie." },
+  { "id": "lpr",  "name": "LPR", "ideology": "extreme_right", "size": "small", "economicView": -1, "socialView": 2, "activeFrom": 2001, "activeTo": 2007 },
+  { "id": "samo", "name": "Samoobrona", "ideology": "radical_left", "size": "small", "economicView": -2, "socialView": -1, "activeFrom": 1992, "activeTo": 2007 },
+  { "id": "pis",  "name": "PiS", "ideology": "center_right", "size": "large", "economicView": 0, "socialView": 2, "activeFrom": 2001, "activeTo": 9999 },
+  { "id": "po",   "name": "PO", "ideology": "center", "size": "large", "economicView": 1, "socialView": 1, "activeFrom": 2001, "activeTo": 9999 },
+  { "id": "lew",  "name": "Lewica", "ideology": "moderate_left", "size": "medium", "economicView": -1, "socialView": -1, "activeFrom": 2005, "activeTo": 9999 },
+  { "id": "kon",  "name": "Konfederacja", "ideology": "extreme_right", "size": "small", "economicView": 2, "socialView": 2, "activeFrom": 2019, "activeTo": 9999 }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "chain1_start",
+    "title": "[Wymyśl tytuł]",
+    "description": "[Opis sytuacji — hak dla gracza]",
+    "weight": 15,
+    "once": true,
+    "conditions": {
+      "yearMin": 1990,
+      "yearMax": 1995,
+      "phase": ["chaos"]
+    },
+    "choices": [
+      {
+        "id": "opcja_a",
+        "label": "[Wybór 1]",
+        "effects": {
+          "stateKonta": -10000,
+          "flagsAdd": ["chain1_droga_a"]
+        }
+      },
+      {
+        "id": "opcja_b",
+        "label": "[Wybór 2]",
+        "effects": {
+          "stateKonta": 20000,
+          "flagsAdd": ["chain1_droga_b"]
+        }
+      },
+      {
+        "id": "opcja_c",
+        "label": "[Wybór 3]",
+        "effects": {
+          "reputation": { "opiniaPubliczna": 5 },
+          "flagsAdd": ["chain1_droga_c"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "chain1_krok2_a",
+    "title": "[Tytuł — tylko dla drogi A]",
+    "description": "[Opis sytuacji po wyborze opcji A]",
+    "weight": 100,
+    "once": true,
+    "conditions": {
+      "yearMin": 1992,
+      "yearMax": 1998,
+      "flags": ["chain1_droga_a"]
+    },
+    "choices": [
+      {
+        "id": "kontynuuj",
+        "label": "[Kontynuujesz]",
+        "effects": {
+          "flagsAdd": ["chain1_a_kontynuacja"]
+        }
+      },
+      {
+        "id": "wycofaj",
+        "label": "[Wycofujesz się]",
+        "effects": {
+          "stateKonta": -5000,
+          "flagsRemove": ["chain1_droga_a"],
+          "flagsAdd": ["chain1_a_wycofany"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "chain1_final",
+    "title": "[Tytuł finału]",
+    "description": "[Konsekwencja — zależna od tego, co zrobił gracz]",
+    "weight": 100,
+    "once": true,
+    "conditions": {
+      "yearMin": 1995,
+      "yearMax": 2005,
+      "flags": ["chain1_a_kontynuacja"]
+    },
+    "choices": [
+      {
+        "id": "final",
+        "label": "[Reakcja]",
+        "effects": {
+          "stateKonta": 50000,
+          "reputation": { "opiniaBranza": 10 }
+        }
+      }
+    ]
+  }
+]

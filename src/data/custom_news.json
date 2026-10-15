@@ -1,0 +1,30 @@
+[
+  {
+    "id": "custom_1",
+    "headline": "Nowy sklep mięsny otwiera się w twojej dzielnicy",
+    "body": "Lokalny przedsiębiorca zainwestował w nowoczesny sklep. Mieszkańcy są zadowoleni.",
+    "weight": 10,
+    "conditions": { "yearMin": 1989 }
+  },
+  {
+    "id": "custom_2",
+    "headline": "Dziennikarze pytają o ceny paliw",
+    "body": "Redakcja lokalnej gazety przygotowuje materiał o rosnących kosztach transportu.",
+    "weight": 8,
+    "conditions": { "yearMin": 1990, "yearMax": 1995 }
+  },
+  {
+    "id": "custom_3",
+    "headline": "Kurs dolara rośnie trzeci tydzień z rzędu",
+    "body": "Analitycy nie są zgodni co do przyczyn.",
+    "weight": 10,
+    "conditions": { "yearMin": 1989, "yearMax": 1998 }
+  },
+  {
+    "id": "custom_4",
+    "headline": "Lokalny klub piłkarski szuka sponsora",
+    "body": "Działacze klubu rozesłali oferty do przedsiębiorców w regionie.",
+    "weight": 8,
+    "conditions": { "yearMin": 1992 }
+  }
+]

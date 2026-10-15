@@ -1,0 +1,296 @@
+[
+  {
+    "year": 1990,
+    "candidates": [
+      {
+        "id": "walesacz_1990",
+        "name": "Marek Wałęsacz",
+        "partyId": "pc_ok",
+        "partyLabel": "PC OK",
+        "minPercent": 15,
+        "maxPercent": 45,
+        "typicalPercent": 35
+      },
+      {
+        "id": "stanislawski_1990",
+        "name": "Tymon Stanisławski",
+        "partyId": null,
+        "partyLabel": "niezależny",
+        "minPercent": 15,
+        "maxPercent": 30,
+        "typicalPercent": 22
+      },
+      {
+        "id": "kujawski_1990",
+        "name": "Mateusz Kujawsko-Pomorski",
+        "partyId": null,
+        "partyLabel": "niezależny",
+        "minPercent": 15,
+        "maxPercent": 25,
+        "typicalPercent": 18
+      },
+      {
+        "id": "nieubezpieczony_1990",
+        "name": "Włodzimierz Nieubezpieczony",
+        "partyId": "sld",
+        "partyLabel": "SLD",
+        "minPercent": 8,
+        "maxPercent": 15,
+        "typicalPercent": 10
+      },
+      {
+        "id": "romaniczsz_1990",
+        "name": "Bartosz Romaniczsz",
+        "partyId": "psl",
+        "partyLabel": "PSL",
+        "minPercent": 5,
+        "maxPercent": 10,
+        "typicalPercent": 7
+      },
+      {
+        "id": "karpatowicz_1990",
+        "name": "Leszek Karpatowicz",
+        "partyId": "kpn",
+        "partyLabel": "KPN",
+        "minPercent": 1,
+        "maxPercent": 5,
+        "typicalPercent": 3
+      }
+    ]
+  },
+  {
+    "year": 1995,
+    "candidates": [
+      {
+        "id": "kwasek_1995",
+        "name": "Aleksander Kwasek",
+        "partyId": "sld",
+        "partyLabel": "SLD",
+        "minPercent": 33,
+        "maxPercent": 45,
+        "typicalPercent": 39
+      },
+      {
+        "id": "walesacz_1995",
+        "name": "Marek Wałęsacz",
+        "partyId": "narodowcy",
+        "partyLabel": "Narodowcy, Stronnictwo Nacjonalistyczne, Republikanie",
+        "minPercent": 25,
+        "maxPercent": 38,
+        "typicalPercent": 31
+      },
+      {
+        "id": "hippo_1995",
+        "name": "Jack the Hippo",
+        "partyId": "unia_powolnych",
+        "partyLabel": "Unia Powolnych",
+        "minPercent": 8,
+        "maxPercent": 15,
+        "typicalPercent": 11
+      },
+      {
+        "id": "olchanowski_1995",
+        "name": "Janusz Olchanowski",
+        "partyId": "ruch_chrzescijansko_narodowy",
+        "partyLabel": "Ruch Chrześcijańsko-Narodowy, PC OK",
+        "minPercent": 5,
+        "maxPercent": 9,
+        "typicalPercent": 7
+      },
+      {
+        "id": "technotronic_1995",
+        "name": "Waldemar Technotronic",
+        "partyId": "psl",
+        "partyLabel": "PSL",
+        "minPercent": 3,
+        "maxPercent": 7,
+        "typicalPercent": 5
+      },
+      {
+        "id": "rowniacha_1995",
+        "name": "Tadek Równiacha",
+        "partyId": "pps",
+        "partyLabel": "PPS, Partia Emerytów, Partia Inkasentów",
+        "minPercent": 2,
+        "maxPercent": 5,
+        "typicalPercent": 3
+      },
+      {
+        "id": "goraczka_1995",
+        "name": "Halina Gorączka-Oberek",
+        "partyId": "stronnictwo_ludowych_demokratow",
+        "partyLabel": "Stronnictwo Ludowych Demokratów",
+        "minPercent": 1,
+        "maxPercent": 5,
+        "typicalPercent": 3
+      },
+      {
+        "id": "muszka_belkot_1995",
+        "name": "Janusz Muszka-Bełkot",
+        "partyId": "unia_polityki_fikcyjnej",
+        "partyLabel": "Unia Polityki Fikcyjnej",
+        "minPercent": 0.1,
+        "maxPercent": 3,
+        "typicalPercent": 1.5
+      },
+      {
+        "id": "per_1995",
+        "name": "Andrzej L. Per",
+        "partyId": "samo",
+        "partyLabel": "Samoobrona",
+        "minPercent": 0.1,
+        "maxPercent": 2,
+        "typicalPercent": 1
+      },
+      {
+        "id": "janitrzak_1995",
+        "name": "Piotr Janitrzak",
+        "partyId": null,
+        "partyLabel": "bezpartyjny",
+        "minPercent": 0.01,
+        "maxPercent": 1,
+        "typicalPercent": 0.5
+      },
+      {
+        "id": "iranski_1995",
+        "name": "Tadeusz Irański",
+        "partyId": null,
+        "partyLabel": "bezpartyjny",
+        "minPercent": 0.01,
+        "maxPercent": 1,
+        "typicalPercent": 0.5
+      },
+      {
+        "id": "wkladka_1995",
+        "name": "Kazimierz Wkładka",
+        "partyId": null,
+        "partyLabel": "bezpartyjny",
+        "minPercent": 0.01,
+        "maxPercent": 0.5,
+        "typicalPercent": 0.25
+      },
+      {
+        "id": "zerwimycka_1995",
+        "name": "Longinus Zerwimycka",
+        "partyId": "agora_walki_z_defetyzmem",
+        "partyLabel": "Agora Walki z Defetyzmem",
+        "minPercent": 0.01,
+        "maxPercent": 0.25,
+        "typicalPercent": 0.13
+      }
+    ]
+  },
+  {
+    "year": 2000,
+    "candidates": [
+      {
+        "id": "kwasek_2000",
+        "name": "Aleksander Kwasek",
+        "partyId": "sld",
+        "partyLabel": "SLD",
+        "minPercent": 25,
+        "maxPercent": 55,
+        "typicalPercent": 40
+      },
+      {
+        "id": "trojkowski_2000",
+        "name": "Andrzej Trójkowski",
+        "partyId": null,
+        "partyLabel": "bezpartyjny",
+        "minPercent": 15,
+        "maxPercent": 30,
+        "typicalPercent": 22
+      },
+      {
+        "id": "przepiekny_2000",
+        "name": "Marian Przepiękny",
+        "partyId": "aws",
+        "partyLabel": "AWS",
+        "minPercent": 15,
+        "maxPercent": 35,
+        "typicalPercent": 25
+      },
+      {
+        "id": "mocnywas_2000",
+        "name": "Jarosław Mocnywąs",
+        "partyId": "psl",
+        "partyLabel": "PSL",
+        "minPercent": 5,
+        "maxPercent": 10,
+        "typicalPercent": 7
+      },
+      {
+        "id": "muszka_belkot_2000",
+        "name": "Janusz Muszka-Bełkot",
+        "partyId": "unia_polityki_fikcyjnej",
+        "partyLabel": "Unia Polityki Fikcyjnej",
+        "minPercent": 4,
+        "maxPercent": 10,
+        "typicalPercent": 7
+      },
+      {
+        "id": "per_2000",
+        "name": "Andrzej L. Per",
+        "partyId": "samo",
+        "partyLabel": "Samoobrona",
+        "minPercent": 1,
+        "maxPercent": 3,
+        "typicalPercent": 2
+      },
+      {
+        "id": "walesak_2000",
+        "name": "Marek Wałęsak",
+        "partyId": "chuj",
+        "partyLabel": "ChUJ",
+        "minPercent": 1,
+        "maxPercent": 6.7,
+        "typicalPercent": 3.8
+      },
+      {
+        "id": "bogoojczyzniany_2000",
+        "name": "Janusz Bogoojczyźniany",
+        "partyId": "nop",
+        "partyLabel": "NOP",
+        "minPercent": 0.5,
+        "maxPercent": 3,
+        "typicalPercent": 1.7
+      },
+      {
+        "id": "gnatowski_2000",
+        "name": "Dariusz Gnatowski",
+        "partyId": "ppssx",
+        "partyLabel": "PPSSX",
+        "minPercent": 0.1,
+        "maxPercent": 1,
+        "typicalPercent": 0.5
+      },
+      {
+        "id": "emoji_2000",
+        "name": "Peter Emoji",
+        "partyId": "pps",
+        "partyLabel": "PPS",
+        "minPercent": 0.1,
+        "maxPercent": 1,
+        "typicalPercent": 0.5
+      },
+      {
+        "id": "generalny_2000",
+        "name": "Tadeusz Generalny",
+        "partyId": "sn",
+        "partyLabel": "SN",
+        "minPercent": 0.1,
+        "maxPercent": 0.5,
+        "typicalPercent": 0.3
+      },
+      {
+        "id": "koks_2000",
+        "name": "Bogdan Koks",
+        "partyId": null,
+        "partyLabel": "bezpartyjny",
+        "minPercent": 0.1,
+        "maxPercent": 0.5,
+        "typicalPercent": 0.3
+      }
+    ]
+  }
+]

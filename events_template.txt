@@ -1,0 +1,98 @@
+{
+  "id": "unikalny_id_bez_spacji",
+  "title": "Krótki tytuł (widoczny na ekranie)",
+  "description": "1-3 zdania. Kontekst sytuacji.",
+  "weight": 10,
+  "once": true,
+  "conditions": {
+    "yearMin": 1990,
+    "yearMax": 1995,
+    "phase": ["chaos"],
+    "party": ["PZPR"],
+    "currentPartyId": ["sld", "psl"],
+    "mafiaMember": true,
+    "minStateKonta": 30000,
+    "maxStateKonta": 100000,
+    "minReputation": { "opiniaPubliczna": 50 },
+    "maxReputation": { "opiniaMafia": 30 },
+    "legalForm": ["sa", "zoo"],
+    "activities": ["it", "handel"],
+    "flags": ["byl_w_pzpr"],
+    "notFlags": ["zrywal_z_komuna"]
+  },
+  "choices": [
+    {
+      "id": "opcja_1",
+      "label": "Tekst przycisku",
+      "description": "Opcjonalny dopisek pod przyciskiem",
+      "effects": {
+        "stateKonta": -20000,
+        "reputation": { "opiniaPubliczna": 5, "opiniaMafia": -10 },
+        "pasywa": { "pracownicy": 5000 },
+        "aktywa": { "przychodyZDzialalnosci": 10000 },
+        "flagsAdd": ["nowa_flaga"],
+        "flagsRemove": ["stara_flaga"],
+        "joinMafia": true,
+        "leaveMafia": false,
+        "setParty": "independent",
+        "setCurrentPartyId": "sld"
+      }
+    },
+    {
+      "id": "opcja_2_losowa",
+      "label": "Ryzowna opcja",
+      "requires": { "mafiaMember": true },
+      "gamble": {
+        "winChance": 0.5,
+        "onWin": {
+          "stateKonta": 50000,
+          "reputation": { "opiniaMafia": 5 }
+        },
+        "onLose": {
+          "stateKonta": -30000,
+          "reputation": { "opiniaMafia": -15 }
+        }
+      }
+    }
+  ]
+}
+
+2. Ściągawka — co wpływa na co
+Warunki (conditions) — wszystkie opcjonalne. Event pokaże się tylko, jeśli WSZYSTKIE są spełnione.
+
+Pole	Znaczenie
+yearMin / yearMax	Zakres lat
+phase	["chaos"], ["duopol"], ["invasion"]
+party	["PZPR"], ["independent"], ["none"], ["opposition"]
+currentPartyId	["sld"], ["pis"], ["po"], ["psl"]...
+rulingParty	Partie w koalicji rządzącej
+mafiaMember	true / false
+minStateKonta / maxStateKonta	Próg stanu konta
+minReputation / maxReputation	Progi reputacji (dowolna sub-statystyka)
+legalForm	["cywilna"], ["zoo"], ["sa"], ["holding"]
+activities	["handel"], ["it"], ["produkcja"]...
+flags	Wymagane flagi
+notFlags	Wykluczone flagi
+Efekty (effects i gamble.onWin/onLose)
+
+Pole	Efekt
+stateKonta	Zmiana stanu konta (+/−)
+reputation	{ "opiniaPubliczna": +5, "opiniaMafia": -10 } — dowolna sub-statystyka
+pasywa	{ "pracownicy": +5000 } — zwiększa koszty
+aktywa	{ "przychodyZDzialalnosci": +10000 }
+flagsAdd / flagsRemove	Dodaje/usuwa flagi
+joinMafia / leaveMafia	true / false
+setParty	"PZPR" / "independent" / "none" / "opposition"
+setCurrentPartyId	ID partii z parties.json
+Sub-statystyki reputacji (nazwy do reputation)
+
+branza, opiniaPubliczna, opiniaPracownicy, opiniaBranza, opiniaMafia, opiniaMedia, opiniaPolitycy
+
+Uwaga o weight — im wyższa liczba, tym częściej event się pojawia. Zasady:
+
+Historyczne, mocne: weight: 100 (i once: true)
+
+Średnie, klimatyczne: weight: 10–20
+
+Rzadkie, mocne efekty: weight: 5–8
+

@@ -1,0 +1,205 @@
+[
+  {
+    "id": "fotowoltaika",
+    "title": "Komwojażer oferuje fotowoltaikę",
+    "description": "Do biura przychodzi komwojażer. Oferuje montaż paneli fotowoltaicznych. Twierdzi, że to inwestycja, która się zwróci.",
+    "weight": 10,
+    "conditions": { "yearMin": 2000, "phase": ["chaos", "duopol"] },
+    "choices": [
+      {
+        "id": "buy",
+        "label": "Wchodzę w to",
+        "effects": {
+          "stateKonta": -50000,
+          "pasywa": { "czynsz": -5000 },
+          "flagsAdd": ["fotowoltaika"]
+        }
+      },
+      {
+        "id": "refuse",
+        "label": "Nie wchodzę w to",
+        "effects": {}
+      },
+      {
+        "id": "mafia",
+        "label": "Nasylasz na niego mafię",
+        "requires": { "mafiaMember": true },
+        "gamble": {
+          "winChance": 0.5,
+          "onWin": {
+            "reputation": { "opiniaMafia": 5 },
+            "pasywa": { "czynsz": -5000 },
+            "flagsAdd": ["fotowoltaika"]
+          },
+          "onLose": {
+            "reputation": { "opiniaMafia": -10 },
+            "stateKonta": -20000,
+            "flagsAdd": ["konflikt_z_mafia"]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "wizyta_skarbowki",
+    "title": "Wizyta skarbówki",
+    "description": "Do firmy przychodzi kontrola skarbowa. Powód: duża liczba pracowników na śmieciówkach.",
+    "weight": 20,
+    "conditions": { "minStateKonta": 0 },
+    "choices": [
+      {
+        "id": "cooperate",
+        "label": "Współpracujesz",
+        "effects": {
+          "stateKonta": -30000,
+          "reputation": { "opiniaPracownicy": 5, "opiniaPubliczna": -5 }
+        }
+      },
+      {
+        "id": "bribe",
+        "label": "Próbujesz załatwić to nieoficjalnie",
+        "gamble": {
+          "winChance": 0.4,
+          "onWin": { "stateKonta": -10000 },
+          "onLose": {
+            "stateKonta": -80000,
+            "reputation": { "opiniaPubliczna": -15, "opiniaPolitycy": -10 }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "propozycja_mafii",
+    "title": "Propozycja współpracy",
+    "description": "Przedstawiciel lokalnej grupy przestępczej proponuje 'ochronę' w zamian za procent od obrotu.",
+    "weight": 15,
+    "conditions": { "yearMax": 2005, "phase": ["chaos"], "mafiaMember": false },
+    "choices": [
+      {
+        "id": "accept",
+        "label": "Przyjmujesz propozycję",
+        "effects": {
+          "joinMafia": true,
+          "reputation": { "opiniaMafia": 20, "opiniaPubliczna": -10 },
+          "flagsAdd": ["wspolpraca_z_mafia"]
+        }
+      },
+      {
+        "id": "refuse",
+        "label": "Odmawiasz",
+        "effects": {
+          "reputation": { "opiniaMafia": -10 },
+          "flagsAdd": ["odmowil_mafii"]
+        }
+      }
+    ]
+  },
+  {
+    "id": "kryzys_1990",
+    "title": "Plan Balcerowicza",
+    "description": "Rząd wprowadza pakiet reform gospodarczych. Inflacja szaleje, ale rynek się otwiera.",
+    "weight": 100,
+    "once": true,
+    "conditions": { "yearMin": 1990, "yearMax": 1990 },
+    "choices": [
+      {
+        "id": "adapt",
+        "label": "Dostosowujesz się",
+        "effects": { "stateKonta": -20000, "reputation": { "opiniaPubliczna": 5 } }
+      },
+      {
+        "id": "wait",
+        "label": "Czekasz",
+        "effects": { "stateKonta": -10000 }
+      }
+    ]
+  },
+  {
+    "id": "kontrola_bankowa",
+    "title": "Kontrola z banku",
+    "description": "Bank, w którym masz kredyt, przeprowadza kontrolę. Martwią się o twoją zdolność kredytową.",
+    "weight": 10,
+    "conditions": { "minStateKonta": -50000 },
+    "choices": [
+      {
+        "id": "show_books",
+        "label": "Pokazujesz księgi",
+        "effects": { "reputation": { "opiniaBranza": 5 } }
+      },
+      {
+        "id": "hide",
+        "label": "Ukrywasz część dokumentów",
+        "gamble": {
+          "winChance": 0.6,
+          "onWin": {},
+          "onLose": { "stateKonta": -40000, "reputation": { "opiniaBranza": -15 } }
+        }
+      }
+    ]
+  },
+  {
+    "id": "wybory_1991",
+    "title": "Pierwsze wolne wybory",
+    "description": "Trwają wybory parlamentarne. Możesz udzielić poparcia swojemu ugrupowaniu.",
+    "weight": 50,
+    "once": true,
+    "conditions": { "yearMin": 1991, "yearMax": 1991 },
+    "choices": [
+      {
+        "id": "support",
+        "label": "Wspierasz swoją partię finansowo",
+        "effects": {
+          "stateKonta": -20000,
+          "reputation": { "opiniaPolitycy": 10 }
+        }
+      },
+      {
+        "id": "neutral",
+        "label": "Zostajesz neutralny",
+        "effects": {}
+      }
+    ]
+  },
+  {
+    "id": "kaseta_vhs",
+    "title": "Kaseta VHS",
+    "description": "Kuzyn z Niemiec przywozi kasety VHS z filmami Teresy Orłowskiej i prosi o pomoc w ich sprzedaży.",
+    "weight": 80,
+    "once": true,
+    "conditions": {
+      "yearMin": 1989,
+      "yearMax": 1997,
+      "phase": ["chaos"],
+      "minStateKonta": 0
+    },
+    "choices": [
+      {
+        "id": "sprzedaj",
+        "label": "Pomóż mu je sprzedać",
+        "description": "Bierzesz na siebie ryzyko. Klient sam się znajdzie.",
+        "gamble": {
+          "winChance": 0.5,
+          "winText": "Polska kinematografia ci tego nie zapomni.",
+          "loseText": "Zostałeś z tymi kasetami jak Himilsbach z angielskim.",
+          "onWin": {
+            "stateKonta": 50000,
+            "reputation": { "opiniaMafia": 5 }
+          },
+          "onLose": {
+            "stateKonta": -30000,
+            "reputation": { "opiniaMafia": -15 }
+          }
+        }
+      },
+      {
+        "id": "odmow",
+        "label": "Odmawiasz",
+        "description": "Nie chcesz mieć z tym nic wspólnego.",
+        "effects": {
+          "reputation": { "opiniaPubliczna": -3 }
+        }
+      }
+    ]
+  }
+]
