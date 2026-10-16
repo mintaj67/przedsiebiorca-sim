@@ -6,6 +6,7 @@ export interface NewsItem {
   headline: string;
   body?: string;
   category: NewsCategory;
+  read: boolean;
 }
 
 export type Phase = 'chaos' | 'duopol' | 'invasion';
@@ -29,6 +30,14 @@ export type ContractType = 'bezUmowy' | 'zlecenie' | 'uop';
 
 export type NewsCategory = 'rumor' | 'poll' | 'party' | 'economy' | 'custom';
 
+export interface NewsChoice {
+  id: string;
+  label: string;
+  description?: string;
+  effects?: EventEffects;
+  requires?: EventConditions;
+}
+
 export interface NewsItem {
   id: string;
   turn: number;
@@ -37,9 +46,14 @@ export interface NewsItem {
   headline: string;
   body?: string;
   category: NewsCategory;
+  read: boolean;
+  // Actionable (opcjonalne — jak są, to wiadomość z akcją)
+  choices?: NewsChoice[];
+  expiresAtTurn?: number;
+  resolved?: boolean;
+  resolvedChoiceId?: string;
+  onExpireEffects?: EventEffects;
 }
-
-
 
 export interface Reputation {
   branza: number;
@@ -168,6 +182,7 @@ export interface CEO {
   inMafia: boolean;
   partySwitchesByPhase: Record<Phase, number>;
   flags: string[];
+  lastMafiaInvitationTurn: number | null;
 }
 
 export interface EventConditions {

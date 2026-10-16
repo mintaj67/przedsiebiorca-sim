@@ -5,11 +5,17 @@ import {
   MAX_NEWS,
   FAKE_RUMORS,
   MISLEADING_RUMOR_CHANCE,
+  MAFIA_INVITATION_THRESHOLD,
+  MAFIA_INVITATION_MIN_GAP_FIRST,
+  MAFIA_INVITATION_MIN_GAP_RETRY,
+  MAFIA_INVITATION_RETRY_CHANCE,
+  MAFIA_INVITATION_EXPIRES_IN,
 } from './constants';
 import { matchesConditions } from './events';
 import eventsData from '../data/events.json';
 import partiesData from '../data/parties.json';
 import customNewsData from '../data/custom_news.json';
+import { applyEffects } from './turn';
 
 interface CustomNews {
   id: string;
@@ -19,8 +25,9 @@ interface CustomNews {
   conditions: GameEvent['conditions'];
 }
 
-export function addNewsItem(state: GameState, item: NewsItem): void {
-  state.news.unshift(item);
+export function addNewsItem(state: GameState, item: Omit<NewsItem, 'read'>): void {
+  const fullItem: NewsItem = { ...item, read: false };
+  state.news.unshift(fullItem);
   if (state.news.length > MAX_NEWS) state.news.pop();
 }
 
@@ -142,4 +149,105 @@ export function activePartiesFor(state: GameState): Party[] {
 
 function sizeRank(p: Party): number {
   return p.size === 'large' ? 3 : p.size === 'medium' ? 2 : 1;
+}
+
+export function addActionableNewsItem(
+  state: GameState,
+  item: Omit<NewsItem, 'read' | 'resolved'>
+): void {
+  const fullItem: NewsItem = {
+    ...item,
+    read: false,
+    resolved: false,
+  };
+  state.news.unshift(fullItem);
+  if (state.news.length > MAX_NEWS) state.news.pop();
+}
+
+export function processExpiredActions(state: GameState): void {
+  for (const item of state.news) {
+    if (item.resolved) continue;
+    if (!item.choices) continue;
+    if (item.expiresAtTurn === undefined) continue;
+    if (state.turn < item.expiresAtTurn) continue;
+
+    item.resolved = true;
+    item.resolvedChoiceId = '__expired__';
+
+    if (item.onExpireEffects) {
+      applyEffects(state, item.onExpireEffects);
+    }
+  }
+}
+
+export function checkMafiaInvitation(state: GameState): void {
+  // Warunki bazowe
+  if (state.year < 1990) return;
+  if (state.phase !== 'chaos') return;
+  if (state.ceo.inMafia) return;
+  if (state.ceo.flags.includes('zdradzil_mafie')) return;
+  if (state.company.reputation.opiniaMafia < MAFIA_INVITATION_THRESHOLD) return;
+
+  // Sprawdź, czy w tej chwili nie ma już aktywnego zaproszenia w skrzynce
+  const hasPending = state.news.some(
+    n => n.id.startsWith('mafia_invitation_') && !n.resolved
+  );
+  if (hasPending) return;
+
+  // Odstęp czasowy od poprzedniego zaproszenia
+  const refusedBefore =
+    state.ceo.flags.includes('mafia_refused') ||
+    state.ceo.flags.includes('mafia_ghosted');
+
+  const lastTurn = state.ceo.lastMafiaInvitationTurn ?? -999;
+  const gap = state.turn - lastTurn;
+  const minGap = refusedBefore ? MAFIA_INVITATION_MIN_GAP_RETRY : MAFIA_INVITATION_MIN_GAP_FIRST;
+  if (gap < minGap) return;
+
+  // Losowanie (przy ponownym zaproszeniu tylko 30% szansy na turę)
+  const rng = makeRng(state.seed, state.turn * 17 + 5);
+  const chance = refusedBefore ? MAFIA_INVITATION_RETRY_CHANCE : 1.0;
+  if (rng.next() > chance) return;
+
+  // Wyślij zaproszenie
+  const isRetry = refusedBefore;
+  addActionableNewsItem(state, {
+    id: `mafia_invitation_${state.turn}`,
+    turn: state.turn,
+    year: state.year,
+    quarter: state.quarter,
+    headline: isRetry ? 'Kolejna propozycja' : 'Propozycja nie do odrzucenia',
+    body: isRetry
+      ? 'Mężczyzna w drogim garniturze znowu się zjawił. Tym razem pyta wprost, czy zmieniłeś zdanie.'
+      : 'Do twojego biura przyszedł mężczyzna w drogim garniturze. Bez zapowiedzi. Mówi, że reprezentuje "ludzi, którzy mogą wiele". Proponuje współpracę.',
+    category: 'custom',
+    expiresAtTurn: state.turn + MAFIA_INVITATION_EXPIRES_IN,
+    choices: [
+      {
+        id: 'accept',
+        label: 'Wchodzę w to',
+        description: 'Akceptujesz propozycję. Od teraz masz nowych partnerów.',
+        effects: {
+          joinMafia: true,
+          reputation: { opiniaMafia: 10, opiniaPubliczna: -5 },
+          flagsAdd: ['w_mafii'],
+        },
+      },
+      {
+        id: 'refuse',
+        label: 'Odmawiam',
+        description: 'Nie chcesz mieć z tym nic wspólnego. Ryzykujesz konsekwencje.',
+        effects: {
+          reputation: { opiniaMafia: -25 },
+          flagsAdd: ['mafia_refused'],
+        },
+      },
+    ],
+    onExpireEffects: {
+      reputation: { opiniaMafia: -10 },
+      flagsAdd: ['mafia_ghosted'],
+    },
+  });
+
+  state.ceo.lastMafiaInvitationTurn = state.turn;
 }

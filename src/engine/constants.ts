@@ -174,3 +174,21 @@ export const CANDIDATE_LAST_NAMES = [
   'Lewandowski', 'Zieliński', 'Szymański', 'Woźniak', 'Dąbrowski',
   'Kozłowski', 'Jankowski', 'Mazur', 'Krawczyk', 'Piotrowski', 'Grabowski',
 ];
+
+export const ACTIVITY_MAFIA_BASELINE: Record<string, number> = {
+  windykacja: 55,
+  transport: 45,
+  gastronomia: 40,
+  budowlanka: 40,
+  handel: 30,
+  produkcja: 25,
+  uslugi: 25,
+  it: 20,
+  edukacja: 15,
+};
+
+export const MAFIA_INVITATION_THRESHOLD = 75;
+export const MAFIA_INVITATION_MIN_GAP_FIRST = 4;      // tury
+export const MAFIA_INVITATION_MIN_GAP_RETRY = 16;     // tury (4 lata)
+export const MAFIA_INVITATION_RETRY_CHANCE = 0.3;
+export const MAFIA_INVITATION_EXPIRES_IN = 3;         // tury na decyzję

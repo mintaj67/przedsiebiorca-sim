@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import { StatBar } from '../components/StatBar';
-import { REPUTATION_LABELS, REPUTATION_DESCRIPTIONS } from '../labels';
+import { REPUTATION_LABELS, REPUTATION_DESCRIPTIONS } from '../Labels';
 import { useSettingsStore } from '../../store/settingsStore';
 
 export function ReputationScreen() {

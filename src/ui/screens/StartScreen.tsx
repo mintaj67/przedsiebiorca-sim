@@ -30,9 +30,13 @@ export function StartScreen() {
   const [size, setSize] = useState<CompanySize>('micro');
   const [inPZPR, setInPZPR] = useState(false);
 
+  const startCash = Math.round(
+    DIFFICULTY_CONFIG[difficulty].startingCash * COMPANY_SIZE_CONFIG[size].cashMultiplier
+  );
+
   return (
     <div className="min-h-screen bg-stone-100 p-6 flex items-center justify-center">
-      <div className="max-w-4xl w-full bg-white rounded-lg shadow-lg p-8">
+      <div className="max-w-4xl w-full bg-white rounded-lg shadow-lg p-6 md:p-8">
         <button
           onClick={() => setScreen('menu')}
           className="text-sm text-stone-500 hover:text-stone-900 mb-4"
@@ -41,8 +45,9 @@ export function StartScreen() {
         </button>
 
         <h1 className="text-3xl font-bold mb-1">Nowa gra</h1>
-        <p className="text-stone-600 mb-6">1 stycznia 1989. Ustawa Wilczka wchodzi w życie.</p>
+        <p className="text-stone-600 mb-6">1 stycznia 1989. Reforma Wilczka wchodzi w życie.</p>
 
+        {/* Nazwa firmy */}
         <h2 className="font-bold mb-2">Nazwa firmy</h2>
         <div className="flex gap-2 mb-6">
           <input
@@ -62,16 +67,14 @@ export function StartScreen() {
           </select>
         </div>
 
+        {/* Działalność */}
         <h2 className="font-bold mb-2">Działalność</h2>
-        <p className="text-xs text-stone-600 mb-2">
-          W nawiasie startowa reputacja w branży. Wyższa = łatwiejszy start.
-        </p>
         <div className="flex flex-wrap gap-2 mb-6">
           {ACTIVITIES.map(a => (
             <button
               key={a.id}
               onClick={() => setActivity(a.id)}
-              className={`px-3 py-1 rounded text-sm border ${
+              className={`px-3 py-1.5 rounded text-sm border ${
                 activity === a.id ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
               }`}
             >
@@ -80,74 +83,83 @@ export function StartScreen() {
           ))}
         </div>
 
+        {/* Rozmiar firmy */}
         <h2 className="font-bold mb-2">Rozmiar firmy</h2>
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-2 mb-2">
           {SIZES.map(sz => (
             <button
               key={sz}
               onClick={() => setSize(sz)}
-              className={`p-4 rounded border text-left transition ${
+              className={`py-3 rounded border text-center font-semibold ${
                 size === sz ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
               }`}
             >
-              <div className="font-bold mb-1">{COMPANY_SIZE_CONFIG[sz].label}</div>
-              <div className={`text-xs mb-2 ${size === sz ? 'text-stone-300' : 'text-stone-600'}`}>
-                Wymaganych pracowników: {COMPANY_SIZE_CONFIG[sz].requiredWorkers}
-              </div>
-              <div className={`text-xs ${size === sz ? 'text-stone-200' : 'text-stone-700'}`}>
-                {COMPANY_SIZE_CONFIG[sz].description}
-              </div>
+              {COMPANY_SIZE_CONFIG[sz].label}
             </button>
           ))}
         </div>
-
-        <h2 className="font-bold mb-2">Poziom trudności</h2>
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {(['easy', 'medium', 'hard'] as Difficulty[]).map(d => {
-            const cash = Math.round(DIFFICULTY_CONFIG[d].startingCash * COMPANY_SIZE_CONFIG[size].cashMultiplier);
-            return (
-              <button
-                key={d}
-                onClick={() => setDifficulty(d)}
-                className={`p-4 rounded border text-left transition ${
-                  difficulty === d ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
-                }`}
-              >
-                <div className="font-bold mb-1">{DIFFICULTY_DESCRIPTIONS[d].title}</div>
-                <div className={`text-xs mb-2 ${difficulty === d ? 'text-stone-300' : 'text-stone-600'}`}>
-                  Start: {cash.toLocaleString('pl-PL')} PLN
-                </div>
-                <div className={`text-xs ${difficulty === d ? 'text-stone-200' : 'text-stone-700'}`}>
-                  {DIFFICULTY_DESCRIPTIONS[d].description}
-                </div>
-              </button>
-            );
-          })}
+        <div className="bg-stone-50 border border-stone-200 rounded p-3 mb-6 text-sm text-stone-700">
+          <div className="text-xs text-stone-500 mb-1">
+            Wymaganych pracowników: <b>{COMPANY_SIZE_CONFIG[size].requiredWorkers}</b> ·
+            Mnożnik kapitału: <b>×{COMPANY_SIZE_CONFIG[size].cashMultiplier}</b>
+          </div>
+          {COMPANY_SIZE_CONFIG[size].description}
         </div>
 
+        {/* Poziom trudności */}
+        <h2 className="font-bold mb-2">Poziom trudności</h2>
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {(['easy', 'medium', 'hard'] as Difficulty[]).map(d => (
+            <button
+              key={d}
+              onClick={() => setDifficulty(d)}
+              className={`py-3 rounded border text-center font-semibold ${
+                difficulty === d ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
+              }`}
+            >
+              {DIFFICULTY_DESCRIPTIONS[d].title}
+            </button>
+          ))}
+        </div>
+        <div className="bg-stone-50 border border-stone-200 rounded p-3 mb-6 text-sm text-stone-700">
+          <div className="text-xs text-stone-500 mb-1">
+            Startowy kapitał: <b>{startCash.toLocaleString('pl-PL')} PLN</b>
+          </div>
+          {DIFFICULTY_DESCRIPTIONS[difficulty].description}
+        </div>
+
+        {/* Przynależność polityczna */}
         <h2 className="font-bold mb-2">Przynależność polityczna</h2>
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-2">
           <button
             onClick={() => setInPZPR(false)}
-            className={`px-4 py-2 rounded border ${!inPZPR ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'}`}
+            className={`flex-1 py-3 rounded border font-semibold ${
+              !inPZPR ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
+            }`}
           >
             Bezpartyjny
           </button>
           <button
             onClick={() => setInPZPR(true)}
-            className={`px-4 py-2 rounded border ${inPZPR ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'}`}
+            className={`flex-1 py-3 rounded border font-semibold ${
+              inPZPR ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
+            }`}
           >
             Członek PZPR
           </button>
         </div>
-        <p className="text-sm text-stone-600 mb-6">
+        <div className="bg-stone-50 border border-stone-200 rounded p-3 mb-6 text-sm text-stone-700">
           {inPZPR
             ? 'Dostęp do postkomunistycznych ugrupowań i znajomości w aparacie. Ale po 1989 możesz zostać rozliczony.'
             : 'Czysty życiorys. Trudniejszy start, ale żadnych obciążeń po transformacji.'}
-        </p>
+        </div>
 
         <button
-          onClick={() => newGame({ difficulty, inPZPR, activity, companyName: companyName.trim() || 'Moja Firma', suffix, size })}
+          onClick={() => newGame({
+            difficulty, inPZPR, activity,
+            companyName: companyName.trim() || 'Moja Firma',
+            suffix, size,
+          })}
           className="w-full bg-stone-900 text-white py-3 rounded text-lg font-bold hover:bg-stone-800"
         >
           Zacznij: 1 stycznia 1989 →

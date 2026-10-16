@@ -6,7 +6,7 @@ import { rollEvents, matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
 import { BANKRUPT_GRACE_TURNS } from './constants';
 import activitiesData from '../data/activities.json';
-import { generatePassiveNews } from './news';
+import { generatePassiveNews, processExpiredActions, checkMafiaInvitation } from './news';
 
 const REPUTATION_LABELS: Record<string, string> = {
   branza: 'Branża',
@@ -83,11 +83,14 @@ export function nextTurn(state: GameState): GameState {
   s.currentActivities = rollActivities(s, rng);
   s.chosenActivityThisTurn = null;
   s.lastChoiceResult = null;
-  
-    generatePassiveNews(s);
+
+  generatePassiveNews(s);
+  checkMafiaInvitation(s);
+  processExpiredActions(s);
 
   return s;
 }
+
 
 export function applyEffects(state: GameState, e: EventEffects) {
   if (e.reputation) {
@@ -147,16 +150,20 @@ export function resolveEventChoice(state: GameState, eventId: string, choiceId: 
   let effects: EventEffects | undefined;
   let outcomeDescription: string | undefined;
 
-  if (choice) {
-    if (choice.gamble) {
-      if (rng.next() < choice.gamble.winChance) {
-        effects = choice.gamble.onWin;
-        gambleResult = 'win';
-        outcomeDescription = choice.gamble.winText;
+    if (choice) {
+      if (choice.outcomes && choice.outcomes.length > 0) {
+        const picked = rng.weighted(choice.outcomes);
+        effects = picked.effects;
+        outcomeDescription = picked.description;
+      } else if (choice.gamble) {
+        if (rng.next() < choice.gamble.winChance) {
+          effects = choice.gamble.onWin;
+          gambleResult = 'win';
+          outcomeDescription = choice.gamble.winText;
       } else {
-        effects = choice.gamble.onLose;
-        gambleResult = 'lose';
-        outcomeDescription = choice.gamble.loseText;
+          effects = choice.gamble.onLose;
+          gambleResult = 'lose';
+          outcomeDescription = choice.gamble.loseText;
       }
     } else {
       effects = choice.effects;

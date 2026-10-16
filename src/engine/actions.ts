@@ -5,6 +5,7 @@ import {
   ACTIVITY_CHANGE_COOLDOWN,
   BANKRUPT_EMERGENCY_LOAN,
   WORKER_CONFIG,
+  ACTIVITY_MAFIA_BASELINE,
 } from './constants';
 import { recomputeReputation } from './reputation';
 
@@ -73,6 +74,7 @@ export function applyChangeActivity(state: GameState, activity: string): GameSta
   const delta = s.company.reputation.branza - oldBranza;
   s.company.reputation.opiniaBranza = clamp(s.company.reputation.opiniaBranza + delta * 0.3);
   s.company.reputation = recomputeReputation(s);
+  s.company.reputation.opiniaMafia = ACTIVITY_MAFIA_BASELINE[activity] ?? 25;
   return s;
 }
 

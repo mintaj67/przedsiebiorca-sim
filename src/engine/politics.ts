@@ -92,7 +92,7 @@ function computeFromPredefined(state: GameState, pre: PredefinedElection): Presi
   id: c.id,
   name: c.name,
   partyId: c.partyId,
-  partyLabel: c.partyLabel ?? partyNameFor(c.partyId),
+  partyLabel: c.partyLabel ?? (c.partyId ? c.partyId.replace(/_/g, ' ') : 'niezależny'),
   votesPercent: value,
     };
   });

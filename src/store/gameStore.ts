@@ -7,6 +7,9 @@ import {
   applyLeaveParty, applyEmergencyLoan, applySetPace,
 } from '../engine/actions';
 import { useSettingsStore } from './settingsStore';
+import { applyEffects } from '../engine/turn';
+import { recomputeReputation } from '../engine/reputation';
+
 
 const SAVE_KEY = 'pp-save-v1';
 
@@ -22,6 +25,7 @@ interface NewGameOpts {
 interface GameStore {
   state: GameState | null;
   screen: AppScreen;
+  markNewsRead: (id: string) => void;
   setScreen: (s: AppScreen) => void;
 
   newGame: (opts: NewGameOpts) => void;
@@ -43,6 +47,8 @@ interface GameStore {
   setPace: (pace: Pace) => void;
   dismissElection: () => void;
   dismissPresidentialResult: () => void;  
+  resolveNewsChoice: (newsId: string, choiceId: string) => void;
+  devAddTestNews: () => void;
 }
 
 function saveToStorage(state: GameState) {
@@ -199,4 +205,70 @@ export const useGameStore = create<GameStore>((set, get) => ({
   saveToStorage(next);
   set({ state: next });
   },
+
+    markNewsRead: (id) => {
+    const s = get().state;
+    if (!s) return;
+    const next = {
+      ...s,
+      news: s.news.map(n => n.id === id ? { ...n, read: true } : n),
+    };
+    saveToStorage(next);
+    set({ state: next });
+  },
+
+    resolveNewsChoice: (newsId, choiceId) => {
+    const s = get().state;
+    if (!s) return;
+    const next = structuredClone(s);
+    const item = next.news.find(n => n.id === newsId);
+    if (!item || item.resolved || !item.choices) return;
+    const choice = item.choices.find(c => c.id === choiceId);
+    if (!choice) return;
+
+    if (choice.effects) applyEffects(next, choice.effects);
+    item.resolved = true;
+    item.resolvedChoiceId = choiceId;
+    item.read = true;
+
+    next.company.reputation = recomputeReputation(next);
+    saveToStorage(next);
+    set({ state: next });
+  },
+  
+    devAddTestNews: () => {
+    const s = get().state;
+    if (!s) return;
+    const next = structuredClone(s);
+    next.news.unshift({
+      id: `test_action_${Date.now()}`,
+      turn: next.turn,
+      year: next.year,
+      quarter: next.quarter,
+      headline: 'Testowa wiadomość z akcją',
+      body: 'To jest test systemu ActionableNews.\nWybierz jedną z opcji poniżej — sprawdzimy, czy działa.',
+      category: 'custom',
+      read: false,
+      resolved: false,
+      expiresAtTurn: next.turn + 3,
+      choices: [
+        {
+          id: 'a',
+          label: 'Opcja A — dostajesz 10 000 PLN',
+          description: 'Prosty test pozytywnego efektu.',
+          effects: { stateKonta: 10000 },
+        },
+        {
+          id: 'b',
+          label: 'Opcja B — tracisz 5 000 PLN',
+          description: 'Prosty test negatywnego efektu.',
+          effects: { stateKonta: -5000 },
+        },
+      ],
+      onExpireEffects: { reputation: { opiniaPubliczna: -3 } },
+    });
+    saveToStorage(next);
+    set({ state: next });
+  },
+
 }));

@@ -1,5 +1,5 @@
 import type { GameState, Difficulty, Activity, CompanySize } from './types';
-import { DIFFICULTY_CONFIG, ACTIVITY_REPUTATION, COMPANY_SIZE_CONFIG, PSL_AVAILABILITY_CHANCE } from './constants';
+import { DIFFICULTY_CONFIG, ACTIVITY_REPUTATION, COMPANY_SIZE_CONFIG, PSL_AVAILABILITY_CHANCE, ACTIVITY_MAFIA_BASELINE } from './constants';
 import { matchesConditions } from './events';
 import { makeRng } from './rng';
 import activitiesData from '../data/activities.json';
@@ -39,6 +39,7 @@ export function createInitialState(opts: {
       inMafia: false,
       partySwitchesByPhase: { chaos: 0, duopol: 0, invasion: 0 },
       flags: [],
+      lastMafiaInvitationTurn: null,
     },
 
     company: {
@@ -74,7 +75,7 @@ export function createInitialState(opts: {
         opiniaPubliczna: startingRep,
         opiniaPracownicy: startingRep,
         opiniaBranza: startingRep,
-        opiniaMafia: 30,
+        opiniaMafia: ACTIVITY_MAFIA_BASELINE[opts.activity] ?? 25,
         opiniaMedia: 50,
         opiniaPolitycy: opts.inPZPR ? 60 : 40,
         ogolna: 0,
