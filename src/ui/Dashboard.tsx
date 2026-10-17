@@ -11,7 +11,7 @@ import { PresidentialElectionScreen } from './screens/PresidentialElectionScreen
 import { NewsScreen } from './screens/NewsScreen';
 import { ChangeActivityScreen } from './screens/ChangeActivityScreen';
 import { OptionsModal } from './components/OptionsModal';
-import { partyLabel } from './Labels';
+import { partyLabel } from './ui-labels';
 import { CombatScreen } from './screens/CombatScreen';
 
 type Screen = 'main' | 'news' | 'reputation' | 'finance' | 'party' | 'activity' | 'changeActivity';

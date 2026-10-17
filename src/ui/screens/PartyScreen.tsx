@@ -1,7 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import partiesData from '../../data/parties.json';
 import type { Party } from '../../engine/types';
-import { partyLabel } from '../Labels';
+import { partyLabel } from '../ui-labels';
 
 export function PartyScreen() {
   const { state, joinParty } = useGameStore();

@@ -1,3 +1,13 @@
+## 0.75 (2026-10-17) — Skarbówka i walka JRPG
+
+**Nowe mechaniki:**
+- **Statystyka `opiniaSkarbowa`** — ukryta reputacja w Urzędzie Skarbowym. Spada za pracowników na śmieciówkach, rośnie za UOP.
+- **Zapowiedź kontroli** — ActionableNews od księgowej, gdy statystyka spada < 30. Gracz ma 3 tury na reakcję (np. wysłanie kwiatów).
+- **Minigra walki (`combat.ts`)** — turowa walka z urzędnikiem w stylu JRPG. 4 ruchy gracza (współpraca, adwokat, kłamstwo, wpływy) i losowe ataki wroga. Wynik: wygrana, przegrana, remis.
+- **Księgowa** — nowa opcja w Finansach. Kosztuje 3000 PLN/kwartał, ale daje +3 do opiniiSkarbowej co turę.
+- **Mafijny "one-shot"** — członkowie mafii mogą użyć "Wpływów mafii" w walce (potężny cios).
+- **Zmiana nazewnictwa** — w kodzie i UI "Aktywa/Pasywa" zmieniono na "Wpływy/Wydatki".
+
 v. 0.7
 Changelog — wersja 0.70
 0.70 (2026-10-16) — Mafia

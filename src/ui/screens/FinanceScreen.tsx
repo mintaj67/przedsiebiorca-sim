@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import type { ContractType } from '../../engine/types';
-import { Wplywy_LABELS, Wydatki_LABELS } from '../Labels';
+import { Wplywy_LABELS, Wydatki_LABELS } from '../ui-labels';
 import { WORKER_CONFIG } from '../../engine/constants';
 
 const CONTRACTS: { id: ContractType; label: string; wage: number; revenue: number; note: string }[] = [
