@@ -12,6 +12,7 @@ import { NewsScreen } from './screens/NewsScreen';
 import { ChangeActivityScreen } from './screens/ChangeActivityScreen';
 import { OptionsModal } from './components/OptionsModal';
 import { partyLabel } from './Labels';
+import { CombatScreen } from './screens/CombatScreen';
 
 type Screen = 'main' | 'news' | 'reputation' | 'finance' | 'party' | 'activity' | 'changeActivity';
 
@@ -23,6 +24,10 @@ export function Dashboard() {
   const [showOptions, setShowOptions] = useState(false);
 
   if (!state) return <div className="p-8">Ładowanie...</div>;
+
+  if (state.activeCombat) {
+  return <CombatScreen />;
+  }
 
   if (state.lastPresidentialResult) {
     return <PresidentialElectionScreen onClose={dismissPresidentialResult} />;

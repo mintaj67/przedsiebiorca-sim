@@ -1,6 +1,14 @@
 import type { GameState } from './types';
-import { COMPANY_SIZE_CONFIG, BELOW_REQUIRED_WORKERS_PENALTY, WORKER_CONFIG } from './constants';
-
+import {
+  COMPANY_SIZE_CONFIG,
+  BELOW_REQUIRED_WORKERS_PENALTY,
+  WORKER_CONFIG,
+  SKARBOWKA_DECAY_BEZ_UMOWY,
+  SKARBOWKA_DECAY_ZLECENIE,
+  SKARBOWKA_GAIN_UOP,
+  ACCOUNTANT_COST,
+  ACCOUNTANT_BONUS,
+} from './constants';
 const BASE_REVENUE = 5000;
 const CZYNSZ = 2500;
 const TAX_RATE = 0.15;
@@ -10,28 +18,28 @@ export function tickEconomy(state: GameState): GameState {
   const f = c.finances;
 
   const baseRevenue = estimateRevenue(c);
-  f.aktywa.przychodyZDzialalnosci = baseRevenue;
+  f.Wplywy.przychodyZDzialalnosci = baseRevenue;
 
-  f.pasywa.pracownicy =
+  f.Wydatki.pracownicy =
     c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.wage +
     c.employees.zlecenie * WORKER_CONFIG.zlecenie.wage +
     c.employees.uop       * WORKER_CONFIG.uop.wage;
 
-  f.pasywa.czynsz = CZYNSZ;
-  f.pasywa.podatki = Math.max(0, baseRevenue * TAX_RATE);
+  f.Wydatki.czynsz = CZYNSZ;
+  f.Wydatki.podatki = Math.max(0, baseRevenue * TAX_RATE);
 
-  f.pasywa.splacaneKredyty = 0;
+  f.Wydatki.splacaneKredyty = 0;
   for (const loan of c.loans) {
     if (loan.remaining <= 0) continue;
     const installment = loan.remaining / Math.max(1, loan.quartersLeft);
     const interest = loan.remaining * loan.interestRate;
-    f.pasywa.splacaneKredyty += installment + interest;
+    f.Wydatki.splacaneKredyty += installment + interest;
     loan.remaining -= installment;
     loan.quartersLeft -= 1;
   }
 
-  const inflow  = sum(f.aktywa);
-  const outflow = sum(f.pasywa);
+  const inflow  = sum(f.Wplywy);
+  const outflow = sum(f.Wydatki);
   f.stateKonta += inflow - outflow;
 
   const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
@@ -39,6 +47,19 @@ export function tickEconomy(state: GameState): GameState {
   if (totalWorkers < requiredWorkers) {
     c.reputation.opiniaBranza = Math.max(0, c.reputation.opiniaBranza - BELOW_REQUIRED_WORKERS_PENALTY);
   }
+
+  let skarbowkaDelta =
+    c.employees.bezUmowy * SKARBOWKA_DECAY_BEZ_UMOWY +
+    c.employees.zlecenie * SKARBOWKA_DECAY_ZLECENIE +
+    c.employees.uop * SKARBOWKA_GAIN_UOP;
+
+  if (c.hasAccountant) {
+    skarbowkaDelta += ACCOUNTANT_BONUS;
+    f.Wydatki.inne += ACCOUNTANT_COST; // Dodatkowy koszt co turę
+  }
+
+  c.reputation.opiniaSkarbowa = Math.max(0, Math.min(100, c.reputation.opiniaSkarbowa + skarbowkaDelta));
+
 
   state.company = c;
 
@@ -60,6 +81,6 @@ function estimateRevenue(c: GameState['company']): number {
   return (BASE_REVENUE + workerRevenue) * activityMultiplier;
 }
 
-function sum(obj: Record<string, number>): number {
-  return Object.values(obj).reduce((a, b) => a + b, 0);
+function sum(obj: any): number {
+  return Object.values(obj).reduce<number>((a, b) => a + (b as number), 0);
 }

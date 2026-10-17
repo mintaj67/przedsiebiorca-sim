@@ -13,7 +13,7 @@ export function ReputationScreen() {
     'branza', 'opiniaPubliczna', 'opiniaPracownicy',
     'opiniaBranza', 'opiniaMafia',
   ];
-  const hidden: (keyof typeof r)[] = ['opiniaMedia', 'opiniaPolitycy'];
+  const hidden: (keyof typeof r)[] = ['opiniaMedia', 'opiniaPolitycy', 'opiniaSkarbowa'];
 
   return (
     <div className="p-6">

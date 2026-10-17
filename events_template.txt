@@ -28,8 +28,8 @@
       "effects": {
         "stateKonta": -20000,
         "reputation": { "opiniaPubliczna": 5, "opiniaMafia": -10 },
-        "pasywa": { "pracownicy": 5000 },
-        "aktywa": { "przychodyZDzialalnosci": 10000 },
+        "Wydatki": { "pracownicy": 5000 },
+        "Wplywy": { "przychodyZDzialalnosci": 10000 },
         "flagsAdd": ["nowa_flaga"],
         "flagsRemove": ["stara_flaga"],
         "joinMafia": true,
@@ -78,8 +78,8 @@ Efekty (effects i gamble.onWin/onLose)
 Pole	Efekt
 stateKonta	Zmiana stanu konta (+/−)
 reputation	{ "opiniaPubliczna": +5, "opiniaMafia": -10 } — dowolna sub-statystyka
-pasywa	{ "pracownicy": +5000 } — zwiększa koszty
-aktywa	{ "przychodyZDzialalnosci": +10000 }
+Wydatki	{ "pracownicy": +5000 } — zwiększa koszty
+Wplywy	{ "przychodyZDzialalnosci": +10000 }
 flagsAdd / flagsRemove	Dodaje/usuwa flagi
 joinMafia / leaveMafia	true / false
 setParty	"PZPR" / "independent" / "none" / "opposition"

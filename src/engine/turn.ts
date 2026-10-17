@@ -6,7 +6,9 @@ import { rollEvents, matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
 import { BANKRUPT_GRACE_TURNS } from './constants';
 import activitiesData from '../data/activities.json';
-import { generatePassiveNews, processExpiredActions, checkMafiaInvitation } from './news';
+import { generatePassiveNews, processExpiredActions, checkMafiaInvitation, checkTaxOfficeNotice } from './news';
+import { applyEffects } from './actions';
+import { startTaxCombat } from './combat';
 
 const REPUTATION_LABELS: Record<string, string> = {
   branza: 'Branża',
@@ -29,16 +31,16 @@ function describeEffects(e: EventEffects): string[] {
       lines.push(`${label}: ${v > 0 ? '+' : ''}${v}`);
     }
   }
-  if (e.pasywa) {
-    for (const [k, v] of Object.entries(e.pasywa)) {
+  if (e.Wydatki) {
+    for (const [k, v] of Object.entries(e.Wydatki)) {
       if (!v) continue;
-      lines.push(`Pasywa (${k}): ${v > 0 ? '+' : ''}${v.toLocaleString('pl-PL')}`);
+      lines.push(`Wydatki (${k}): ${v > 0 ? '+' : ''}${v.toLocaleString('pl-PL')}`);
     }
   }
-  if (e.aktywa) {
-    for (const [k, v] of Object.entries(e.aktywa)) {
+  if (e.Wplywy) {
+    for (const [k, v] of Object.entries(e.Wplywy)) {
       if (!v) continue;
-      lines.push(`Aktywa (${k}): ${v > 0 ? '+' : ''}${v.toLocaleString('pl-PL')}`);
+      lines.push(`Wplywy (${k}): ${v > 0 ? '+' : ''}${v.toLocaleString('pl-PL')}`);
     }
   }
   if (e.joinMafia) lines.push('Dołączasz do mafii');
@@ -86,31 +88,13 @@ export function nextTurn(state: GameState): GameState {
 
   generatePassiveNews(s);
   checkMafiaInvitation(s);
+  checkTaxOfficeNotice(s);
   processExpiredActions(s);
-
+  
+  if (s.skarbowkaVisitTurn !== null && s.turn === s.skarbowkaVisitTurn && !s.activeCombat) {
+    startTaxCombat(s);
+  }
   return s;
-}
-
-
-export function applyEffects(state: GameState, e: EventEffects) {
-  if (e.reputation) {
-    for (const [k, v] of Object.entries(e.reputation)) {
-      (state.company.reputation as any)[k] = clamp((state.company.reputation as any)[k] + (v as number));
-    }
-  }
-  if (e.stateKonta) state.company.finances.stateKonta += e.stateKonta;
-  if (e.aktywa) for (const [k, v] of Object.entries(e.aktywa)) {
-    (state.company.finances.aktywa as any)[k] += v as number;
-  }
-  if (e.pasywa) for (const [k, v] of Object.entries(e.pasywa)) {
-    (state.company.finances.pasywa as any)[k] += v as number;
-  }
-  if (e.flagsAdd) state.ceo.flags.push(...e.flagsAdd);
-  if (e.flagsRemove) state.ceo.flags = state.ceo.flags.filter(f => !e.flagsRemove!.includes(f));
-  if (e.joinMafia) state.ceo.inMafia = true;
-  if (e.leaveMafia) state.ceo.inMafia = false;
-  if (e.setParty) state.ceo.party = e.setParty;
-  if (e.setCurrentPartyId) state.ceo.currentPartyId = e.setCurrentPartyId;
 }
 
 function rollActivities(state: GameState, rng: ReturnType<typeof makeRng>): string[] {
@@ -121,8 +105,6 @@ function rollActivities(state: GameState, rng: ReturnType<typeof makeRng>): stri
     .map(a => a.id);
 }
 
-const clamp = (x: number) => Math.max(0, Math.min(100, x));
-
 export function consumeActivity(state: GameState, activityId: string): GameState {
   if (state.chosenActivityThisTurn) return state;
   const s = structuredClone(state);
@@ -130,7 +112,7 @@ export function consumeActivity(state: GameState, activityId: string): GameState
   if (!activity) return s;
 
   applyEffects(s, activity.effects);
-  s.chosenActivityThisTurn = activityId;
+  s.chosenActivityThisTurn = activityId
   s.company.reputation = recomputeReputation(s);
 
   if (s.company.reputation.ogolna <= 0) {

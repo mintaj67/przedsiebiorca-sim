@@ -1,6 +1,6 @@
 import { useGameStore } from '../../store/gameStore';
 import type { ContractType } from '../../engine/types';
-import { AKTYWA_LABELS, PASYWA_LABELS } from '../labels';
+import { Wplywy_LABELS, Wydatki_LABELS } from '../Labels';
 import { WORKER_CONFIG } from '../../engine/constants';
 
 const CONTRACTS: { id: ContractType; label: string; wage: number; revenue: number; note: string }[] = [
@@ -11,7 +11,7 @@ const CONTRACTS: { id: ContractType; label: string; wage: number; revenue: numbe
 
 
 export function FinanceScreen() {
-  const { state, hireWorker, takeLoan } = useGameStore();
+  const { state, hireWorker, takeLoan, toggleAccountant } = useGameStore();
   if (!state) return null;
   const f = state.company.finances;
   const workers = state.company.employees;
@@ -28,18 +28,18 @@ export function FinanceScreen() {
       <div className="grid grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h2 className="font-bold mb-3 text-green-800">Wpływy</h2>
-          {Object.entries(f.aktywa).map(([k, v]) => (
+          {Object.entries(f.Wplywy).map(([k, v]) => (
             <div key={k} className="flex justify-between text-sm border-b border-stone-100 py-1.5">
-              <span className="text-stone-700">{AKTYWA_LABELS[k] ?? k}</span>
+              <span className="text-stone-700">{Wplywy_LABELS[k] ?? k}</span>
               <span className="font-mono">{v.toLocaleString('pl-PL')}</span>
             </div>
           ))}
         </div>
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h2 className="font-bold mb-3 text-red-800">Wydatki</h2>
-          {Object.entries(f.pasywa).map(([k, v]) => (
+          {Object.entries(f.Wydatki).map(([k, v]) => (
             <div key={k} className="flex justify-between text-sm border-b border-stone-100 py-1.5">
-              <span className="text-stone-700">{PASYWA_LABELS[k] ?? k}</span>
+              <span className="text-stone-700">{Wydatki_LABELS[k] ?? k}</span>
               <span className="font-mono">{v.toLocaleString('pl-PL')}</span>
             </div>
           ))}
@@ -76,6 +76,30 @@ export function FinanceScreen() {
           </div>
         ))}
       </div>
+
+      {/* KSIĘGOWA */}
+      <h2 className="font-bold mb-3 mt-6">Księgowość</h2>
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-8 flex justify-between items-center">
+        <div>
+          <div className="font-semibold">
+            Pani Grażyna (Księgowa)
+            {state.company.hasAccountant && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Zatrudniona</span>}
+          </div>
+          <div className="text-xs text-stone-600 mt-1">
+            Koszt: 3 000 PLN / kwartał. Zwiększa opinię w Urzędzie Skarbowym o +3 co turę.
+          </div>
+        </div>
+        <button
+          onClick={toggleAccountant}
+          className={`px-4 py-2 rounded text-sm font-semibold ${
+            state.company.hasAccountant 
+              ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+              : 'bg-stone-900 text-white hover:bg-stone-800'
+          }`}
+        >
+          {state.company.hasAccountant ? 'Zwolnij' : 'Zatrudnij'}
+        </button>
+      </div>      
 
       <h2 className="font-bold mb-3">Kredyty</h2>
       <p className="text-sm text-stone-600 mb-3">

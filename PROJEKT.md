@@ -110,9 +110,9 @@ Waga opinii polityków zależy od tego, czy twoja partia rządzi.
 Finanse
 stateKonta — główna liczba
 
-aktywa (wpływy) — przychody, kredyty, dofinansowania, dochód pasywny
+Wplywy (wpływy) — przychody, kredyty, dofinansowania, dochód pasywny
 
-pasywa (wydatki) — kredyty, pensje, czynsz, podatki, kary
+Wydatki (wydatki) — kredyty, pensje, czynsz, podatki, kary
 
 Pracownicy (3 typy umów)
 Bez umowy — najtańsi, łatwo zwolnić, obniżają opinię pracowników
@@ -271,7 +271,7 @@ ID w JSON: snake_case bez polskich znaków (kaseta_vhs, plan_balcerowicza)
 
 Teksty w UI: polskie, z polskimi znakami
 
-Efekty: stateKonta (liczba), reputation (obiekt), pasywa/aktywa (obiekty), flagsAdd/flagsRemove (tablice)
+Efekty: stateKonta (liczba), reputation (obiekt), Wydatki/Wplywy (obiekty), flagsAdd/flagsRemove (tablice)
 
 9. Jak kontynuować pracę
 Zawsze zaczynaj od:

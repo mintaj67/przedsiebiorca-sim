@@ -1,0 +1,296 @@
+v. 0.7
+Changelog — wersja 0.70
+0.70 (2026-10-16) — Mafia
+Nowe mechaniki:
+
+System mafii przez reputację — dołączenie do mafii nie jest eventem, tylko konsekwencją długiej gry. Warunek: opiniaMafia >= 75%.
+
+ACTIVITY_MAFIA_BASELINE — każda działalność ma inny startowy poziom opinii u mafii (windykacja 55%, transport 45%, IT 20%, edukacja 15%). Zmiana działalności resetuje opinię do baseline'u nowej branży.
+
+Zaproszenie do mafii — przychodzi jako ActionableNews do skrzynki odbiorczej. Można je przyjąć, odrzucić lub zignorować (ghosting). Każda decyzja ma inne konsekwencje.
+
+Odstępy czasowe — pierwsze zaproszenie max raz na 4 tury, ponowne (po odmowie) raz na 16 tur z 30% szansą.
+
+Event mafia_konsekwencje — po odrzuceniu zaproszenia, w ciągu 1–2 tur ktoś grzebie przy biurze gracza.
+
+ActionableNews (fundament):
+
+NewsItem rozszerzony o pola: choices, expiresAtTurn, resolved, resolvedChoiceId, onExpireEffects.
+
+NewsChoice — nowy typ: opcja w wiadomości z label, description, effects.
+
+addActionableNewsItem — nowa funkcja w news.ts.
+
+processExpiredActions — automatycznie rozwiązuje wygasłe wiadomości (aplikuje onExpireEffects) po każdej turze.
+
+resolveNewsChoice — nowa akcja w gameStore — aplikuje efekty wybranej opcji, oznacza wiadomość jako rozwiązaną.
+
+NewsScreen — przebudowa: domyślna zakładka to Skrzynka odbiorcza, badge „AKCJA" dla wiadomości wymagających decyzji, przyciski opcji pod treścią, wskaźnik wygaśnięcia, pokazanie wybranej opcji po decyzji.
+
+Przebudowa interfejsu:
+
+Dashboard — info o partii, działalności i aktywności przeniesione na górę (nad biurko).
+
+Banner nieprzeczytanych — klikalny komunikat „Masz X nieprzeczytanych wiadomości" pod headerem, przekierowuje do Skrzynki.
+
+Nowy ekran „Działalność" — osobna zakładka (ChangeActivityScreen) z listą wszystkich branż, opisami i reputacją bazową. Zmiana działalności nie jest już na głównym ekranie.
+
+Biurko responsywne — mniejsza wysokość na mobile (h-40), część elementów (monitor, krzesło, obrazek) ukryta na małych ekranach.
+
+Nawigacja — overflow-x-auto, przewijalna na telefonie.
+
+StartScreen — opisy rozmiarów firmy, trudności i przynależności politycznej przeniesione poza przyciski (spójny layout w trzech sekcjach).
+
+Usunięte eventy:
+
+kryzys_1990 (Plan Balcerowicza) — bez sensu jako event losowy.
+
+wizyta_skarbowki — wróci jako osobna mechanika.
+
+propozycja_mafii — zastąpione systemem reputacji mafii.
+
+Pozostałe zmiany:
+
+CEO — nowe pole lastMafiaInvitationTurn (śledzi, kiedy ostatnio wysłano zaproszenie).
+
+Wybory 1995 — 13 ręcznie wpisanych kandydatów (Kwasek, Wałęsacz, Jack the Hippo, Muszka-Bełkot, Zerwimycka i in.).
+
+Wybory 2000 — 12 kandydatów (Kwasek, Trójkowski, Przepiękny, Koks i in.).
+
+Ekrany wyborów — rok w dużym nagłówku („Wybory prezydenckie 1995", „Wybory parlamentarne 1999") zamiast małego szarego dopisku.
+
+describeEffects w turn.ts — polskie etykiety reputacji zamiast surowych kluczy.
+
+Janusz Weiss — nowy event z outcomes (3 wyniki na opcję). Wprowadza outcomes do silnika — teraz można robić eventy z N wynikami, nie tylko 2 (jak w gamble).
+
+Fixy:
+
+Cykl importów — applyEffects przeniesione z turn.ts do actions.ts. Zapobiega białemu ekranowi przy starcie.
+
+partyNameFor w politics.ts — zamienione na inline fallback (c.partyId.replace(/_/g, ' ')).
+
+JSON events.json — naprawione przecinki między eventami.
+
+0.67 (2026-10-15) — Skórki i wybory prezydenckie
+Nowe mechaniki:
+
+Skórki (themes) — pięć motywów wybieranych z poziomu Opcji: domyślny, Telegazeta TVP (VT323, czarne tło, żółty tekst), Gazeta (Georgia, sepia), Gadu-Gadu (Tahoma, szary Windows XP), Brat (lime green, Arial Bold).
+
+Implementacja motywów — CSS variables w index.css, ustawiane przez data-theme na <html>. Klasy Tailwinda nadpisywane !important. Zmiana natychmiastowa.
+
+Ekran About — opis gry, autor, Patreon, podziękowania, stopka wersji.
+
+settingsStore — osobny store dla ustawień (autosave, tempo, ukryte statystyki, język, motyw). Klucz pp-settings-v1.
+
+Wybory prezydenckie:
+
+computePresidentialElection w politics.ts — losuje kandydatów z partii + niezależnych, daje wyniki procentowe, obsługuje II turę.
+
+presidential_elections.json — ręcznie wpisani kandydaci na 1990. Każdy z minPercent, maxPercent, typicalPercent. Rozkład dzwonowy wokół typical (3 rzuty uśrednione).
+
+PresidentialElectionScreen — ekran wyników z I i II turą, kandydaci z partiami, zwycięzca w czarnej karcie.
+
+Wroniecki jako prezydent 1989 (stan początkowy — przed wyborami).
+
+Typy PresidentialCandidate, PresidentialResult w types.ts.
+
+lastPresidentialResult w GameState + dismissPresidentialResult w gameStore.
+
+Rozszerzenia silnika:
+
+Outcomes — eventy mogą mieć N wyników z wagami (EventOutcome), nie tylko 2 jak w gamble. Używane m.in. w Januszu Weissie.
+
+EventOutcome — typ { weight, description, effects }.
+
+Zmiany w UI:
+
+Menu główne — nowy przycisk „O grze", placeholder logo, stopka wersji 0.67, „© by HZ GAMES 2026".
+
+Opcje — rozwijana lista skórek z opisem aktualnie wybranej, sekcja ustawień, przycisk „Przywróć domyślne".
+
+Fixy:
+
+Settings — dodane pole theme, ThemeId jako typ unii.
+
+0.60 (2026-10-13) — System newsów
+Nowe mechaniki:
+
+Newsy — osobny system w news.ts, kategorie: rumor, poll, party, economy, custom.
+
+generatePassiveNews — losuje newsy po każdej turze. Trzy źródła:
+
+Plotki o nadchodzących eventach (35% szans na turę, 30% z nich fałszywa).
+
+Sondaże co 4 tury, na 2 lata przed wyborami.
+
+Zmiany partii (pojawienie się / zniknięcie z schedule).
+
+Custom newsy z custom_news.json (flavor, bez efektów).
+
+NewsTicker — pasek z 4 ostatnimi newsami na dashboardzie.
+
+NewsScreen — pełne archiwum z filtrami po kategorii.
+
+partySchedule — losowe przesunięcie dat partii ±2 lata (generatePartySchedule w initialState.ts).
+
+Fałszywe plotki — FAKE_RUMORS w constants.ts, 30% szans że plotka nie zapowiada żadnego prawdziwego eventu.
+
+Decyzje projektowe:
+
+Eventy NIE idą do newsów — oddzielone, bo gracz ma je jako osobne ekrany decyzyjne.
+
+PSL — zawsze aktywny, niezależnie od schedule.
+
+Rozszerzenia silnika:
+
+NewsItem, NewsCategory w types.ts.
+
+news: NewsItem[] w GameState.
+
+MISLEADING_RUMOR_CHANCE, RUMOR_TEMPLATES, MAX_NEWS w constants.ts.
+
+0.50 (2026-10-12) — Pracownicy, etykiety, pierwsze wybory
+Nowe mechaniki:
+
+WORKER_CONFIG w constants.ts — pola: wage, revenue, severance, reputationImpact dla trzech typów umów.
+
+Odprawy za UOP — 8000 PLN przy zwolnieniu (sprawdzane w applyHire, nie można zwolnić bez kasy).
+
+Opinia pracowników spada o 2 za każdego zwolnionego bez umowy/zlecenia (UOP nie wpływa negatywnie, bo ma odprawę).
+
+Ekonomia — rebalans — BASE_REVENUE = 5000 (CEO sam pracuje), REVENUE_PER_WORKER = 5500, CZYNSZ = 2500, TAX_RATE = 0.15.
+
+Rozmiar firmy — CompanySize (micro/small/medium) z requiredWorkers, cashMultiplier, startingEmployees. Kara reputacyjna jeśli firma ma mniej pracowników niż wymaga rozmiar.
+
+Sufiks firmy — pole suffix w Company (-EX, -POL, brak).
+
+labels.ts — polskie etykiety i opisy (REPUTATION_LABELS, REPUTATION_DESCRIPTIONS, Wplywy_LABELS, Wydatki_LABELS, PARTY_LABELS, partyLabel).
+
+Wybory:
+
+ElectionScreen — ekran wyborów parlamentarnych z mandatami, procentami, koalicją.
+
+Wybory parlamentarne co 4 lata (od 1991), prezydenckie co 5 lat (od 1990).
+
+Koalicje wg reguł z COALITION_RULES — czasem egzotyczne (radykalna lewica ↔ skrajna prawica).
+
+460 posłów w Sejmie, duże partie dostają więcej mandatów.
+
+Rozszerzenia silnika:
+
+Akcje natychmiastowe w actions.ts — applyHire, applyLoan, applyChangeActivity, applyJoinParty, applyLeaveParty, applyEmergencyLoan, applySetPace. Nie przesuwają tury.
+
+Auto-save po każdej akcji (klucz pp-save-v1).
+
+Zmiany w UI:
+
+MainMenu — Nowa gra / Wczytaj / Opcje / Wesprzyj na Patronite.
+
+StartScreen — nazwa firmy, sufiks, branża, rozmiar firmy, trudność, PZPR.
+
+OptionsModal — zapis / wczytanie / usunięcie zapisu / powrót do menu.
+
+PartyScreen — podział na: Twoja partia / Koalicja rządząca / Wszystkie partie.
+
+FinanceScreen — zatrudnienie (3 typy umów), kredyty, Wplywy/Wydatki.
+
+ReputationScreen — polskie nazwy, opisy, sekcje widoczne / ukryte.
+
+ActivityScreen — jedna aktywność na turę, blokada po wyborze, opis skutków.
+
+EventScreen — pełnoekranowy widok eventu.
+
+ConsequenceScreen — ekran konsekwencji z listą zmian, winText/loseText, badge sukces/porażka.
+
+Wpływy/Wydatki zamiast Wplywy/Wydatki.
+
+Fixy:
+
+Join party, zmiana działalności, kredyty — nie przesuwają już tury (przeniesione do akcji natychmiastowych).
+
+Kaskada eventów — resolveEventChoice nie wywołuje nextTurn, tylko osobno aplikuje efekty.
+
+0.40 (2026-10-11) — Pierwszy grywalny prototyp
+Nowe mechaniki:
+
+Silnik tury — nextTurn, applyEffects, resolveEventChoice, dismissConsequence w turn.ts.
+
+Ekonomia — tickEconomy z przychodami, kosztami, kredytami, sprawdzeniem bankructwa (2 tury z saldem < 0).
+
+Reputacja — recomputeReputation z kaskadami: media + politycy → publiczna/branża/mafia; mafia > 70 szkodzi publicznej.
+
+Polityka — tickPolitics, wybory parlamentarne, koalicje wg COALITION_RULES.
+
+Wybory co 4/5 lat — start w 1991 (parlament) i 1990 (prezydent).
+
+Kredyty — bank (3%) i szara strefa (7%). Bank wymaga dobrej reputacji ogólnej.
+
+Kredyt ratunkowy — 50 000 PLN @ 15% przy bankructwie.
+
+System flag — flagsAdd, flags, notFlags, flagsRemove dla łańcuchów eventów.
+
+Gamble — 2 wyniki z winChance, onWin, onLose.
+
+Pierwsze eventy:
+
+Plan Balcerowicza, Wizyta skarbówki, Propozycja mafii, Kontrola bankowa, Wybory 1991, Fotowoltaika.
+
+Pierwsze aktywności:
+
+Karetki szpitalowi, Kapus mafii, Poparcie kandydata, Sponsoring klubu, Szkolenie pracowników.
+
+Rozszerzenia silnika:
+
+types.ts — GameState, CEO, Company, PoliticsState, Reputation, Finances, EventConditions, EventEffects, Gamble, EventChoice, GameEvent, Activity.
+
+initialState.ts — createInitialState, getEligibleActivities.
+
+events.ts — matchesConditions, rollEvents.
+
+rng.ts — seedowany RNG (seedrandom).
+
+constants.ts — REPUTATION_WEIGHTS, COALITION_RULES, ACTIVITY_REPUTATION, DIFFICULTY_CONFIG, MAFIA_PUBLIC_THRESHOLD, PARTY_INFLUENCE_WEIGHTS.
+
+Zmiany w UI:
+
+Dashboard — główny ekran z zakładkami: Główny / Reputacja / Finanse / Partia / Aktywności.
+
+StatBar — pasek reputacji z opcją hidden.
+
+EventModal — modal eventu z przyciskami opcji.
+
+Fixy:
+
+Kaskada eventów — pierwsza wersja miała błąd: kliknięcie opcji odpalało kolejny event. Naprawione przez rozdzielenie resolveEventChoice od nextTurn.
+
+Ekonomia — pierwsza wersja kończyła się bankructwem po 4 latach. Naprawione przez BASE_REVENUE = 5000.
+
+0.1.0 (2026-10-10) — Setup projektu
+Fundament:
+
+Vite + React 18 + TypeScript — start projektu.
+
+Zustand — gameStore dla stanu gry.
+
+Tailwind CSS — klasy bg-stone-*, text-stone-* itd.
+
+Struktura folderów — engine/ (logika), data/ (JSON-y), store/ (Zustand), ui/ (React).
+
+package.json — React, React-DOM, Zustand, seedrandom, Tailwind, Vitest.
+
+tsconfig.json — konfiguracja TypeScript.
+
+vite.config.ts — konfiguracja Vite.
+
+index.html — punkt wejścia HTML.
+
+main.tsx, App.tsx — punkt wejścia React.
+
+Zasada architektoniczna:
+
+Silnik (engine/) nie wie nic o React. UI (ui/) tylko czyta stan i wysyła akcje.
+
+Dane (data/) to JSON-y — edytowalne bez zmiany kodu.
+
+Uwaga: Wersja 0.1.0 była setupem, nie grą. Nic nie działało jeszcze — tylko szkielet projektu.
+

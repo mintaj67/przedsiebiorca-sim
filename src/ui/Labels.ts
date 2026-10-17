@@ -1,4 +1,4 @@
-    export const REPUTATION_LABELS: Record<string, string> = {
+export const REPUTATION_LABELS: Record<string, string> = {
   branza: 'Branża',
   opiniaPubliczna: 'Opinia publiczna',
   opiniaPracownicy: 'Opinia pracowników',
@@ -6,6 +6,7 @@
   opiniaMafia: 'Opinia wśród mafii',
   opiniaMedia: 'Opinia w mediach',
   opiniaPolitycy: 'Opinia wśród polityków',
+  opiniaSkarbowa: 'Urząd Skarbowy',
   ogolna: 'Reputacja ogólna',
 };
 
@@ -19,7 +20,7 @@ export const REPUTATION_DESCRIPTIONS: Record<string, string> = {
   opiniaPolitycy: 'Twoje wpływy w świecie polityki. Statystyka ukryta. Waga zależy od wyników wyborów.',
 };
 
-export const AKTYWA_LABELS: Record<string, string> = {
+export const Wplywy_LABELS: Record<string, string> = {
   przychodyZDzialalnosci: 'Przychody z działalności',
   srodkiZKredytow: 'Środki z kredytów',
   dofinansowania: 'Dofinansowania',
@@ -28,7 +29,7 @@ export const AKTYWA_LABELS: Record<string, string> = {
   splatyZobowiazan: 'Spłaty zobowiązań',
 };
 
-export const PASYWA_LABELS: Record<string, string> = {
+export const Wydatki_LABELS: Record<string, string> = {
   splacaneKredyty: 'Spłacane kredyty',
   pracownicy: 'Pracownicy',
   czynsz: 'Czynsz',

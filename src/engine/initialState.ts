@@ -49,9 +49,10 @@ export function createInitialState(opts: {
       legalForm: 'cywilna',
       activity: opts.activity,
       employees: { ...sizeCfg.startingEmployees },
+      hasAccountant: false,      
       finances: {
         stateKonta: cash,
-        aktywa: {
+        Wplywy: {
           przychodyZDzialalnosci: 0,
           srodkiZKredytow: 0,
           dofinansowania: 0,
@@ -59,7 +60,7 @@ export function createInitialState(opts: {
           dochodPasywny: 0,
           splatyZobowiazan: 0,
         },
-        pasywa: {
+        Wydatki: {
           splacaneKredyty: 0,
           pracownicy: 0,
           czynsz: 0,
@@ -78,7 +79,8 @@ export function createInitialState(opts: {
         opiniaMafia: ACTIVITY_MAFIA_BASELINE[opts.activity] ?? 25,
         opiniaMedia: 50,
         opiniaPolitycy: opts.inPZPR ? 60 : 40,
-        ogolna: 0,
+        opiniaSkarbowa: 50,
+        ogolna: 0
       },
       loans: [],
       lastActivityChangeTurn: -999,
@@ -111,6 +113,8 @@ export function createInitialState(opts: {
     chosenActivityThisTurn: null,
     lastElectionResult: null,
     lastPresidentialResult: null,
+    skarbowkaVisitTurn: null,
+    activeCombat: null,
     news: [],
     gameOver: null,
   };

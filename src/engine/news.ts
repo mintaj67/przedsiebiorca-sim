@@ -6,16 +6,20 @@ import {
   FAKE_RUMORS,
   MISLEADING_RUMOR_CHANCE,
   MAFIA_INVITATION_THRESHOLD,
-  MAFIA_INVITATION_MIN_GAP_FIRST,
   MAFIA_INVITATION_MIN_GAP_RETRY,
+  MAFIA_INVITATION_MIN_GAP_FIRST,
   MAFIA_INVITATION_RETRY_CHANCE,
   MAFIA_INVITATION_EXPIRES_IN,
+  SKARBOWKA_THRESHOLD,
+  SKARBOWKA_PREPARE_TURNS,
+  FLOWERS_COST,
+  FLOWERS_BONUS,
 } from './constants';
 import { matchesConditions } from './events';
+import { applyEffects } from './actions'; // <- upewnij się, że to jest stąd!
 import eventsData from '../data/events.json';
 import partiesData from '../data/parties.json';
 import customNewsData from '../data/custom_news.json';
-import { applyEffects } from './turn';
 
 interface CustomNews {
   id: string;
@@ -250,4 +254,45 @@ export function checkMafiaInvitation(state: GameState): void {
   });
 
   state.ceo.lastMafiaInvitationTurn = state.turn;
+}
+
+export function checkTaxOfficeNotice(state: GameState): void {
+  if (state.skarbowkaVisitTurn !== null) return;
+  if (state.company.reputation.opiniaSkarbowa >= SKARBOWKA_THRESHOLD) return;
+
+  // Zapowiedź
+  addActionableNewsItem(state, {
+    id: `skarbowka_notice_${state.turn}`,
+    turn: state.turn,
+    year: state.year,
+    quarter: state.quarter,
+    headline: 'Wiadomość od księgowej',
+    body: 'Panie prezesie, mamy problem. Urząd skarbowy coś węszy. Słyszałam, że szykują kontrolę. Mamy jakieś 3 kwartały, zanim się zjawią.',
+    category: 'custom',
+    expiresAtTurn: state.turn + SKARBOWKA_PREPARE_TURNS,
+    choices: [
+      {
+        id: 'send_flowers',
+        label: 'Wysyłasz kwiaty do urzędu',
+        description: `Kosztuje ${FLOWERS_COST} PLN, ale może poprawić nastroje.`,
+        effects: {
+          stateKonta: -FLOWERS_COST,
+          reputation: { opiniaSkarbowa: FLOWERS_BONUS },
+        },
+      },
+      {
+        id: 'ignore',
+        label: 'Ignorujesz sprawę',
+        description: 'Może jakoś to będzie.',
+        effects: {
+          reputation: { opiniaSkarbowa: -5 },
+        },
+      },
+    ],
+    onExpireEffects: {
+      reputation: { opiniaSkarbowa: -10 },
+    },
+  });
+
+  state.skarbowkaVisitTurn = state.turn + SKARBOWKA_PREPARE_TURNS;
 }

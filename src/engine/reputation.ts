@@ -20,13 +20,18 @@ export function politicianWeight(state: GameState): number {
 export function recomputeReputation(state: GameState): Reputation {
   const r = { ...state.company.reputation };
 
+
   const mediaInf = (r.opiniaMedia - 50) * 0.1;
   const polWeight = politicianWeight(state);
   const polInf = (r.opiniaPolitycy - 50) * polWeight * 0.15;
 
-  r.opiniaPubliczna = clamp(r.opiniaPubliczna + mediaInf + polInf);
-  r.opiniaBranza    = clamp(r.opiniaBranza    + mediaInf * 0.5 + polInf * 0.5);
-  r.opiniaMafia     = clamp(r.opiniaMafia     + mediaInf * 0.3 + polInf * 0.3);
+  r.branza = clamp(r.branza);
+  r.opiniaPubliczna = clamp(r.opiniaPubliczna);
+  r.opiniaPracownicy = clamp(r.opiniaPracownicy);
+  r.opiniaBranza = clamp(r.opiniaBranza);
+  r.opiniaMafia = clamp(r.opiniaMafia);
+  r.opiniaMedia = clamp(r.opiniaMedia);
+  r.opiniaPolitycy = clamp(r.opiniaPolitycy);
 
   if (r.opiniaMafia > MAFIA_PUBLIC_THRESHOLD) {
     const overshoot = r.opiniaMafia - MAFIA_PUBLIC_THRESHOLD;

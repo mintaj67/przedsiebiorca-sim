@@ -4,7 +4,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { THEMES } from '../themes';
 
 export function OptionsScreen() {
-  const { setScreen, deleteSave, hasSave } = useGameStore();
+  const { setScreen } = useGameStore();
   const { autosave, defaultPace, showHiddenStats, language, theme, set, reset } = useSettingsStore();
   const [msg, setMsg] = useState('');
 
@@ -66,30 +66,12 @@ export function OptionsScreen() {
 
           <hr className="border-stone-200" />
 
-          {/* Skórki */}
           <div>
-            <label
-              style={{
-                display: 'block',
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Skórka
-            </label>
+            <label className="block font-semibold text-stone-900 mb-1">Skórka</label>
             <select
               value={theme}
               onChange={e => set('theme', e.target.value as any)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #d6d3d1',
-                borderRadius: 6,
-                background: '#ffffff',
-                color: '#1c1917',
-                fontSize: 14,
-                fontFamily: 'system-ui, sans-serif',
-              }}
+              className="w-full border border-stone-300 rounded px-3 py-2 bg-white text-stone-900"
             >
               {THEMES.map(t => (
                 <option key={t.id} value={t.id}>
@@ -97,15 +79,7 @@ export function OptionsScreen() {
                 </option>
               ))}
             </select>
-            <p
-              style={{
-                fontSize: 12,
-                color: '#78716c',
-                marginTop: 8,
-                fontStyle: 'italic',
-                fontFamily: 'system-ui, sans-serif',
-              }}
-            >
+            <p className="text-xs text-stone-500 mt-2 italic">
               {THEMES.find(t => t.id === theme)?.description}
             </p>
           </div>
@@ -113,17 +87,6 @@ export function OptionsScreen() {
           <hr className="border-stone-200" />
 
           <div className="flex flex-col gap-2">
-            <button
-              onClick={() => {
-                deleteSave();
-                setMsg('Zapis usunięty.');
-              }}
-              disabled={!hasSave()}
-              className="border py-2 rounded hover:bg-stone-50 disabled:opacity-30 text-red-700"
-            >
-              Usuń zapis gry
-            </button>
-
             <button
               onClick={() => {
                 reset();

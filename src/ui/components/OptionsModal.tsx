@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
 export function OptionsModal({ onClose }: { onClose: () => void }) {
-  const { saveGame, loadGame, deleteSave, hasSave, setScreen } = useGameStore();
+  const { saveGame, setScreen } = useGameStore();
   const [msg, setMsg] = useState('');
-  const saveExists = hasSave();
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
@@ -26,34 +25,6 @@ export function OptionsModal({ onClose }: { onClose: () => void }) {
           >
             💾 Zapisz grę
           </button>
-
-          <button
-            onClick={() => {
-              if (confirm('Wczytać ostatni zapis? Obecny stan gry zostanie utracony.')) {
-                loadGame();
-                onClose();
-              }
-            }}
-            disabled={!saveExists}
-            className="border py-2 rounded hover:bg-stone-50 disabled:opacity-30"
-          >
-            📂 Wczytaj ostatni zapis
-          </button>
-
-          <button
-            onClick={() => {
-              if (confirm('Usunąć zapis? Nie da się cofnąć.')) {
-                deleteSave();
-                setMsg('Zapis usunięty.');
-              }
-            }}
-            disabled={!saveExists}
-            className="border py-2 rounded hover:bg-stone-50 disabled:opacity-30"
-          >
-            🗑 Usuń zapis
-          </button>
-
-          <hr className="my-2" />
 
           <button
             onClick={() => {

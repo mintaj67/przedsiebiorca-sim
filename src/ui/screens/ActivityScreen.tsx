@@ -1,7 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import activitiesData from '../../data/activities.json';
 import type { Activity, EventEffects } from '../../engine/types';
-import { REPUTATION_LABELS } from '../labels';
+import { REPUTATION_LABELS } from '../Labels';
 
 function describeEffects(e: EventEffects | undefined): string[] {
   if (!e) return [];

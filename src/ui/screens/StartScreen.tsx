@@ -22,7 +22,7 @@ const SUFFIXES = ['', '-EX', '-POL'];
 const SIZES: CompanySize[] = ['micro', 'small', 'medium'];
 
 export function StartScreen() {
-  const { newGame, setScreen } = useGameStore();
+  const { newGame, setScreen, pendingSlotId } = useGameStore();
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [companyName, setCompanyName] = useState('Moja Firma');
   const [suffix, setSuffix] = useState('');
@@ -155,11 +155,18 @@ export function StartScreen() {
         </div>
 
         <button
-          onClick={() => newGame({
-            difficulty, inPZPR, activity,
-            companyName: companyName.trim() || 'Moja Firma',
-            suffix, size,
-          })}
+          onClick={() => {
+            const slotId = pendingSlotId;
+            if (!slotId) {
+              alert('Nie wybrano slotu. Wróć do menu i wybierz slot.');
+              return;
+            }
+            newGame({
+              difficulty, inPZPR, activity,
+              companyName: companyName.trim() || 'Moja Firma',
+              suffix, size,
+            }, slotId);
+          }}
           className="w-full bg-stone-900 text-white py-3 rounded text-lg font-bold hover:bg-stone-800"
         >
           Zacznij: 1 stycznia 1989 →

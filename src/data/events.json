@@ -11,7 +11,7 @@
         "label": "Wchodzę w to",
         "effects": {
           "stateKonta": -50000,
-          "pasywa": { "czynsz": -5000 },
+          "Wydatki": { "czynsz": -5000 },
           "flagsAdd": ["fotowoltaika"]
         }
       },
@@ -28,7 +28,7 @@
           "winChance": 0.5,
           "onWin": {
             "reputation": { "opiniaMafia": 5 },
-            "pasywa": { "czynsz": -5000 },
+            "Wydatki": { "czynsz": -5000 },
             "flagsAdd": ["fotowoltaika"]
           },
           "onLose": {
@@ -218,7 +218,7 @@
       "label": "Wynajmujesz prywatną ochronę",
       "effects": {
         "stateKonta": -40000,
-        "pasywa": { "inne": 5000 },
+        "Wydatki": { "inne": 5000 },
         "reputation": { "opiniaPubliczna": -3 }
       }
     },

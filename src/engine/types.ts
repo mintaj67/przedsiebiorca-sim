@@ -13,7 +13,7 @@ export type Phase = 'chaos' | 'duopol' | 'invasion';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Pace = 'quarter' | 'year';
 export type CompanySize = 'micro' | 'small' | 'medium';
-export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about';
+export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about' | 'saves';
 
 export type PoliticalSide = 'PZPR' | 'independent' | 'opposition' | 'none';
 
@@ -63,10 +63,11 @@ export interface Reputation {
   opiniaMafia: number;
   opiniaMedia: number;
   opiniaPolitycy: number;
+  opiniaSkarbowa: number;
   ogolna: number;
 }
 
-export interface Aktywa {
+export interface Wplywy {
   przychodyZDzialalnosci: number;
   srodkiZKredytow: number;
   dofinansowania: number;
@@ -75,7 +76,7 @@ export interface Aktywa {
   splatyZobowiazan: number;
 }
 
-export interface Pasywa {
+export interface Wydatki {
   splacaneKredyty: number;
   pracownicy: number;
   czynsz: number;
@@ -88,8 +89,8 @@ export interface Pasywa {
 
 export interface Finances {
   stateKonta: number;
-  aktywa: Aktywa;
-  pasywa: Pasywa;
+  Wplywy: Wplywy;
+  Wydatki: Wydatki;
 }
 
 export interface Employees {
@@ -118,6 +119,7 @@ export interface Company {
   reputation: Reputation;
   loans: Loan[];
   lastActivityChangeTurn: number;
+  hasAccountant: boolean;
 }
 
 export interface Party {
@@ -208,8 +210,8 @@ export interface EventConditions {
 export interface EventEffects {
   reputation?: Partial<Reputation>;
   stateKonta?: number;
-  aktywa?: Partial<Aktywa>;
-  pasywa?: Partial<Pasywa>;
+  Wplywy?: Partial<Wplywy>;
+  Wydatki?: Partial<Wydatki>;
   flagsAdd?: string[];
   flagsRemove?: string[];
   joinMafia?: boolean;
@@ -294,6 +296,9 @@ export interface GameState {
   lastElectionResult: ElectionResult | null;
   lastPresidentialResult: PresidentialResult | null;
   news: NewsItem[];
+  skarbowkaVisitTurn: number | null;
+
+  activeCombat: CombatState | null;
 
   gameOver: null | { reason: string };
 }
@@ -310,3 +315,20 @@ export type PlayerAction =
   | { type: 'leave_party' }
   | { type: 'change_activity'; activity: string }
   | { type: 'take_emergency_loan' };
+
+export interface CombatLogEntry {
+  text: string;
+  type: 'player' | 'enemy' | 'system';
+}
+
+export interface CombatState {
+  type: 'skarbowka';
+  playerHp: number; // Siła argumentów
+  playerHpMax: number;
+  enemyHp: number; // Cierpliwość urzędnika
+  enemyHpMax: number;
+  round: number;
+  log: CombatLogEntry[];
+  finished: boolean;
+  result: 'win' | 'lose' | 'draw' | null;
+}

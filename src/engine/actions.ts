@@ -1,4 +1,4 @@
-import type { GameState, ContractType, Pace } from './types';
+import type { GameState, ContractType, Pace, EventEffects } from './types';
 import {
   ACTIVITY_REPUTATION,
   MAX_PARTY_SWITCHES_PER_PHASE,
@@ -59,8 +59,8 @@ export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amo
     quartersLeft: 12,
   });
   s.company.finances.stateKonta += amount;
-  if (source === 'bank') s.company.finances.aktywa.srodkiZKredytow += amount;
-  else s.company.finances.aktywa.dofinansowaniaSzaraStrefa += amount;
+  if (source === 'bank') s.company.finances.Wplywy.srodkiZKredytow += amount;
+  else s.company.finances.Wplywy.dofinansowaniaSzaraStrefa += amount;
   return s;
 }
 
@@ -112,5 +112,32 @@ export function applyEmergencyLoan(state: GameState): GameState {
 export function applySetPace(state: GameState, pace: Pace): GameState {
   const s = structuredClone(state);
   s.pace = pace;
+  return s;
+}
+
+export function applyEffects(state: GameState, e: EventEffects) {
+  if (e.reputation) {
+    for (const [k, v] of Object.entries(e.reputation)) {
+      (state.company.reputation as any)[k] = clamp((state.company.reputation as any)[k] + (v as number));
+    }
+  }
+  if (e.stateKonta) state.company.finances.stateKonta += e.stateKonta;
+  if (e.Wplywy) for (const [k, v] of Object.entries(e.Wplywy)) {
+    (state.company.finances.Wplywy as any)[k] += v as number;
+  }
+  if (e.Wydatki) for (const [k, v] of Object.entries(e.Wydatki)) {
+    (state.company.finances.Wydatki as any)[k] += v as number;
+  }
+  if (e.flagsAdd) state.ceo.flags.push(...e.flagsAdd);
+  if (e.flagsRemove) state.ceo.flags = state.ceo.flags.filter(f => !e.flagsRemove!.includes(f));
+  if (e.joinMafia) state.ceo.inMafia = true;
+  if (e.leaveMafia) state.ceo.inMafia = false;
+  if (e.setParty) state.ceo.party = e.setParty;
+  if (e.setCurrentPartyId) state.ceo.currentPartyId = e.setCurrentPartyId;
+}
+
+export function toggleAccountant(state: GameState): GameState {
+  const s = structuredClone(state);
+  s.company.hasAccountant = !s.company.hasAccountant;
   return s;
 }
