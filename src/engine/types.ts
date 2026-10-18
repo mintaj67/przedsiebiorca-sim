@@ -1,14 +1,3 @@
-export interface NewsItem {
-  id: string;
-  turn: number;
-  year: number;
-  quarter: 1 | 2 | 3 | 4;
-  headline: string;
-  body?: string;
-  category: NewsCategory;
-  read: boolean;
-}
-
 export type Phase = 'chaos' | 'duopol' | 'invasion';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Pace = 'quarter' | 'year';
@@ -47,7 +36,6 @@ export interface NewsItem {
   body?: string;
   category: NewsCategory;
   read: boolean;
-  // Actionable (opcjonalne — jak są, to wiadomość z akcją)
   choices?: NewsChoice[];
   expiresAtTurn?: number;
   resolved?: boolean;

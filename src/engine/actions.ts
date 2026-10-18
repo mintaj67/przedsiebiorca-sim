@@ -51,7 +51,7 @@ export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amo
   const s = structuredClone(state);
   const rate = source === 'bank' ? 0.03 : 0.07;
   s.company.loans.push({
-    id: `loan_${s.turn}_${Math.random().toString(36).slice(2, 6)}`,
+    id: `loan_${s.turn}_${s.company.loans.length}`,
     source,
     principal: amount,
     remaining: amount,
