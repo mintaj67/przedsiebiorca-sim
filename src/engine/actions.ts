@@ -134,6 +134,31 @@ export function applyEffects(state: GameState, e: EventEffects) {
   if (e.leaveMafia) state.ceo.inMafia = false;
   if (e.setParty) state.ceo.party = e.setParty;
   if (e.setCurrentPartyId) state.ceo.currentPartyId = e.setCurrentPartyId;
+  if (e.divideFinances) {
+    const div = (n: number) => Math.round((n / 10000) * 100) / 100;
+    
+    state.company.finances.stateKonta = div(state.company.finances.stateKonta);
+    
+    const wplywy = (state.company.finances as any).wplywy || (state.company.finances as any).aktywa;
+    if (wplywy) {
+      for (const k in wplywy) wplywy[k] = div(wplywy[k]);
+    }
+    
+    const wydatki = (state.company.finances as any).wydatki || (state.company.finances as any).pasywa;
+    if (wydatki) {
+      for (const k in wydatki) wydatki[k] = div(wydatki[k]);
+    }
+
+    for (const loan of state.company.loans) {
+      loan.principal = div(loan.principal);
+      loan.remaining = div(loan.remaining);
+    }
+  }
+  if (e.employeesDelta) {
+    if (e.employeesDelta.bezUmowy) state.company.employees.bezUmowy = Math.max(0, state.company.employees.bezUmowy + e.employeesDelta.bezUmowy);
+    if (e.employeesDelta.zlecenie) state.company.employees.zlecenie = Math.max(0, state.company.employees.zlecenie + e.employeesDelta.zlecenie);
+    if (e.employeesDelta.uop) state.company.employees.uop = Math.max(0, state.company.employees.uop + e.employeesDelta.uop);
+  }  
 }
 
 export function toggleAccountant(state: GameState): GameState {

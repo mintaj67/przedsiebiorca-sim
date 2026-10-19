@@ -18,35 +18,34 @@ export function AboutScreen() {
 
         <div className="space-y-6 text-sm text-stone-700 leading-relaxed">
           <section>
-            <h2 className="font-bold text-stone-900 mb-2">Polski Przedsiębiorca</h2>
+            <h2 className="font-bold text-stone-900 mb-2">Polski Przedsiębiorca Simulator wersja beta</h2>
             <p>
-              Turowy symulator polskiego przedsiębiorcy osadzony w latach 1989–2030.
-              Zakładasz firmę w chaosie transformacji ustrojowej i prowadzisz ją przez
-              kolejne dekady — przez hiperinflację, wejście do NATO i Unii Europejskiej,
-              kryzysy, aż po moment, w którym rzeczywistość przestaje być przewidywalna.
+              Gra strategiczna, w której wcielasz się w rolę właściciela polskiej firmy
+              założonej w 1989 roku. Zarządzasz pracownikami i biurem, unikasz 
+              skarbówki, mafii i wielu innych problemów, o których się nawet fizjologom nie śniło.
             </p>
             <p className="mt-2">
-              Każda decyzja ma konsekwencje. Reputacja, finanse, polityka i lojalności
-              splatają się w jedną sieć zależności. Wygrana nie jest celem — celem jest
-              przetrwanie.
+              GRA ZOSTAŁA STWORZONA ZA POMOCĄ AI. 
+              Koncept, mechaniki, zasady, wszystkie teksty oraz grafiki zostały wymyślone przeze mnie, AI zostało wykorzystane
+              wyłącznie w celu wcielenia moich pomysłów w życie. 
             </p>
           </section>
 
           <section>
             <h2 className="font-bold text-stone-900 mb-2">Autor</h2>
             <p>
-              Gra tworzona hobbystycznie przez <b>[TWOJE IMIĘ / NICK]</b>.
+              Gra tworzona hobbystycznie przez <b>MENTOS GAMES</b>.
             </p>
             <p>
-              Kontakt: <b>[twój e-mail lub nick na Discordzie]</b>
+              Kontakt: <b>https://www.facebook.com/niefajnerzeczy</b>
             </p>
           </section>
 
           <section>
             <h2 className="font-bold text-stone-900 mb-2">Wsparcie</h2>
             <p>
-              Jeśli gra ci się podoba i chcesz, żeby dalej się rozwijała —
-              możesz wesprzeć projekt na Patronite.
+              Gra jest w pełni darmowa, ale wkrótce założę Patronite
+              za pośrednictwem którego będzie można rzucić grosza lub tychże 67 autorowi.
             </p>
             <a
               href="https://patronite.pl/"
@@ -61,18 +60,18 @@ export function AboutScreen() {
           <section>
             <h2 className="font-bold text-stone-900 mb-2">Podziękowania</h2>
             <p>
-              Dziękuję wszystkim, którzy testowali grę, zgłaszali błędy i dzielili się
-              pomysłami. Bez was ten projekt nie miałby sensu.
+              Dziękuję wszystkim, poza urażonymi, moim znajomym, rodzinie i wszystkim 
+              poza tymi którym nie dziękuję. No i dziękuję też Tetrykom, bo gdyby nie 
+              ich Polski Piłkarz Simulator to bym nawet nie wpadł na to, że można sobie
+              zrobić grę poprzez pisanie komputerowi, a ten robi.
             </p>
           </section>
 
           <section className="text-xs text-stone-500 pt-4 border-t border-stone-200">
             <p>Polski Przedsiębiorca · wersja 0.67 · prototyp</p>
-            <p>© by HZ GAMES 2026</p>
-            <p className="mt-1">
-              Gra tworzona w TypeScript, React i Vite. Wszystkie postacie i wydarzenia
-              są fikcyjne, a podobieństwo do osób rzeczywistych — przypadkowe.
-            </p>
+            <p>© by MENTOS GAMES 2026</p>
+            <p>Gra tworzona w TypeScript, React i Vite.</p>
+            <p>Wszelkie podobieństwo osób i postaci w grze do osób i postaci w grze jest przypadkowe.</p>
           </section>
         </div>
       </div>

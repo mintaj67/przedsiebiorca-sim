@@ -206,7 +206,10 @@ export interface EventEffects {
   leaveMafia?: boolean;
   setParty?: PoliticalSide;
   setCurrentPartyId?: string;
+  divideFinances?: boolean;
+  employeesDelta?: { bezUmowy?: number; zlecenie?: number; uop?: number };
 }
+
 
 export interface Gamble {
   winChance: number;

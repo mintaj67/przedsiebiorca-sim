@@ -6,7 +6,7 @@ import { rollEvents, matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
 import { BANKRUPT_GRACE_TURNS } from './constants';
 import activitiesData from '../data/activities.json';
-import { generatePassiveNews, processExpiredActions, checkMafiaInvitation, checkTaxOfficeNotice } from './news';
+import { generatePassiveNews, processExpiredActions, checkMafiaInvitation, checkTaxOfficeNotice, checkEmployeeUnrest } from './news';
 import { applyEffects } from './actions';
 import { startTaxCombat } from './combat';
 
@@ -90,6 +90,7 @@ export function nextTurn(state: GameState): GameState {
   checkMafiaInvitation(s);
   checkTaxOfficeNotice(s);
   processExpiredActions(s);
+  checkEmployeeUnrest(s);
   
   if (s.skarbowkaVisitTurn !== null && s.turn === s.skarbowkaVisitTurn && !s.activeCombat) {
     startTaxCombat(s);

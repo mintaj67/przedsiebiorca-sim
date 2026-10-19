@@ -296,3 +296,55 @@ export function checkTaxOfficeNotice(state: GameState): void {
 
   state.skarbowkaVisitTurn = state.turn + SKARBOWKA_PREPARE_TURNS;
 }
+
+export function checkEmployeeUnrest(state: GameState): void {
+  // Sprawdzamy, czy jest już jakaś wiadomość od pracowników w skrzynce
+  const hasPending = state.news.some(n => n.id.startsWith('employee_demand_') && !n.resolved);
+  if (hasPending) return;
+
+  // Warunki: mamy pracowników na śmieciówkach/bez umowy ORAZ niska opinia (lub losowy pech)
+  const hasWorkers = state.company.employees.bezUmowy > 0 || state.company.employees.zlecenie > 0;
+  if (!hasWorkers) return;
+
+  const isUnhappy = state.company.reputation.opiniaPracownicy < 40;
+  const rng = makeRng(state.seed, state.turn * 11 + 4);
+
+  // Szansa: 100% jeśli są bardzo nieszczęśliwi, 15% w normalnych warunkach
+  const chance = isUnhappy ? 1.0 : 0.15;
+  if (rng.next() > chance) return;
+
+  addActionableNewsItem(state, {
+    id: `employee_demand_${state.turn}`,
+    turn: state.turn,
+    year: state.year,
+    quarter: state.quarter,
+    headline: 'Niezadowolenie w firmie',
+    body: 'Jeden z Twoich najlepszych pracowników przychodzi do Ciebie z ultimatum. "Pracuję tu na śmieciówce od miesięcy. Albo dostaję umowę o pracę, albo odchodzę."',
+    category: 'custom',
+    expiresAtTurn: state.turn + 2,
+    choices: [
+      {
+        id: 'accept',
+        label: 'Daję mu umowę o pracę',
+        description: 'Zmieniasz formę zatrudnienia na UOP. Kosztuje to więcej, ale zyskujesz lojalność.',
+        effects: {
+          employeesDelta: { bezUmowy: -1, uop: 1 },
+          reputation: { opiniaPracownicy: 15 }
+        }
+      },
+      {
+        id: 'refuse',
+        label: 'Odmawiam',
+        description: 'Wypadasz na chama. Pracownik odchodzi, a inni patrzą.',
+        effects: {
+          employeesDelta: { bezUmowy: -1 },
+          reputation: { opiniaPracownicy: -20, opiniaPubliczna: -5 }
+        }
+      }
+    ],
+    onExpireEffects: {
+      employeesDelta: { bezUmowy: -1 },
+      reputation: { opiniaPracownicy: -10 }
+    }
+  });
+}

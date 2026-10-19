@@ -195,40 +195,68 @@
     ]
   },
   {
-  "id": "mafia_konsekwencje",
-  "title": "Ktoś grzebał przy twoim biurze",
-  "description": "Wracasz do biura i zastajesz wyważone drzwi. Nic nie zginęło, ale to nie był zwykły włamywacz.",
-  "weight": 100,
-  "once": true,
-  "conditions": {
-    "yearMin": 1991,
-    "flags": ["mafia_refused"]
+    "id": "mafia_konsekwencje",
+    "title": "Ktoś grzebał przy twoim biurze",
+    "description": "Wracasz do biura i zastajesz wyważone drzwi. Nic nie zginęło, ale to nie był zwykły włamywacz.",
+    "weight": 100,
+    "once": true,
+    "conditions": {
+      "yearMin": 1991,
+      "flags": ["mafia_refused"]
+    },
+    "choices": [
+      {
+        "id": "policja",
+        "label": "Zgłaszasz na policję",
+        "effects": {
+          "stateKonta": -20000,
+          "reputation": { "opiniaPubliczna": 5, "opiniaMafia": -5 }
+        }
+      },
+      {
+        "id": "ochrona",
+        "label": "Wynajmujesz prywatną ochronę",
+        "effects": {
+          "stateKonta": -40000,
+          "Wydatki": { "inne": 5000 },
+          "reputation": { "opiniaPubliczna": -3 }
+        }
+      },
+      {
+        "id": "nic",
+        "label": "Nic nie robisz",
+        "effects": {
+          "reputation": { "opiniaPubliczna": -5, "opiniaMafia": -5 }
+        }
+      }
+    ]
   },
-  "choices": [
-    {
-      "id": "policja",
-      "label": "Zgłaszasz na policję",
-      "effects": {
-        "stateKonta": -20000,
-        "reputation": { "opiniaPubliczna": 5, "opiniaMafia": -5 }
-      }
+  {
+    "id": "denominacja_1995",
+    "title": "Denominacja złotego",
+    "description": "Rząd ogłasza wielką reformę pieniężną. Od jutra 10 000 starych złotych będzie warte 1 nowy złoty. Wszystkie ceny, pensje i konta bankowe zostaną przeliczone. Twoje oszczędności topnieją w oczach.",
+    "weight": 100,
+    "once": true,
+    "conditions": {
+      "yearMin": 1995,
+      "yearMax": 1995
     },
-    {
-      "id": "ochrona",
-      "label": "Wynajmujesz prywatną ochronę",
-      "effects": {
-        "stateKonta": -40000,
-        "Wydatki": { "inne": 5000 },
-        "reputation": { "opiniaPubliczna": -3 }
+    "choices": [
+      {
+        "id": "accept",
+        "label": "Przyjmuję do wiadomości",
+        "gamble": {
+          "winChance": 0.95,
+          "winText": "Reforma wchodzi w życie. Twoje konto zostało przeliczone.",
+          "loseText": "Rząd wycofał się z reformy w ostatniej chwili. Ale strach na rynku pozostał.",
+          "onWin": {
+            "divideFinances": true
+          },
+          "onLose": {
+            "reputation": { "opiniaPubliczna": -5 }
+          }
+        }
       }
-    },
-    {
-      "id": "nic",
-      "label": "Nic nie robisz",
-      "effects": {
-        "reputation": { "opiniaPubliczna": -5, "opiniaMafia": -5 }
-      }
-    }
-  ]
-}
+    ]
+  }
 ]

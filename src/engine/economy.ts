@@ -7,11 +7,22 @@ import {
   SKARBOWKA_DECAY_ZLECENIE,
   SKARBOWKA_GAIN_UOP,
   ACCOUNTANT_COST,
-  ACCOUNTANT_BONUS,
+  ACCOUNTANT_BONUS
 } from './constants';
+
 const BASE_REVENUE = 5000;
 const CZYNSZ = 2500;
 const TAX_RATE = 0.15;
+
+// Nowa funkcja: Im więcej pracowników, tym mniejsza wydajność każdego kolejnego (min. 20%)
+function calculateWorkerRevenue(count: number, baseRevenue: number): number {
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    const efficiency = Math.max(0.2, 1 - (i * 0.05)); // 5% spadku za każdego kolejnego pracownika
+    total += baseRevenue * efficiency;
+  }
+  return total;
+}
 
 export function tickEconomy(state: GameState): GameState {
   const c = structuredClone(state.company);
@@ -23,7 +34,7 @@ export function tickEconomy(state: GameState): GameState {
   f.Wydatki.pracownicy =
     c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.wage +
     c.employees.zlecenie * WORKER_CONFIG.zlecenie.wage +
-    c.employees.uop       * WORKER_CONFIG.uop.wage;
+    c.employees.uop      * WORKER_CONFIG.uop.wage;
 
   f.Wydatki.czynsz = CZYNSZ;
   f.Wydatki.podatki = Math.max(0, baseRevenue * TAX_RATE);
@@ -38,16 +49,7 @@ export function tickEconomy(state: GameState): GameState {
     loan.quartersLeft -= 1;
   }
 
-  const inflow  = sum(f.Wplywy);
-  const outflow = sum(f.Wydatki);
-  f.stateKonta += inflow - outflow;
-
-  const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
-  const requiredWorkers = COMPANY_SIZE_CONFIG[c.size].requiredWorkers;
-  if (totalWorkers < requiredWorkers) {
-    c.reputation.opiniaBranza = Math.max(0, c.reputation.opiniaBranza - BELOW_REQUIRED_WORKERS_PENALTY);
-  }
-
+  // Logika Skarbówki
   let skarbowkaDelta =
     c.employees.bezUmowy * SKARBOWKA_DECAY_BEZ_UMOWY +
     c.employees.zlecenie * SKARBOWKA_DECAY_ZLECENIE +
@@ -57,9 +59,18 @@ export function tickEconomy(state: GameState): GameState {
     skarbowkaDelta += ACCOUNTANT_BONUS;
     f.Wydatki.inne += ACCOUNTANT_COST; // Dodatkowy koszt co turę
   }
-
   c.reputation.opiniaSkarbowa = Math.max(0, Math.min(100, c.reputation.opiniaSkarbowa + skarbowkaDelta));
 
+  const inflow  = sum(f.Wplywy);
+  const outflow = sum(f.Wydatki);
+  f.stateKonta += inflow - outflow;
+
+  // Kara reputacyjna za za mało pracowników
+  const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
+  const requiredWorkers = COMPANY_SIZE_CONFIG[c.size].requiredWorkers;
+  if (totalWorkers < requiredWorkers) {
+    c.reputation.opiniaBranza = Math.max(0, c.reputation.opiniaBranza - BELOW_REQUIRED_WORKERS_PENALTY);
+  }
 
   state.company = c;
 
@@ -73,14 +84,16 @@ export function tickEconomy(state: GameState): GameState {
 }
 
 function estimateRevenue(c: GameState['company']): number {
+  // Używamy nowej funkcji zamiast prostego mnożenia
   const workerRevenue =
-    c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.revenue +
-    c.employees.zlecenie * WORKER_CONFIG.zlecenie.revenue +
-    c.employees.uop       * WORKER_CONFIG.uop.revenue;
+    calculateWorkerRevenue(c.employees.bezUmowy, WORKER_CONFIG.bezUmowy.revenue) +
+    calculateWorkerRevenue(c.employees.zlecenie, WORKER_CONFIG.zlecenie.revenue) +
+    calculateWorkerRevenue(c.employees.uop, WORKER_CONFIG.uop.revenue);
+    
   const activityMultiplier = 1 + (c.reputation.branza - 50) / 200;
   return (BASE_REVENUE + workerRevenue) * activityMultiplier;
 }
 
 function sum(obj: any): number {
-  return Object.values(obj).reduce<number>((a, b) => a + (b as number), 0);
+  return Object.values(obj).reduce((a: number, b: any) => a + b, 0);
 }

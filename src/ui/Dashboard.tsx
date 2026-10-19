@@ -14,12 +14,14 @@ import { CombatScreen } from './screens/CombatScreen';
 import { EmployeesScreen } from './screens/EmployeesScreen';
 import { OfficeScreen } from './screens/OfficeScreen';
 import { RankingsScreen } from './screens/RankingsScreen';
+import { AchievementsScreen } from './screens/AchievementsScreen';
 import { OptionsModal } from './components/OptionsModal';
+import { partyLabel } from './ui-labels';
 
-type MainTab = 'main' | 'news' | 'management' | 'global' | 'reputation' | 'activity';
-type ManagementTab = 'changeActivity' | 'finance' | 'employees' | 'office';
-type GlobalTab = 'party' | 'rankings' | 'reputation';
-
+// Definiujemy dostępne ekrany
+type MainTab = 'main' | 'news' | 'management' | 'global';
+type ManagementTab = 'changeActivity' | 'finance' | 'employees' | 'office' | 'activity';
+type GlobalTab = 'party' | 'rankings' | 'achievements' | 'reputation';
 
 export function Dashboard() {
   const {
@@ -51,7 +53,7 @@ export function Dashboard() {
     );
   }
 
-  const party = String(state.ceo.currentPartyId ?? 'brak');
+  const party = partyLabel(state.ceo.currentPartyId);
   const chosenActivityLabel = state.chosenActivityThisTurn ?? 'brak';
   const unreadCount = state.news.filter(n => !n.read).length;
 
@@ -60,7 +62,9 @@ export function Dashboard() {
       {/* NAGŁÓWEK */}
       <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-3 mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">{state.company.name}{state.company.suffix}</h1>
+          <h1 className="text-xl md:text-2xl font-bold truncate max-w-[300px] sm:max-w-md md:max-w-xl" title={`${state.company.name}${state.company.suffix}`}>
+            {state.company.name}{state.company.suffix}
+          </h1>
           <p className="text-sm text-stone-600">{state.year} Q{state.quarter} · {state.phase} {state.ceo.inMafia && ' · <mafia>'}</p>
         </div>
         <div className="flex items-center gap-3 md:gap-4">
@@ -82,39 +86,40 @@ export function Dashboard() {
         </button>
       )}
 
-      {/* INFO KARTY (tylko na głównym) */}
       {mainTab === 'main' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <InfoCard label="Partia" value={party} />
           <InfoCard label="Działalność" value={state.company.activity} />
           <InfoCard label="Aktywność w tej turze" value={chosenActivityLabel} muted={!state.chosenActivityThisTurn} />
+          <InfoCard label="Mafia" value={state.ceo.inMafia ? 'Członek' : 'Brak powiązań'} muted={!state.ceo.inMafia} />
         </div>
       )}
 
-      {/* GŁÓWNA NAWIGACJA */}
+      {/* GŁÓWNA NAWIGACJA - 4 przyciski */}
       <nav className="flex gap-2 mb-2 overflow-x-auto pb-1">
         <NavButton active={mainTab === 'main'} onClick={() => setMainTab('main')}>Główny</NavButton>
         <NavButton active={mainTab === 'news'} onClick={() => setMainTab('news')}>Wiadomości</NavButton>
         <NavButton active={mainTab === 'management'} onClick={() => setMainTab('management')}>Zarządzanie</NavButton>
         <NavButton active={mainTab === 'global'} onClick={() => setMainTab('global')}>Globalne</NavButton>
-        <NavButton active={mainTab === 'activity'} onClick={() => setMainTab('activity')}>Aktywności</NavButton>
       </nav>
 
-      {/* PODZAKŁADKI (dla Zarządzania i Globalnych) */}
+      {/* PODZAKŁADKI */}
       {mainTab === 'management' && (
         <div className="flex gap-2 mb-4 border-b border-stone-300 pb-2 overflow-x-auto">
-          <SubNavButton active={mgmtTab === 'changeActivity'} onClick={() => setMgmtTab('changeActivity')}>Działalność</SubNavButton>
           <SubNavButton active={mgmtTab === 'finance'} onClick={() => setMgmtTab('finance')}>Finanse</SubNavButton>
           <SubNavButton active={mgmtTab === 'employees'} onClick={() => setMgmtTab('employees')}>Pracownicy</SubNavButton>
           <SubNavButton active={mgmtTab === 'office'} onClick={() => setMgmtTab('office')}>Biuro</SubNavButton>
+          <SubNavButton active={mgmtTab === 'changeActivity'} onClick={() => setMgmtTab('changeActivity')}>Działalność</SubNavButton>
+          <SubNavButton active={mgmtTab === 'activity'} onClick={() => setMgmtTab('activity')}>Aktywności</SubNavButton>
         </div>
       )}
 
       {mainTab === 'global' && (
         <div className="flex gap-2 mb-4 border-b border-stone-300 pb-2 overflow-x-auto">
           <SubNavButton active={globalTab === 'party'} onClick={() => setGlobalTab('party')}>Polityka</SubNavButton>
-          <SubNavButton active={globalTab === 'rankings'} onClick={() => setGlobalTab('rankings')}>Rankingi</SubNavButton>
           <SubNavButton active={globalTab === 'reputation'} onClick={() => setGlobalTab('reputation')}>Reputacja</SubNavButton>
+          <SubNavButton active={globalTab === 'rankings'} onClick={() => setGlobalTab('rankings')}>Rankingi</SubNavButton>
+          <SubNavButton active={globalTab === 'achievements'} onClick={() => setGlobalTab('achievements')}>Osiągnięcia</SubNavButton>
         </div>
       )}
 
@@ -135,8 +140,6 @@ export function Dashboard() {
         )}
 
         {mainTab === 'news' && <NewsScreen />}
-        {mainTab === 'reputation' && <ReputationScreen />}
-        {mainTab === 'activity' && <ActivityScreen />}
 
         {/* ZARZĄDZANIE */}
         {mainTab === 'management' && (
@@ -145,6 +148,7 @@ export function Dashboard() {
             {mgmtTab === 'finance' && <FinanceScreen />}
             {mgmtTab === 'employees' && <EmployeesScreen />}
             {mgmtTab === 'office' && <OfficeScreen />}
+            {mgmtTab === 'activity' && <ActivityScreen />}
           </>
         )}
 
@@ -153,8 +157,8 @@ export function Dashboard() {
           <>
             {globalTab === 'party' && <PartyScreen />}
             {globalTab === 'rankings' && <RankingsScreen />}
+            {globalTab === 'achievements' && <AchievementsScreen />}
             {globalTab === 'reputation' && <ReputationScreen />}
-            
           </>
         )}
       </div>
@@ -164,7 +168,7 @@ export function Dashboard() {
   );
 }
 
-// Komponenty pomocnicze dla nawigacji i kart
+// Komponenty pomocnicze dla nawigacji
 function InfoCard({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div className="bg-white rounded-lg shadow-sm p-3">
@@ -190,66 +194,28 @@ function SubNavButton({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-function OfficeView({
-  companyName,
-  year,
-  quarter,
-  inMafia,
-}: {
-  companyName: string;
-  year: number;
-  quarter: number;
-  inMafia: boolean;
-}) {
+function OfficeView({ companyName, year, quarter, inMafia }: any) {
   return (
     <div className="relative bg-gradient-to-b from-stone-200 via-stone-100 to-stone-300 rounded-lg shadow-sm overflow-hidden mb-4 h-40 md:h-64 border border-stone-200">
       <div className="absolute top-0 left-0 right-0 h-3/4 bg-gradient-to-b from-stone-100 to-stone-200" />
-
-      {/* Okno */}
       <div className="absolute top-4 md:top-6 left-4 md:left-8 w-20 md:w-28 h-14 md:h-20 bg-gradient-to-br from-sky-200 to-sky-100 border-4 border-stone-400 rounded-sm shadow-inner">
         <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-stone-400 -translate-x-1/2" />
         <div className="absolute top-1/2 left-0 right-0 h-1 bg-stone-400 -translate-y-1/2" />
       </div>
-
-      {/* Obrazek na ścianie */}
-      <div className="hidden md:flex absolute top-8 right-32 w-16 h-12 bg-amber-100 border-2 border-stone-400 rounded-sm items-center justify-center text-lg">
-        🏆
-      </div>
-
-      {/* Podłoga */}
+      <div className="hidden md:flex absolute top-8 right-32 w-16 h-12 bg-amber-100 border-2 border-stone-400 rounded-sm items-center justify-center text-lg">🏆</div>
       <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-amber-800/60" />
       <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-amber-900/40 to-transparent" />
-
-      {/* Biurko */}
       <div className="absolute bottom-10 md:bottom-16 left-1/2 -translate-x-1/2 w-48 md:w-64 h-2 bg-amber-900 rounded-sm shadow-md" />
-
-      {/* Monitor */}
       <div className="hidden md:block absolute bottom-20 left-1/2 -translate-x-1/2 -translate-x-12 w-16 h-12 bg-stone-800 rounded-sm border-2 border-stone-700">
         <div className="w-full h-full bg-gradient-to-br from-green-900 to-green-700 opacity-60" />
       </div>
-
-      {/* Telefon */}
       <div className="hidden md:block absolute bottom-20 left-1/2 -translate-x-1/2 translate-x-12 w-8 h-5 bg-stone-900 rounded-sm" />
-
-      {/* Krzesło */}
       <div className="hidden md:block absolute bottom-10 left-1/2 -translate-x-1/2 translate-x-20 w-12 h-16 bg-stone-800 rounded-t-xl opacity-80" />
-
-      {/* Info overlay (prawy górny róg) */}
       <div className="absolute top-3 md:top-4 right-3 md:right-4 text-right z-10">
-        <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-stone-500 font-semibold">
-          Siedziba firmy
-        </div>
-        <div className="text-xs md:text-sm font-bold text-stone-900 drop-shadow-sm">
-          {companyName}
-        </div>
-        <div className="text-[10px] md:text-xs text-stone-600 font-mono">
-          {year} Q{quarter}
-        </div>
-        {inMafia && (
-          <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-red-700 font-bold mt-1">
-            ⚠ powiązania
-          </div>
-        )}
+        <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-stone-500 font-semibold">Siedziba firmy</div>
+        <div className="text-xs md:text-sm font-bold text-stone-900 drop-shadow-sm">{companyName}</div>
+        <div className="text-[10px] md:text-xs text-stone-600 font-mono">{year} Q{quarter}</div>
+        {inMafia && <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-red-700 font-bold mt-1">⚠ powiązania</div>}
       </div>
     </div>
   );

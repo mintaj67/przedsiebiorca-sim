@@ -1,3 +1,24 @@
+## (2026-10-19) — Nowe UI, Denominacja i Pracownicy
+
+**Nowe mechaniki:**
+- **Denominacja złotego (1995)** — event, który z 95% szansą dzieli całą gotówkę, kredyty, wpływy i wydatki przez 10 000. Dodano obsługę `divideFinances` w `EventEffects`.
+- **Prawo malejących przychodów** — każdy kolejny pracownik danej grupy generuje o 5% mniej przychodu (aż do minimum 20% wydajności). Zatrudnianie dziesiątek osób na UOP przestało być opłacalne.
+- **Niezadowolenie pracowników** — nowy event zależny od niskiej opinii pracowników. Gracz dostaje ActionableNews z żądaniem przejścia na UOP. Odmowa lub zignorowanie kończy się odejściem pracownika. Dodano obsługę `employeesDelta` w `EventEffects`.
+- **Osiągnięcia** — nowy ekran (placeholder) w zakładce Globalne.
+
+**Zmiany w UI:**
+- **Reorganizacja nawigacji:** Główny pasek został zredukowany do 4 kategorii (Główny, Wiadomości, Zarządzanie, Globalne).
+  - **Zarządzanie** zawiera: Finanse, Pracowników, Biuro, Działalność i Aktywności.
+  - **Globalne** zawiera: Politykę, Reputację, Rankingi i Osiągnięcia.
+- **Ekran Główny:** Informacja o przynależności do mafii trafiła do panelu kart. Pole z nazwą firmy w nagłówku ma ograniczoną szerokość (`truncate`), aby nie rozpychało ekranu.
+- **Ekran Startowy:** Pole nazwy firmy i wybór sufiksu są teraz w jednej linii (poprawne skalowanie na mobile). Lista działalności zmieniona na rozwijaną listę `<select>`.
+- **Ekran O grze:** Poprawiono literówki, zaktualizowano stopkę (MENTOS GAMES) i dodano klikalny link do profilu FB.
+
+**Architektura i porządki:**
+- **Podział `gameStore`:** Wydzielono `combatSlice.ts` oraz `newsSlice.ts`. Logika `autosave` trafiła do osobnego pliku `autosave.ts`.
+- **Usunięto niedeterministyczne losowanie:** Wyeliminowano `Math.random()` z akcji (kredyty, dev-newsy) na rzecz seedowanego RNG, aby zapisy gry były w 100% stabilne.
+- **Testy:** Dodano/zaadaptowano testy sprawdzające nowe mechanizmy ekonomii i ActionableNews.
+
 ## 0.75 (2026-10-17) — Skarbówka i walka JRPG
 
 **Nowe mechaniki:**

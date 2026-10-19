@@ -49,39 +49,37 @@ export function StartScreen() {
 
         {/* Nazwa firmy */}
         <h2 className="font-bold mb-2">Nazwa firmy</h2>
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-row gap-2 mb-6">
           <input
             value={companyName}
             onChange={e => setCompanyName(e.target.value)}
-            className="flex-1 border p-2 rounded"
+            className="flex-1 min-w-0 border p-2 rounded"
             placeholder="np. Inter-Fruit"
           />
           <select
             value={suffix}
             onChange={e => setSuffix(e.target.value)}
-            className="border p-2 rounded bg-white"
+            className="w-[110px] sm:w-32 shrink-0 border p-2 rounded bg-white"
           >
             {SUFFIXES.map(s => (
-              <option key={s} value={s}>{s || '(bez sufiksu)'}</option>
+              <option key={s} value={s}>{s || '(puste)'}</option>
             ))}
           </select>
         </div>
 
-        {/* Działalność */}
+        {/* Działalność jako Dropdown */}
         <h2 className="font-bold mb-2">Działalność</h2>
-        <div className="flex flex-wrap gap-2 mb-6">
+        <select
+          value={activity}
+          onChange={e => setActivity(e.target.value)}
+          className="w-full border p-2 rounded bg-white mb-6"
+        >
           {ACTIVITIES.map(a => (
-            <button
-              key={a.id}
-              onClick={() => setActivity(a.id)}
-              className={`px-3 py-1.5 rounded text-sm border ${
-                activity === a.id ? 'bg-stone-900 text-white' : 'bg-white hover:bg-stone-50'
-              }`}
-            >
-              {a.label} ({ACTIVITY_REPUTATION[a.id] ?? 50})
-            </button>
+            <option key={a.id} value={a.id}>
+              {a.label} (Reputacja: {ACTIVITY_REPUTATION[a.id] ?? 50})
+            </option>
           ))}
-        </div>
+        </select>
 
         {/* Rozmiar firmy */}
         <h2 className="font-bold mb-2">Rozmiar firmy</h2>

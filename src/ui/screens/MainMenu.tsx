@@ -58,7 +58,7 @@ export function MainMenu() {
 
         <div className="text-xs text-stone-400 mt-8 space-y-0.5">
           <p>wersja 0.67</p>
-          <p>© by HZ GAMES 2026</p>
+          <p>© by MENTOS GAMES 2026</p>
         </div>
       </div>
     </div>
