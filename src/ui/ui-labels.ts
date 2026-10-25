@@ -20,7 +20,7 @@ export const REPUTATION_DESCRIPTIONS: Record<string, string> = {
   opiniaPolitycy: 'Twoje wpływy w świecie polityki. Statystyka ukryta. Waga zależy od wyników wyborów.',
 };
 
-export const Wplywy_LABELS: Record<string, string> = {
+export const WPLYWY_LABELS: Record<string, string> = {
   przychodyZDzialalnosci: 'Przychody z działalności',
   srodkiZKredytow: 'Środki z kredytów',
   dofinansowania: 'Dofinansowania',
@@ -29,7 +29,7 @@ export const Wplywy_LABELS: Record<string, string> = {
   splatyZobowiazan: 'Spłaty zobowiązań',
 };
 
-export const Wydatki_LABELS: Record<string, string> = {
+export const WYDATKI_LABELS: Record<string, string> = {
   splacaneKredyty: 'Spłacane kredyty',
   pracownicy: 'Pracownicy',
   czynsz: 'Czynsz',

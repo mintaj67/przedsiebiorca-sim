@@ -21,13 +21,13 @@ describe('tickEconomy', () => {
   it('generuje przychód z działalności nawet bez pracowników (CEO sam pracuje)', () => {
     const state = makeState();
     const result = tickEconomy(state);
-    expect(result.company.finances.Wplywy.przychodyZDzialalnosci).toBeGreaterThan(0);
+    expect(result.company.finances.wplywy.przychodyZDzialalnosci).toBeGreaterThan(0);
   });
 
   it('pobiera czynsz co turę', () => {
     const state = makeState();
     const result = tickEconomy(state);
-    expect(result.company.finances.Wydatki.czynsz).toBeGreaterThan(0);
+    expect(result.company.finances.wydatki.czynsz).toBeGreaterThan(0);
   });
 
   it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
@@ -43,7 +43,7 @@ describe('tickEconomy', () => {
       3 * WORKER_CONFIG.zlecenie.wage +
       1 * WORKER_CONFIG.uop.wage;
 
-    expect(result.company.finances.Wydatki.pracownicy).toBe(expected);
+    expect(result.company.finances.wydatki.pracownicy).toBe(expected);
   });
 
   it('pracownik UOP zarabia więcej niż kosztuje (netto na plus)', () => {
@@ -52,8 +52,8 @@ describe('tickEconomy', () => {
 
     const result = tickEconomy(state);
 
-    const revenue = result.company.finances.Wplywy.przychodyZDzialalnosci;
-    const wages = result.company.finances.Wydatki.pracownicy;
+    const revenue = result.company.finances.wplywy.przychodyZDzialalnosci;
+    const wages = result.company.finances.wydatki.pracownicy;
 
     expect(revenue).toBeGreaterThan(wages);
     expect(WORKER_CONFIG.uop.revenue).toBeGreaterThan(WORKER_CONFIG.uop.wage);
@@ -66,7 +66,7 @@ describe('tickEconomy', () => {
     const result = tickEconomy(state);
 
     expect(WORKER_CONFIG.bezUmowy.revenue).toBeGreaterThan(WORKER_CONFIG.bezUmowy.wage);
-    expect(result.company.finances.Wplywy.przychodyZDzialalnosci).toBeGreaterThan(0);
+    expect(result.company.finances.wplywy.przychodyZDzialalnosci).toBeGreaterThan(0);
   });
 
   it('po turze z dodatnim saldem stanKonta rośnie', () => {
@@ -115,6 +115,6 @@ describe('tickEconomy', () => {
   it('podatki są dodatnie gdy przychód dodatni', () => {
     const state = makeState();
     const result = tickEconomy(state);
-    expect(result.company.finances.Wydatki.podatki).toBeGreaterThan(0);
+    expect(result.company.finances.wydatki.podatki).toBeGreaterThan(0);
   });
 });

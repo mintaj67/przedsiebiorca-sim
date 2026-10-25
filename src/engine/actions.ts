@@ -59,8 +59,8 @@ export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amo
     quartersLeft: 12,
   });
   s.company.finances.stateKonta += amount;
-  if (source === 'bank') s.company.finances.Wplywy.srodkiZKredytow += amount;
-  else s.company.finances.Wplywy.dofinansowaniaSzaraStrefa += amount;
+  if (source === 'bank') s.company.finances.wplywy.srodkiZKredytow += amount;
+  else s.company.finances.wplywy.dofinansowaniaSzaraStrefa += amount;
   return s;
 }
 
@@ -115,6 +115,16 @@ export function applySetPace(state: GameState, pace: Pace): GameState {
   return s;
 }
 
+export function buyOfficeItem(state: GameState, itemId: string, price: number): GameState {
+  const s = structuredClone(state);
+  if (s.company.finances.stateKonta < price) return s; // Brak kasy
+  if (s.company.inventory.includes(itemId)) return s; // Już to masz
+  
+  s.company.finances.stateKonta -= price;
+  s.company.inventory.push(itemId);
+  return s;
+}
+
 export function applyEffects(state: GameState, e: EventEffects) {
   if (e.reputation) {
     for (const [k, v] of Object.entries(e.reputation)) {
@@ -122,11 +132,11 @@ export function applyEffects(state: GameState, e: EventEffects) {
     }
   }
   if (e.stateKonta) state.company.finances.stateKonta += e.stateKonta;
-  if (e.Wplywy) for (const [k, v] of Object.entries(e.Wplywy)) {
-    (state.company.finances.Wplywy as any)[k] += v as number;
+  if (e.wplywy) for (const [k, v] of Object.entries(e.wplywy)) {
+    (state.company.finances.wplywy as any)[k] += v as number;
   }
-  if (e.Wydatki) for (const [k, v] of Object.entries(e.Wydatki)) {
-    (state.company.finances.Wydatki as any)[k] += v as number;
+  if (e.wydatki) for (const [k, v] of Object.entries(e.wydatki)) {
+    (state.company.finances.wydatki as any)[k] += v as number;
   }
   if (e.flagsAdd) state.ceo.flags.push(...e.flagsAdd);
   if (e.flagsRemove) state.ceo.flags = state.ceo.flags.filter(f => !e.flagsRemove!.includes(f));
@@ -158,7 +168,10 @@ export function applyEffects(state: GameState, e: EventEffects) {
     if (e.employeesDelta.bezUmowy) state.company.employees.bezUmowy = Math.max(0, state.company.employees.bezUmowy + e.employeesDelta.bezUmowy);
     if (e.employeesDelta.zlecenie) state.company.employees.zlecenie = Math.max(0, state.company.employees.zlecenie + e.employeesDelta.zlecenie);
     if (e.employeesDelta.uop) state.company.employees.uop = Math.max(0, state.company.employees.uop + e.employeesDelta.uop);
-  }  
+  }
+   if (e.addItem && !state.company.inventory.includes(e.addItem)) {
+    state.company.inventory.push(e.addItem);
+  }   
 }
 
 export function toggleAccountant(state: GameState): GameState {

@@ -29,22 +29,22 @@ export function tickEconomy(state: GameState): GameState {
   const f = c.finances;
 
   const baseRevenue = estimateRevenue(c);
-  f.Wplywy.przychodyZDzialalnosci = baseRevenue;
+  f.wplywy.przychodyZDzialalnosci = baseRevenue;
 
-  f.Wydatki.pracownicy =
+  f.wydatki.pracownicy =
     c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.wage +
     c.employees.zlecenie * WORKER_CONFIG.zlecenie.wage +
     c.employees.uop      * WORKER_CONFIG.uop.wage;
 
-  f.Wydatki.czynsz = CZYNSZ;
-  f.Wydatki.podatki = Math.max(0, baseRevenue * TAX_RATE);
+  f.wydatki.czynsz = CZYNSZ;
+  f.wydatki.podatki = Math.max(0, baseRevenue * TAX_RATE);
 
-  f.Wydatki.splacaneKredyty = 0;
+  f.wydatki.splacaneKredyty = 0;
   for (const loan of c.loans) {
     if (loan.remaining <= 0) continue;
     const installment = loan.remaining / Math.max(1, loan.quartersLeft);
     const interest = loan.remaining * loan.interestRate;
-    f.Wydatki.splacaneKredyty += installment + interest;
+    f.wydatki.splacaneKredyty += installment + interest;
     loan.remaining -= installment;
     loan.quartersLeft -= 1;
   }
@@ -57,12 +57,12 @@ export function tickEconomy(state: GameState): GameState {
 
   if (c.hasAccountant) {
     skarbowkaDelta += ACCOUNTANT_BONUS;
-    f.Wydatki.inne += ACCOUNTANT_COST; // Dodatkowy koszt co turę
+    f.wydatki.inne += ACCOUNTANT_COST; // Dodatkowy koszt co turę
   }
   c.reputation.opiniaSkarbowa = Math.max(0, Math.min(100, c.reputation.opiniaSkarbowa + skarbowkaDelta));
 
-  const inflow  = sum(f.Wplywy);
-  const outflow = sum(f.Wydatki);
+  const inflow  = sum(f.wplywy);
+  const outflow = sum(f.wydatki);
   f.stateKonta += inflow - outflow;
 
   // Kara reputacyjna za za mało pracowników

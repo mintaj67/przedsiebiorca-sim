@@ -258,5 +258,33 @@
         }
       }
     ]
-  }
+  },
+  {
+    "id": "test_komputer_quest",
+    "title": "Tajne pliki na komputerze",
+    "description": "Przeglądając dysk twardy nowego komputera, natrafiasz na podejrzany folder. Ktoś zapisał tam akta dotyczące lokalnych polityków.",
+    "weight": 100,
+    "once": true,
+    "conditions": {
+      "hasItem": "komputer"
+    },
+    "choices": [
+      {
+        "id": "sell",
+        "label": "Sprzedajesz akta dziennikarzowi",
+        "effects": {
+          "stateKonta": 50000,
+          "reputation": { "opiniaPubliczna": 10, "opiniaPolitycy": -20 }
+        }
+      },
+      {
+        "id": "keep",
+        "label": "Zatrzymujesz teczkę dla siebie",
+        "effects": {
+          "flagsAdd": ["ma_teczke_politykow"],
+          "reputation": { "opiniaPolitycy": 5 }
+        }
+      }
+    ]
+  }  
 ]

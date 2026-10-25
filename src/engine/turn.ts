@@ -9,6 +9,7 @@ import activitiesData from '../data/activities.json';
 import { generatePassiveNews, processExpiredActions, checkMafiaInvitation, checkTaxOfficeNotice, checkEmployeeUnrest } from './news';
 import { applyEffects } from './actions';
 import { startTaxCombat } from './combat';
+import { startChase } from './chase';
 
 const REPUTATION_LABELS: Record<string, string> = {
   branza: 'Branża',
@@ -31,14 +32,14 @@ function describeEffects(e: EventEffects): string[] {
       lines.push(`${label}: ${v > 0 ? '+' : ''}${v}`);
     }
   }
-  if (e.Wydatki) {
-    for (const [k, v] of Object.entries(e.Wydatki)) {
+  if (e.wydatki) {
+    for (const [k, v] of Object.entries(e.wydatki)) {
       if (!v) continue;
       lines.push(`Wydatki (${k}): ${v > 0 ? '+' : ''}${v.toLocaleString('pl-PL')}`);
     }
   }
-  if (e.Wplywy) {
-    for (const [k, v] of Object.entries(e.Wplywy)) {
+  if (e.wplywy) {
+    for (const [k, v] of Object.entries(e.wplywy)) {
       if (!v) continue;
       lines.push(`Wplywy (${k}): ${v > 0 ? '+' : ''}${v.toLocaleString('pl-PL')}`);
     }
@@ -94,6 +95,13 @@ export function nextTurn(state: GameState): GameState {
   
   if (s.skarbowkaVisitTurn !== null && s.turn === s.skarbowkaVisitTurn && !s.activeCombat) {
     startTaxCombat(s);
+  }
+
+  if (!s.activeChase && !s.activeCombat && s.ceo.inMafia === false && s.company.reputation.opiniaMafia < 25) {
+    const rng = makeRng(s.seed, s.turn * 99 + 1);
+    if (rng.next() < 0.3) { // 30% szans na turę, że mafia wyśle "chłopaków"
+      startChase(s);
+    }
   }
   return s;
 }

@@ -49,10 +49,11 @@ export function createInitialState(opts: {
       legalForm: 'cywilna',
       activity: opts.activity,
       employees: { ...sizeCfg.startingEmployees },
-      hasAccountant: false,      
+      hasAccountant: false,
+      inventory: [], // <-- Inicjalizacja nowego pola inventory jako pustej tablicy
       finances: {
         stateKonta: cash,
-        Wplywy: {
+        wplywy: {
           przychodyZDzialalnosci: 0,
           srodkiZKredytow: 0,
           dofinansowania: 0,
@@ -60,7 +61,7 @@ export function createInitialState(opts: {
           dochodPasywny: 0,
           splatyZobowiazan: 0,
         },
-        Wydatki: {
+        wydatki: {
           splacaneKredyty: 0,
           pracownicy: 0,
           czynsz: 0,
@@ -115,6 +116,7 @@ export function createInitialState(opts: {
     lastPresidentialResult: null,
     skarbowkaVisitTurn: null,
     activeCombat: null,
+    activeChase: null,    
     news: [],
     gameOver: null,
   };

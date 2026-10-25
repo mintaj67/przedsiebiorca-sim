@@ -17,6 +17,7 @@ import { RankingsScreen } from './screens/RankingsScreen';
 import { AchievementsScreen } from './screens/AchievementsScreen';
 import { OptionsModal } from './components/OptionsModal';
 import { partyLabel } from './ui-labels';
+import { ChaseScreen } from './screens/ChaseScreen';
 
 // Definiujemy dostępne ekrany
 type MainTab = 'main' | 'news' | 'management' | 'global';
@@ -40,6 +41,13 @@ export function Dashboard() {
   if (state.lastChoiceResult) return <ConsequenceScreen />;
   if (state.pendingEvents.length > 0) return <EventScreen />;
   if (state.activeCombat) return <CombatScreen />;
+  if (state.lastPresidentialResult) return <PresidentialElectionScreen onClose={dismissPresidentialResult} />;
+  if (state.lastElectionResult) return <ElectionScreen onClose={dismissElection} />;
+  if (state.lastChoiceResult) return <ConsequenceScreen />;
+  if (state.pendingEvents.length > 0) return <EventScreen />;
+  if (state.activeCombat) return <CombatScreen />;
+  if (state.activeChase) return <ChaseScreen />; // <-- DODAJ TO
+
 
   if (state.gameOver) {
     return (
@@ -134,7 +142,7 @@ export function Dashboard() {
       <div className="mt-4">
         {mainTab === 'main' && (
           <div>
-            <OfficeView companyName={`${state.company.name}${state.company.suffix}`} year={state.year} quarter={state.quarter} inMafia={state.ceo.inMafia} />
+            <OfficeView companyName={`${state.company.name}${state.company.suffix}`} year={state.year} quarter={state.quarter} inMafia={state.ceo.inMafia} inventory={state.company.inventory} />
             <button onClick={() => doTurn()} className="bg-stone-900 text-white px-6 py-3 rounded hover:bg-stone-800 text-lg font-bold">Następna tura →</button>
           </div>
         )}
@@ -194,23 +202,47 @@ function SubNavButton({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-function OfficeView({ companyName, year, quarter, inMafia }: any) {
+function OfficeView({ companyName, year, quarter, inMafia, inventory }: any) {
+  // Ustawienia pór roku (1=Wiosna, 2=Lato, 3=Jesień, 4=Zima)
+  let seasonBg = 'from-stone-200 via-stone-100 to-stone-300'; // Domyślny
+  let windowEmoji = '🌤️';
+  
+  if (quarter === 1) { seasonBg = 'from-green-200 via-green-100 to-green-300'; windowEmoji = '🌱'; }
+  if (quarter === 2) { seasonBg = 'from-yellow-200 via-yellow-100 to-yellow-300'; windowEmoji = '☀️'; }
+  if (quarter === 3) { seasonBg = 'from-orange-200 via-orange-100 to-orange-300'; windowEmoji = '🍂'; }
+  if (quarter === 4) { seasonBg = 'from-blue-200 via-blue-100 to-blue-300'; windowEmoji = '❄️'; }
+
   return (
-    <div className="relative bg-gradient-to-b from-stone-200 via-stone-100 to-stone-300 rounded-lg shadow-sm overflow-hidden mb-4 h-40 md:h-64 border border-stone-200">
-      <div className="absolute top-0 left-0 right-0 h-3/4 bg-gradient-to-b from-stone-100 to-stone-200" />
-      <div className="absolute top-4 md:top-6 left-4 md:left-8 w-20 md:w-28 h-14 md:h-20 bg-gradient-to-br from-sky-200 to-sky-100 border-4 border-stone-400 rounded-sm shadow-inner">
+    <div className={`relative bg-gradient-to-b ${seasonBg} rounded-lg shadow-sm overflow-hidden mb-4 h-40 md:h-64 border border-stone-200`}>
+      <div className={`absolute top-0 left-0 right-0 h-3/4 bg-gradient-to-b ${seasonBg} opacity-50`} />
+
+      {/* Okno z widokiem na zewnątrz */}
+      <div className="absolute top-4 md:top-6 left-4 md:left-8 w-20 md:w-28 h-14 md:h-20 bg-gradient-to-br from-sky-200 to-sky-100 border-4 border-stone-400 rounded-sm shadow-inner flex items-center justify-center text-2xl">
+        {windowEmoji}
         <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-stone-400 -translate-x-1/2" />
         <div className="absolute top-1/2 left-0 right-0 h-1 bg-stone-400 -translate-y-1/2" />
       </div>
-      <div className="hidden md:flex absolute top-8 right-32 w-16 h-12 bg-amber-100 border-2 border-stone-400 rounded-sm items-center justify-center text-lg">🏆</div>
+
+      {/* Przedmioty z ekwipunku (wyświetlane w zależności od posiadania) */}
+      {inventory?.includes('kwiat') && <div className="absolute bottom-10 md:bottom-16 left-4 md:left-12 text-3xl">🪴</div>}
+      {inventory?.includes('sejf') && <div className="absolute bottom-4 right-8 md:right-16 text-4xl">🔐</div>}
+      {inventory?.includes('komputer') && <div className="absolute bottom-18 left-1/2 -translate-x-1/2 -translate-x-12 w-16 h-12 bg-stone-800 rounded-sm border-2 border-stone-700"><div className="w-full h-full bg-gradient-to-br from-blue-900 to-blue-700 opacity-60" /></div>}
+
+      {/* Podłoga */}
       <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-amber-800/60" />
       <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-amber-900/40 to-transparent" />
+
+      {/* Biurko */}
       <div className="absolute bottom-10 md:bottom-16 left-1/2 -translate-x-1/2 w-48 md:w-64 h-2 bg-amber-900 rounded-sm shadow-md" />
-      <div className="hidden md:block absolute bottom-20 left-1/2 -translate-x-1/2 -translate-x-12 w-16 h-12 bg-stone-800 rounded-sm border-2 border-stone-700">
-        <div className="w-full h-full bg-gradient-to-br from-green-900 to-green-700 opacity-60" />
-      </div>
+
+      {/* Ekspres do kawy */}
+      {inventory?.includes('ekspres') && <div className="absolute bottom-18 md:bottom-20 left-1/2 -translate-x-1/2 translate-x-16 text-2xl">☕</div>}
+
+      {/* Standardowe wyposażenie */}
       <div className="hidden md:block absolute bottom-20 left-1/2 -translate-x-1/2 translate-x-12 w-8 h-5 bg-stone-900 rounded-sm" />
       <div className="hidden md:block absolute bottom-10 left-1/2 -translate-x-1/2 translate-x-20 w-12 h-16 bg-stone-800 rounded-t-xl opacity-80" />
+
+      {/* Info overlay */}
       <div className="absolute top-3 md:top-4 right-3 md:right-4 text-right z-10">
         <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-stone-500 font-semibold">Siedziba firmy</div>
         <div className="text-xs md:text-sm font-bold text-stone-900 drop-shadow-sm">{companyName}</div>

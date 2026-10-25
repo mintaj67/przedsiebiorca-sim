@@ -30,6 +30,7 @@ export function matchesConditions(state: GameState, c: EventConditions): boolean
       if ((state.company.reputation as any)[k] > (v as number)) return false;
     }
   }
+  if (c.hasItem && !state.company.inventory.includes(c.hasItem)) return false;
   return true;
 }
 

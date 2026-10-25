@@ -195,7 +195,7 @@ Rozmiar firmy — CompanySize (micro/small/medium) z requiredWorkers, cashMultip
 
 Sufiks firmy — pole suffix w Company (-EX, -POL, brak).
 
-labels.ts — polskie etykiety i opisy (REPUTATION_LABELS, REPUTATION_DESCRIPTIONS, Wplywy_LABELS, Wydatki_LABELS, PARTY_LABELS, partyLabel).
+labels.ts — polskie etykiety i opisy (REPUTATION_LABELS, REPUTATION_DESCRIPTIONS, WPLYWY_LABELS, WYDATKI_LABELS, PARTY_LABELS, partyLabel).
 
 Wybory:
 

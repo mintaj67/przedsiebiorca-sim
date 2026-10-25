@@ -5,43 +5,10 @@ export type CompanySize = 'micro' | 'small' | 'medium';
 export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about' | 'saves';
 
 export type PoliticalSide = 'PZPR' | 'independent' | 'opposition' | 'none';
-
-export type Ideology =
-  | 'radical_left'
-  | 'moderate_left'
-  | 'center'
-  | 'center_right'
-  | 'extreme_right';
-
+export type Ideology = 'radical_left' | 'moderate_left' | 'center' | 'center_right' | 'extreme_right';
 export type PartySize = 'large' | 'medium' | 'small';
 export type LegalForm = 'cywilna' | 'zoo' | 'sa' | 'holding';
 export type ContractType = 'bezUmowy' | 'zlecenie' | 'uop';
-
-export type NewsCategory = 'rumor' | 'poll' | 'party' | 'economy' | 'custom';
-
-export interface NewsChoice {
-  id: string;
-  label: string;
-  description?: string;
-  effects?: EventEffects;
-  requires?: EventConditions;
-}
-
-export interface NewsItem {
-  id: string;
-  turn: number;
-  year: number;
-  quarter: 1 | 2 | 3 | 4;
-  headline: string;
-  body?: string;
-  category: NewsCategory;
-  read: boolean;
-  choices?: NewsChoice[];
-  expiresAtTurn?: number;
-  resolved?: boolean;
-  resolvedChoiceId?: string;
-  onExpireEffects?: EventEffects;
-}
 
 export interface Reputation {
   branza: number;
@@ -77,8 +44,8 @@ export interface Wydatki {
 
 export interface Finances {
   stateKonta: number;
-  Wplywy: Wplywy;
-  Wydatki: Wydatki;
+  wplywy: Wplywy;
+  wydatki: Wydatki;
 }
 
 export interface Employees {
@@ -108,6 +75,7 @@ export interface Company {
   loans: Loan[];
   lastActivityChangeTurn: number;
   hasAccountant: boolean;
+  inventory: string[]; // <-- Nowe pole na przyszłe przedmioty
 }
 
 export interface Party {
@@ -138,22 +106,6 @@ export interface ElectionResult {
   premierId: string | null;
 }
 
-export interface PresidentialCandidate {
-  id: string;
-  name: string;
-  partyId: string | null;
-  partyLabel?: string;
-  votesPercent: number;
-}
-
-export interface PresidentialResult {
-  year: number;
-  candidates: PresidentialCandidate[];
-  winner: PresidentialCandidate;
-  secondRound: boolean;
-  secondRoundCandidates?: PresidentialCandidate[];
-}
-
 export interface PoliticsState {
   parties: Party[];
   president: President | null;
@@ -175,6 +127,7 @@ export interface CEO {
   lastMafiaInvitationTurn: number | null;
 }
 
+// --- Eventy i Akcje ---
 export interface EventConditions {
   yearMin?: number;
   yearMax?: number;
@@ -193,13 +146,14 @@ export interface EventConditions {
   flags?: string[];
   notFlags?: string[];
   hasParty?: boolean;
+  hasItem?: string; // <-- Nowe pole na przyszłe przedmioty
 }
 
 export interface EventEffects {
   reputation?: Partial<Reputation>;
   stateKonta?: number;
-  Wplywy?: Partial<Wplywy>;
-  Wydatki?: Partial<Wydatki>;
+  wplywy?: Partial<Wplywy>;
+  wydatki?: Partial<Wydatki>;
   flagsAdd?: string[];
   flagsRemove?: string[];
   joinMafia?: boolean;
@@ -208,8 +162,8 @@ export interface EventEffects {
   setCurrentPartyId?: string;
   divideFinances?: boolean;
   employeesDelta?: { bezUmowy?: number; zlecenie?: number; uop?: number };
+  addItem?: string; // <-- Nowe pole na przyszłe przedmioty
 }
-
 
 export interface Gamble {
   winChance: number;
@@ -254,6 +208,34 @@ export interface Activity {
   effects: EventEffects;
 }
 
+// --- System Wiadomości ---
+export type NewsCategory = 'rumor' | 'poll' | 'party' | 'economy' | 'custom';
+
+export interface NewsChoice {
+  id: string;
+  label: string;
+  description?: string;
+  effects?: EventEffects;
+  requires?: EventConditions;
+}
+
+export interface NewsItem {
+  id: string;
+  turn: number;
+  year: number;
+  quarter: 1 | 2 | 3 | 4;
+  headline: string;
+  body?: string;
+  category: NewsCategory;
+  read: boolean;
+  choices?: NewsChoice[];
+  expiresAtTurn?: number;
+  resolved?: boolean;
+  resolvedChoiceId?: string;
+  onExpireEffects?: EventEffects;
+}
+
+// --- Stany (Walka, Wyniki) ---
 export interface ChoiceResult {
   eventId: string;
   eventTitle: string;
@@ -264,6 +246,40 @@ export interface ChoiceResult {
   outcomeDescription?: string;
 }
 
+export interface CombatLogEntry {
+  text: string;
+  type: 'player' | 'enemy' | 'system';
+}
+
+export interface CombatState {
+  type: 'skarbowka';
+  playerHp: number;
+  playerHpMax: number;
+  enemyHp: number;
+  enemyHpMax: number;
+  round: number;
+  log: CombatLogEntry[];
+  finished: boolean;
+  result: 'win' | 'lose' | 'draw' | null;
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface ChaseState {
+  player: Point;
+  enemies: Point[];
+  gridSize: number;
+  grid: number[][]; // 0 = puste, 1 = zamalowane
+  turn: number;
+  maxTurns: number;
+  finished: boolean;
+  result: 'escaped' | 'caught' | null;
+}
+
+// --- Główny Stan Gry ---
 export interface GameState {
   schemaVersion: number;
   seed: string;
@@ -285,41 +301,11 @@ export interface GameState {
   lastChoiceResult: ChoiceResult | null;
   chosenActivityThisTurn: string | null;
   lastElectionResult: ElectionResult | null;
-  lastPresidentialResult: PresidentialResult | null;
-  news: NewsItem[];
-  skarbowkaVisitTurn: number | null;
-
+  lastPresidentialResult: any | null;
   activeCombat: CombatState | null;
+  skarbowkaVisitTurn: number | null;
+  news: NewsItem[];
+  activeChase: ChaseState | null;
 
   gameOver: null | { reason: string };
-}
-
-export type PlayerAction =
-  | { type: 'do_nothing' }
-  | { type: 'do_activity'; activityId: string }
-  | { type: 'resolve_event'; eventId: string; choiceId: string }
-  | { type: 'hire'; contract: ContractType; count: number }
-  | { type: 'fire'; contract: ContractType; count: number }
-  | { type: 'take_loan'; source: 'bank' | 'szara_strefa'; amount: number }
-  | { type: 'set_pace'; pace: Pace }
-  | { type: 'join_party'; partyId: string }
-  | { type: 'leave_party' }
-  | { type: 'change_activity'; activity: string }
-  | { type: 'take_emergency_loan' };
-
-export interface CombatLogEntry {
-  text: string;
-  type: 'player' | 'enemy' | 'system';
-}
-
-export interface CombatState {
-  type: 'skarbowka';
-  playerHp: number; // Siła argumentów
-  playerHpMax: number;
-  enemyHp: number; // Cierpliwość urzędnika
-  enemyHpMax: number;
-  round: number;
-  log: CombatLogEntry[];
-  finished: boolean;
-  result: 'win' | 'lose' | 'draw' | null;
 }

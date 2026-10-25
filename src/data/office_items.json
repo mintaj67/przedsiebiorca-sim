@@ -1,0 +1,26 @@
+[
+  {
+    "id": "kwiat",
+    "name": "Roślina doniczkowa",
+    "price": 500,
+    "description": "Ożywia nieco szare biuro."
+  },
+  {
+    "id": "ekspres",
+    "name": "Ekspres do kawy",
+    "price": 3000,
+    "description": "Pracownicy nieco lepiej znoszą nadgodziny."
+  },
+  {
+    "id": "sejf",
+    "name": "Stalowy sejf",
+    "price": 10000,
+    "description": "Bezpieczne miejsce na dokumenty (i brudne pieniądze)."
+  },
+  {
+    "id": "komputer",
+    "name": "Nowoczesny komputer",
+    "price": 15000,
+    "description": "Ułatwia księgowość i zarządzanie."
+  }
+]
