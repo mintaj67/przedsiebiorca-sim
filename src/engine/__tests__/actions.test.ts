@@ -130,21 +130,32 @@ describe('applyChangeActivity', () => {
 });
 
 describe('applyJoinParty / applyLeaveParty', () => {
+  // Testy dla partii przenosimy do 1990 roku, bo w 1989 jest blokada
   it('dołączenie do partii ustawia currentPartyId', () => {
     const state = makeState();
+    state.year = 1990; // <-- Zmieniamy rok!
     const result = applyJoinParty(state, 'sld');
     expect(result.ceo.currentPartyId).toBe('sld');
   });
 
   it('dołączenie do partii zwiększa licznik przefarbowań', () => {
     const state = makeState();
+    state.year = 1990; // <-- Zmieniamy rok!
     const result = applyJoinParty(state, 'sld');
     expect(result.ceo.partySwitchesByPhase.chaos).toBe(1);
   });
 
   it('nie pozwala przekroczyć limitu przefarbowań', () => {
     const state = makeState();
+    state.year = 1990; // <-- Zmieniamy rok!
     state.ceo.partySwitchesByPhase.chaos = MAX_PARTY_SWITCHES_PER_PHASE;
+    const result = applyJoinParty(state, 'sld');
+    expect(result.ceo.currentPartyId).toBeNull();
+  });
+
+  it('nie pozwala dołączyć do partii w 1989 roku', () => {
+    const state = makeState();
+    state.year = 1989;
     const result = applyJoinParty(state, 'sld');
     expect(result.ceo.currentPartyId).toBeNull();
   });

@@ -1,12 +1,12 @@
 import type { GameState, ContractType, Pace, EventEffects } from './types';
 import {
-  ACTIVITY_REPUTATION,
   MAX_PARTY_SWITCHES_PER_PHASE,
   ACTIVITY_CHANGE_COOLDOWN,
   BANKRUPT_EMERGENCY_LOAN,
   WORKER_CONFIG,
   ACTIVITY_MAFIA_BASELINE,
 } from './constants';
+import { getActivityData } from './activityHelper'
 import { recomputeReputation } from './reputation';
 
 const clamp = (x: number) => Math.max(0, Math.min(100, x));
@@ -68,8 +68,10 @@ export function applyChangeActivity(state: GameState, activity: string): GameSta
   const s = structuredClone(state);
   if (s.turn - s.company.lastActivityChangeTurn < ACTIVITY_CHANGE_COOLDOWN) return s;
   const oldBranza = s.company.reputation.branza;
+  const actData = getActivityData(activity);
   s.company.activity = activity;
-  s.company.reputation.branza = ACTIVITY_REPUTATION[activity] ?? 50;
+  s.company.reputation.branza = actData?.rep ?? 50;
+  s.company.reputation.opiniaMafia = actData?.mafia ?? 25; // <-- Aktualizujemy też mafię!
   s.company.lastActivityChangeTurn = s.turn;
   const delta = s.company.reputation.branza - oldBranza;
   s.company.reputation.opiniaBranza = clamp(s.company.reputation.opiniaBranza + delta * 0.3);

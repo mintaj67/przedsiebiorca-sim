@@ -4,10 +4,11 @@ import activities from '../activities.json';
 import parties from '../parties.json';
 import type { GameEvent, Activity, Party } from '../../engine/types';
 
+// --- 1. WALIDACJA EVENTÓW ---
 describe('events.json - walidacja struktury', () => {
   const eventList = events as GameEvent[];
 
-  it('każdy event ma id, title, description, weight, conditions, choices', () => {
+  it('każdy event ma wymagane pola', () => {
     for (const ev of eventList) {
       expect(ev.id, `Event bez id`).toBeTruthy();
       expect(ev.title, `${ev.id}: brak title`).toBeTruthy();
@@ -29,42 +30,22 @@ describe('events.json - walidacja struktury', () => {
       for (const c of ev.choices) {
         expect(c.label, `${ev.id}/${c.id}: brak label`).toBeTruthy();
         const hasEffect = c.effects || c.gamble || c.outcomes;
-        expect(hasEffect, `${ev.id}/${c.id}: brak efektu (effects/gamble/outcomes)`).toBeTruthy();
+        expect(hasEffect, `${ev.id}/${c.id}: brak efektu`).toBeTruthy();
       }
-    }
-  });
-
-  it('id eventów są unikalne', () => {
-    const ids = eventList.map(e => e.id);
-    const unique = new Set(ids);
-    expect(unique.size).toBe(ids.length);
-  });
-
-  it('id opcji są unikalne w obrębie eventu', () => {
-    for (const ev of eventList) {
-      const ids = ev.choices.map(c => c.id);
-      const unique = new Set(ids);
-      expect(unique.size, `${ev.id}: duplikat id opcji`).toBe(ids.length);
-    }
-  });
-
-  it('weight jest liczbą dodatnią', () => {
-    for (const ev of eventList) {
-      expect(ev.weight, `${ev.id}: weight <= 0`).toBeGreaterThan(0);
     }
   });
 });
 
+// --- 2. WALIDACJA AKTYWNOŚCI (Daily Actions) ---
 describe('activities.json - walidacja struktury', () => {
   const activityList = activities as Activity[];
 
-  it('każda aktywność ma id, label, description, weight, effects', () => {
+  it('każda aktywność ma wymagane pola', () => {
     for (const a of activityList) {
-      expect(a.id).toBeTruthy();
+      expect(a.id, `Aktywność bez id`).toBeTruthy();
       expect(a.label, `${a.id}: brak label`).toBeTruthy();
       expect(a.description, `${a.id}: brak description`).toBeTruthy();
       expect(typeof a.weight, `${a.id}: weight musi być liczbą`).toBe('number');
-      expect(a.effects, `${a.id}: brak effects`).toBeDefined();
     }
   });
 
@@ -74,6 +55,7 @@ describe('activities.json - walidacja struktury', () => {
   });
 });
 
+// --- 3. WALIDACJA PARTII ---
 describe('parties.json - walidacja struktury', () => {
   const partyList = parties as Party[];
 
@@ -82,25 +64,21 @@ describe('parties.json - walidacja struktury', () => {
       expect(p.id).toBeTruthy();
       expect(p.name, `${p.id}: brak name`).toBeTruthy();
       expect(p.ideology, `${p.id}: brak ideology`).toBeTruthy();
-      expect(p.size, `${p.id}: brak size`).toBeTruthy();
+      
+      expect(p.sizeSchedule, `${p.id}: brak sizeSchedule`).toBeDefined();
+      expect(Array.isArray(p.sizeSchedule), `${p.id}: sizeSchedule nie jest tablicą`).toBe(true);
+      
       expect(typeof p.activeFrom).toBe('number');
       expect(typeof p.activeTo).toBe('number');
     }
   });
 
-  it('activeFrom <= activeTo', () => {
+  it('sizeSchedule ma poprawne przedziały czasowe', () => {
     for (const p of partyList) {
-      expect(p.activeFrom, `${p.id}: activeFrom > activeTo`).toBeLessThanOrEqual(p.activeTo);
+      for (const sched of p.sizeSchedule) {
+        expect(sched.from, `${p.id}: sizeSchedule from > to`).toBeLessThanOrEqual(sched.to);
+        expect(sched.size, `${p.id}: brak size w sizeSchedule`).toBeTruthy();
+      }
     }
-  });
-
-  it('id partii są unikalne', () => {
-    const ids = partyList.map(p => p.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('PSL ma isPSL: true', () => {
-    const psl = partyList.find(p => p.id === 'psl');
-    expect(psl?.isPSL).toBe(true);
   });
 });

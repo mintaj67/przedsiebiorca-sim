@@ -1,0 +1,65 @@
+[
+  {
+    "id": "handel",
+    "name": "Handel",
+    "activities": [
+      { "id": "handel_odziez", "name": "Podrabiana odzież", "rep": 35, "mafia": 40 },
+      { "id": "handel_elektronika", "name": "Importowana elektronika", "rep": 55, "mafia": 45 },
+      { "id": "handel_pieczarki", "name": "Pieczarki", "rep": 50, "mafia": 20 },
+      { "id": "handel_plyty", "name": "Płyty i kasety", "rep": 60, "mafia": 25 },
+      { "id": "handel_alkohol", "name": "Alkohol", "rep": 45, "mafia": 55 },
+      { "id": "handel_sexshop", "name": "Sex shop", "rep": 30, "mafia": 60 },
+      { "id": "handel_papieskie", "name": "Akcesoria papieskie", "rep": 70, "mafia": 10 },
+      { "id": "handel_czesci", "name": "Części do samochodów", "rep": 50, "mafia": 50 },
+      { "id": "handel_mix", "name": "Trochę tego, trochę tamtego", "rep": 40, "mafia": 35 }
+    ]
+  },
+  {
+    "id": "produkcja",
+    "name": "Produkcja",
+    "activities": [
+      { "id": "prod_azbest", "name": "Azbest", "rep": 20, "mafia": 30 },
+      { "id": "prod_poliester", "name": "Poliester", "rep": 45, "mafia": 20 },
+      { "id": "prod_poliuretan", "name": "Poliuretan", "rep": 45, "mafia": 20 },
+      { "id": "prod_mleko", "name": "Mleko w tubce", "rep": 55, "mafia": 10 },
+      { "id": "prod_polena", "name": "Polena 9000", "rep": 50, "mafia": 15 },
+      { "id": "prod_jelcz", "name": "Części do Jelcza", "rep": 55, "mafia": 25 },
+      { "id": "prod_wegiel", "name": "Węgiel", "rep": 60, "mafia": 40 },
+      { "id": "prod_dlugopisy", "name": "Długopisy z Papieżem", "rep": 75, "mafia": 10 }
+    ]
+  },
+  {
+    "id": "kultura",
+    "name": "Kultura",
+    "activities": [
+      { "id": "kult_telewizja", "name": "Telewizja", "rep": 80, "mafia": 30 },
+      { "id": "kult_radio", "name": "Radio", "rep": 75, "mafia": 25 },
+      { "id": "kult_wydawnictwo", "name": "Wydawnictwo", "rep": 70, "mafia": 20 },
+      { "id": "kult_wytwornia", "name": "Wytwórnia płytowa", "rep": 75, "mafia": 35 }
+    ]
+  },
+  {
+    "id": "uslugi",
+    "name": "Usługi",
+    "activities": [
+      { "id": "usl_hotel", "name": "Hotel", "rep": 65, "mafia": 40 },
+      { "id": "usl_kasyno", "name": "Kasyno", "rep": 35, "mafia": 70 },
+      { "id": "usl_salongier", "name": "Salon gier", "rep": 40, "mafia": 60 },
+      { "id": "usl_fryzjer", "name": "Fryzjer", "rep": 60, "mafia": 15 },
+      { "id": "usl_dentysta", "name": "Dentysta", "rep": 70, "mafia": 10 },
+      { "id": "usl_ochrona", "name": "Prywatna firma ochroniarska", "rep": 40, "mafia": 80 },
+      { "id": "usl_windykacja", "name": "Firma windykacyjna", "rep": 20, "mafia": 90 }
+    ]
+  },
+  {
+    "id": "gastronomia",
+    "name": "Gastronomia",
+    "activities": [
+      { "id": "gast_kebab", "name": "Buda z kebabem", "rep": 40, "mafia": 30 },
+      { "id": "gast_zapiekanki", "name": "Zapiekanki", "rep": 50, "mafia": 20 },
+      { "id": "gast_familijna", "name": "Restauracja familijna", "rep": 70, "mafia": 10 },
+      { "id": "gast_speluna", "name": "Speluna", "rep": 25, "mafia": 60 },
+      { "id": "gast_luksusowy", "name": "Luksusowy lokal", "rep": 85, "mafia": 40 }
+    ]
+  }
+]

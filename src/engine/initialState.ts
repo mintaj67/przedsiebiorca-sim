@@ -1,5 +1,6 @@
 import type { GameState, Difficulty, Activity, CompanySize } from './types';
-import { DIFFICULTY_CONFIG, ACTIVITY_REPUTATION, COMPANY_SIZE_CONFIG, PSL_AVAILABILITY_CHANCE, ACTIVITY_MAFIA_BASELINE } from './constants';
+import { DIFFICULTY_CONFIG, COMPANY_SIZE_CONFIG, PSL_AVAILABILITY_CHANCE } from './constants';
+import { getActivityData } from './activityHelper';
 import { matchesConditions } from './events';
 import { makeRng } from './rng';
 import activitiesData from '../data/activities.json';
@@ -17,9 +18,9 @@ export function createInitialState(opts: {
 }): GameState {
   const { startingCash, startingRep } = DIFFICULTY_CONFIG[opts.difficulty];
   const sizeCfg = COMPANY_SIZE_CONFIG[opts.size];
-  const branza = ACTIVITY_REPUTATION[opts.activity] ?? 50;
+  const actData = getActivityData(opts.activity);
+  const branza = actData?.rep ?? 50;
   const cash = Math.round(startingCash * sizeCfg.cashMultiplier);
-
   const rng = makeRng(opts.seed, 999);
   const pslAvailable = rng.next() < PSL_AVAILABILITY_CHANCE;
 
@@ -77,7 +78,7 @@ export function createInitialState(opts: {
         opiniaPubliczna: startingRep,
         opiniaPracownicy: startingRep,
         opiniaBranza: startingRep,
-        opiniaMafia: ACTIVITY_MAFIA_BASELINE[opts.activity] ?? 25,
+        opiniaMafia: actData?.mafia ?? 25,        
         opiniaMedia: 50,
         opiniaPolitycy: opts.inPZPR ? 60 : 40,
         opiniaSkarbowa: 50,
@@ -118,12 +119,13 @@ export function createInitialState(opts: {
     activeCombat: null,
     activeChase: null,    
     news: [],
+    showIntro: true,
     gameOver: null,
   };
 }
 
 export function getEligibleActivities(state: GameState): string[] {
-  const all = activitiesData as Activity[];
+  const all = activitiesData as unknown as Activity[];
   const eligible = all.filter(a => matchesConditions(state, a.conditions));
   const rng = makeRng(state.seed, state.turn * 7 + 3);
   return eligible

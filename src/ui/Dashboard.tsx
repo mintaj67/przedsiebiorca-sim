@@ -18,6 +18,7 @@ import { AchievementsScreen } from './screens/AchievementsScreen';
 import { OptionsModal } from './components/OptionsModal';
 import { partyLabel } from './ui-labels';
 import { ChaseScreen } from './screens/ChaseScreen';
+import { IntroScreen } from './screens/IntroScreen';
 
 // Definiujemy dostępne ekrany
 type MainTab = 'main' | 'news' | 'management' | 'global';
@@ -36,6 +37,7 @@ export function Dashboard() {
 
   if (!state) return <div className="p-8">Ładowanie...</div>;
 
+  if (state.showIntro) return <IntroScreen />;
   if (state.lastPresidentialResult) return <PresidentialElectionScreen onClose={dismissPresidentialResult} />;
   if (state.lastElectionResult) return <ElectionScreen onClose={dismissElection} />;
   if (state.lastChoiceResult) return <ConsequenceScreen />;

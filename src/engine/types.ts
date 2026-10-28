@@ -248,6 +248,19 @@ export interface Activity {
   effects: EventEffects;
 }
 
+export interface ActivityItem {
+  id: string;
+  name: string;
+  rep: number;
+  mafia: number;
+}
+
+export interface ActivityCategory {
+  id: string;
+  name: string;
+  activities: ActivityItem[];
+}
+
 // --- System Wiadomości ---
 export type NewsCategory = 'rumor' | 'poll' | 'party' | 'economy' | 'custom';
 
@@ -328,6 +341,7 @@ export interface GameState {
   phase: Phase;
   difficulty: Difficulty;
   pace: Pace;
+  
 
 
   ceo: CEO;
@@ -345,6 +359,7 @@ export interface GameState {
   skarbowkaVisitTurn: number | null;
   news: NewsItem[];
   activeChase: ChaseState | null;
-
+  showIntro: boolean;
+  
   gameOver: null | { reason: string };
 }

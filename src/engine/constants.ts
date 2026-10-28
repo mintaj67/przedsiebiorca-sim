@@ -68,15 +68,15 @@ export const BANKRUPT_EMERGENCY_LOAN = {
 
 export const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, { title: string; description: string }> = {
   easy: {
-    title: 'Dziecko ambasadora',
+    title: 'Łatwy',
     description: 'Dziecko prywatnego przedsiębiorcy z PRL. Startujesz z dużym kapitałem i znajomościami.',
   },
   medium: {
-    title: 'Były pracownik PGRu',
+    title: 'Średni',
     description: 'Zostajesz zwolniony po latach w zakładzie i postanawiasz zainwestować odprawę we własną firmę. .',
   },
   hard: {
-    title: 'Syn włókniarki ze Rzgowa k. Łodzi',
+    title: 'Trudny',
     description: 'Pochodzisz z biednej robotniczej rodziny. Twoja matka oddaje ci ostatnie dolary wysłane przez ojca pracującego w USA, byś mógł zacząć nowe życie w wielkim mieście',
   },
 };

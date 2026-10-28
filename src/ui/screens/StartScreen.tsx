@@ -1,38 +1,24 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import {
-  DIFFICULTY_DESCRIPTIONS, DIFFICULTY_CONFIG,
-  ACTIVITY_REPUTATION, COMPANY_SIZE_CONFIG,
+  DIFFICULTY_DESCRIPTIONS, COMPANY_SIZE_CONFIG,
 } from '../../engine/constants';
 import type { Difficulty, CompanySize } from '../../engine/types';
-
-const ACTIVITIES = [
-  { id: 'handel', label: 'Handel' },
-  { id: 'produkcja', label: 'Produkcja' },
-  { id: 'uslugi', label: 'Usługi' },
-  { id: 'it', label: 'IT' },
-  { id: 'budowlanka', label: 'Budowlanka' },
-  { id: 'gastronomia', label: 'Gastronomia' },
-  { id: 'transport', label: 'Transport' },
-  { id: 'edukacja', label: 'Edukacja' },
-  { id: 'windykacja', label: 'Windykacja' },
-];
+import branchesData from '../../data/branches.json';
 
 const SUFFIXES = ['', '-EX', '-POL'];
 const SIZES: CompanySize[] = ['micro', 'small', 'medium'];
 
 export function StartScreen() {
+  const [selectedCategory, setSelectedCategory] = useState(branchesData[0].id);
+  const currentCategoryData = branchesData.find((c: any) => c.id === selectedCategory);
   const { newGame, setScreen, pendingSlotId } = useGameStore();
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [companyName, setCompanyName] = useState('Moja Firma');
   const [suffix, setSuffix] = useState('');
-  const [activity, setActivity] = useState('handel');
+  const [activity, setActivity] = useState(branchesData[0]?.activities[0]?.id || '');
   const [size, setSize] = useState<CompanySize>('micro');
   const [inPZPR, setInPZPR] = useState(false);
-
-  const startCash = Math.round(
-    DIFFICULTY_CONFIG[difficulty].startingCash * COMPANY_SIZE_CONFIG[size].cashMultiplier
-  );
 
   return (
     <div className="min-h-screen bg-stone-100 p-6 flex items-center justify-center">
@@ -40,7 +26,7 @@ export function StartScreen() {
         <button
           onClick={() => setScreen('menu')}
           className="text-sm text-stone-500 hover:text-stone-900 mb-4"
-        >
+        > 
           ← Powrót do menu
         </button>
 
@@ -69,21 +55,37 @@ export function StartScreen() {
 
         {/* Działalność jako Dropdown */}
         <h2 className="font-bold mb-2">Działalność</h2>
-        <select
-          value={activity}
-          onChange={e => setActivity(e.target.value)}
-          className="w-full border p-2 rounded bg-white mb-6"
-        >
-          {ACTIVITIES.map(a => (
-            <option key={a.id} value={a.id}>
-              {a.label} (Reputacja: {ACTIVITY_REPUTATION[a.id] ?? 50})
-            </option>
-          ))}
-        </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
+          <select
+            value={selectedCategory}
+            onChange={e => {
+              setSelectedCategory(e.target.value);
+              const firstSub = branchesData.find((c:any) => c.id === e.target.value)?.activities[0];
+              if (firstSub) setActivity(firstSub.id);
+            }}
+            className="w-full border p-2 rounded bg-white"
+          >
+            {branchesData.map((cat: any) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          
+          <select
+            value={activity}
+            onChange={e => setActivity(e.target.value)}
+            className="w-full border p-2 rounded bg-white"
+          >
+            {currentCategoryData?.activities.map((act: any) => (
+              <option key={act.id} value={act.id}>
+                {act.name} (Reputacja: {act.rep})
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Rozmiar firmy */}
         <h2 className="font-bold mb-2">Rozmiar firmy</h2>
-        <div className="grid grid-cols-3 gap-2 mb-2">
+        <div className="grid grid-cols-3 gap-2 mb-6">
           {SIZES.map(sz => (
             <button
               key={sz}
@@ -96,17 +98,10 @@ export function StartScreen() {
             </button>
           ))}
         </div>
-        <div className="bg-stone-50 border border-stone-200 rounded p-3 mb-6 text-sm text-stone-700">
-          <div className="text-xs text-stone-500 mb-1">
-            Wymaganych pracowników: <b>{COMPANY_SIZE_CONFIG[size].requiredWorkers}</b> ·
-            Mnożnik kapitału: <b>×{COMPANY_SIZE_CONFIG[size].cashMultiplier}</b>
-          </div>
-          {COMPANY_SIZE_CONFIG[size].description}
-        </div>
 
         {/* Poziom trudności */}
         <h2 className="font-bold mb-2">Poziom trudności</h2>
-        <div className="grid grid-cols-3 gap-2 mb-2">
+        <div className="grid grid-cols-3 gap-2 mb-6">
           {(['easy', 'medium', 'hard'] as Difficulty[]).map(d => (
             <button
               key={d}
@@ -119,16 +114,10 @@ export function StartScreen() {
             </button>
           ))}
         </div>
-        <div className="bg-stone-50 border border-stone-200 rounded p-3 mb-6 text-sm text-stone-700">
-          <div className="text-xs text-stone-500 mb-1">
-            Startowy kapitał: <b>{startCash.toLocaleString('pl-PL')} PLN</b>
-          </div>
-          {DIFFICULTY_DESCRIPTIONS[difficulty].description}
-        </div>
 
         {/* Przynależność polityczna */}
         <h2 className="font-bold mb-2">Przynależność polityczna</h2>
-        <div className="flex gap-2 mb-2">
+        <div className="flex gap-2 mb-6">
           <button
             onClick={() => setInPZPR(false)}
             className={`flex-1 py-3 rounded border font-semibold ${
@@ -145,11 +134,6 @@ export function StartScreen() {
           >
             Członek PZPR
           </button>
-        </div>
-        <div className="bg-stone-50 border border-stone-200 rounded p-3 mb-6 text-sm text-stone-700">
-          {inPZPR
-            ? 'Dostęp do postkomunistycznych ugrupowań i znajomości w aparacie. Ale po 1989 możesz zostać rozliczony.'
-            : 'Czysty życiorys. Trudniejszy start, ale żadnych obciążeń po transformacji.'}
         </div>
 
         <button

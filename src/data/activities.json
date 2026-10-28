@@ -5,21 +5,15 @@
     "description": "Masz w firmie pracownika, który donosi mafii. Możesz go zwolnić.",
     "weight": 10,
     "conditions": { "mafiaMember": true, "yearMax": 2005 },
-    "effects": {
-      "reputation": { "opiniaMafia": 5, "opiniaPracownicy": -10 },
-      "stateKonta": 5000
-    }
+    "effects": { "reputation": { "opiniaMafia": 5, "opiniaPracownicy": -10 }, "stateKonta": 5000 }
   },
   {
     "id": "karetki",
-    "label": "Kupujesz karetki szpitalowi",
+    "label": "Kuujesz karetki szpitalowi",
     "description": "Lokalny szpital potrzebuje sprzętu. Możesz pomóc.",
     "weight": 10,
     "conditions": {},
-    "effects": {
-      "reputation": { "opiniaPubliczna": 8 },
-      "stateKonta": -15000
-    }
+    "effects": { "reputation": { "opiniaPubliczna": 8 }, "stateKonta": -15000 }
   },
   {
     "id": "poparcie_kandydata",
@@ -27,9 +21,7 @@
     "description": "Twoja partia wystawia kandydata. Możesz go wesprzeć.",
     "weight": 10,
     "conditions": {},
-    "effects": {
-      "reputation": { "opiniaPolitycy": 8, "opiniaPubliczna": -3 }
-    }
+    "effects": { "reputation": { "opiniaPolitycy": 8, "opiniaPubliczna": -3 } }
   },
   {
     "id": "sponsoring_lokalny",
@@ -37,10 +29,7 @@
     "description": "Klub piłkarski w twoim mieście potrzebuje sponsora.",
     "weight": 10,
     "conditions": { "minStateKonta": 50000 },
-    "effects": {
-      "reputation": { "opiniaPubliczna": 6, "opiniaMedia": 5 },
-      "stateKonta": -10000
-    }
+    "effects": { "reputation": { "opiniaPubliczna": 6, "opiniaMedia": 5 }, "stateKonta": -10000 }
   },
   {
     "id": "szkolenie_pracownikow",
@@ -48,9 +37,6 @@
     "description": "Inwestycja w kadry.",
     "weight": 10,
     "conditions": { "minStateKonta": 20000 },
-    "effects": {
-      "reputation": { "opiniaPracownicy": 10 },
-      "stateKonta": -8000
-    }
+    "effects": { "reputation": { "opiniaPracownicy": 10 }, "stateKonta": -8000 }
   }
 ]
