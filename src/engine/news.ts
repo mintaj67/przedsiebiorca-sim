@@ -20,6 +20,7 @@ import { applyEffects } from './actions'; // <- upewnij się, że to jest stąd!
 import eventsData from '../data/events.json';
 import partiesData from '../data/parties.json';
 import customNewsData from '../data/custom_news.json';
+import { getPartySize } from './politics';
 
 interface CustomNews {
   id: string;
@@ -78,7 +79,7 @@ export function generatePassiveNews(state: GameState): void {
   if (electionIn <= 2 && electionIn > 0 && state.turn % 4 === 0) {
     const active = activePartiesFor(state);
     if (active.length > 0) {
-      const sorted = [...active].sort((a, b) => sizeRank(b) - sizeRank(a));
+      const sorted = [...active].sort((a, b) => sizeRank(b, state.year) - sizeRank(a, state.year));
       const leader = sorted[0];
       const second = sorted[1];
       addNewsItem(state, {
@@ -151,8 +152,9 @@ export function activePartiesFor(state: GameState): Party[] {
   });
 }
 
-function sizeRank(p: Party): number {
-  return p.size === 'large' ? 3 : p.size === 'medium' ? 2 : 1;
+function sizeRank(p: Party, year: number): number {
+  const size = getPartySize(p, year);
+  return size === 'very_large' ? 5 : size === 'large' ? 4 : size === 'medium' ? 3 : size === 'small' ? 2 : 1;
 }
 
 export function addActionableNewsItem(

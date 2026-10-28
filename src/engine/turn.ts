@@ -99,7 +99,7 @@ export function nextTurn(state: GameState): GameState {
 
   if (!s.activeChase && !s.activeCombat && s.ceo.inMafia === false && s.company.reputation.opiniaMafia < 25) {
     const rng = makeRng(s.seed, s.turn * 99 + 1);
-    if (rng.next() < 0.3) { // 30% szans na turę, że mafia wyśle "chłopaków"
+    if (rng.next() < 0.3) { 
       startChase(s);
     }
   }

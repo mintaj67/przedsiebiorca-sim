@@ -80,6 +80,7 @@ export function applyChangeActivity(state: GameState, activity: string): GameSta
 
 export function applyJoinParty(state: GameState, partyId: string): GameState {
   const s = structuredClone(state);
+  if (s.year <= 1989) return s;
   if (s.ceo.partySwitchesByPhase[s.phase] >= MAX_PARTY_SWITCHES_PER_PHASE) return s;
   s.ceo.currentPartyId = partyId;
   s.ceo.partySwitchesByPhase[s.phase] += 1;

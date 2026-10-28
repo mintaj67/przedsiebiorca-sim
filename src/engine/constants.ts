@@ -1,4 +1,4 @@
-import type { Ideology, Difficulty } from './types';
+import type { Ideology, Difficulty, PartySize } from './types';
 
 export const REPUTATION_WEIGHTS = {
   branza: 0.15,
@@ -11,11 +11,19 @@ export const REPUTATION_WEIGHTS = {
 } as const;
 
 export const COALITION_RULES: Record<Ideology, Ideology[]> = {
-  radical_left:  ['moderate_left', 'extreme_right'],
+  radical_left:  ['moderate_left', 'radical_right'],
   moderate_left: ['center', 'radical_left'],
-  center:        ['moderate_left', 'center_right'],
-  center_right:  ['extreme_right', 'center'],
-  extreme_right: ['center_right', 'radical_left'],
+  center:        ['moderate_left', 'moderate_right'],
+  moderate_right:['center', 'radical_right'],
+  radical_right: ['moderate_right', 'radical_left'],
+};
+
+export const PARTY_SIZE_WEIGHT: Record<PartySize, number> = {
+  very_small: 0.03,
+  small: 0.06,
+  medium: 0.12,
+  large: 0.22,
+  very_large: 0.35,
 };
 
 export const ACTIVITY_REPUTATION: Record<string, number> = {
@@ -204,3 +212,4 @@ export const COMBAT_SKARBOWKA_ENEMY_HP = 100;
 export const COMBAT_MAX_ROUNDS = 10;
 export const ACCOUNTANT_COST = 3000;
 export const ACCOUNTANT_BONUS = 3;
+export const ELECTION_YEARS = [1991, 1993, 1997, 2001, 2005, 2007, 2011, 2015, 2019, 2023, 2027];

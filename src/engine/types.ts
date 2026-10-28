@@ -3,10 +3,9 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Pace = 'quarter' | 'year';
 export type CompanySize = 'micro' | 'small' | 'medium';
 export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about' | 'saves';
-
 export type PoliticalSide = 'PZPR' | 'independent' | 'opposition' | 'none';
-export type Ideology = 'radical_left' | 'moderate_left' | 'center' | 'center_right' | 'extreme_right';
-export type PartySize = 'large' | 'medium' | 'small';
+export type Ideology = 'radical_right' | 'moderate_right' | 'center' | 'moderate_left' | 'radical_left';
+export type PartySize = 'very_small' | 'small' | 'medium' | 'large' | 'very_large';
 export type LegalForm = 'cywilna' | 'zoo' | 'sa' | 'holding';
 export type ContractType = 'bezUmowy' | 'zlecenie' | 'uop';
 
@@ -78,11 +77,35 @@ export interface Company {
   inventory: string[]; // <-- Nowe pole na przyszłe przedmioty
 }
 
+export interface PartySizeSchedule {
+  from: number;
+  to: number;
+  size: PartySize;
+}
+
 export interface Party {
   id: string;
   name: string;
+  descriptions: string[]; // Tablica na Opis 1, Opis 2 itd.
+  descriptionAfterJoin: string;
+  ideology: Ideology;
+  sizeSchedule: PartySizeSchedule[];
+  pzprAvailable: 'yes' | 'no' | 'both';
+  isPSL?: boolean;
+  special?: string;
+  economicView: number;
+  socialView: number;
+  activeFrom: number;
+  activeTo: number;
+}
+
+export interface Party {
+  id: string;
+  name: string;
+  description: string;
   ideology: Ideology;
   size: PartySize;
+  pzprAvailable: 'yes' | 'no' | 'both';
   isPSL?: boolean;
   special?: string;
   economicView: number;
@@ -105,6 +128,23 @@ export interface ElectionResult {
   coalition: string[];
   premierId: string | null;
 }
+
+export interface PresidentialCandidate {
+  id: string;
+  name: string;
+  partyId: string | null;
+  partyLabel?: string;
+  votesPercent: number;
+}
+
+export interface PresidentialResult {
+  year: number;
+  candidates: PresidentialCandidate[];
+  winner: PresidentialCandidate;
+  secondRound: boolean;
+  secondRoundCandidates?: PresidentialCandidate[];
+}
+
 
 export interface PoliticsState {
   parties: Party[];
@@ -279,7 +319,6 @@ export interface ChaseState {
   result: 'escaped' | 'caught' | null;
 }
 
-// --- Główny Stan Gry ---
 export interface GameState {
   schemaVersion: number;
   seed: string;
@@ -290,10 +329,10 @@ export interface GameState {
   difficulty: Difficulty;
   pace: Pace;
 
+
   ceo: CEO;
   company: Company;
   politics: PoliticsState;
-
   pendingEvents: GameEvent[];
   currentActivities: string[];
   history: string[];

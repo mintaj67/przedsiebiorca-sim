@@ -1,12 +1,118 @@
 [
-  { "id": "sld",  "name": "SLD", "ideology": "moderate_left", "size": "large",  "economicView": -1, "socialView": -1, "activeFrom": 1990, "activeTo": 2005 },
-  { "id": "uw",   "name": "Unia Wolności", "ideology": "center", "size": "medium", "economicView": 1, "socialView": 1, "activeFrom": 1994, "activeTo": 2005 },
-  { "id": "aws",  "name": "AWS", "ideology": "center_right", "size": "large", "economicView": 1, "socialView": 0, "activeFrom": 1996, "activeTo": 2001 },
-  { "id": "psl",  "name": "PSL", "ideology": "center", "size": "medium", "economicView": 0, "socialView": 0, "activeFrom": 1989, "activeTo": 9999, "isPSL": true, "special": "Istnieje na każdym etapie. Poglądy generowane losowo. Ma tajne zakończenie." },
-  { "id": "lpr",  "name": "LPR", "ideology": "extreme_right", "size": "small", "economicView": -1, "socialView": 2, "activeFrom": 2001, "activeTo": 2007 },
-  { "id": "samo", "name": "Samoobrona", "ideology": "radical_left", "size": "small", "economicView": -2, "socialView": -1, "activeFrom": 1992, "activeTo": 2007 },
-  { "id": "pis",  "name": "PiS", "ideology": "center_right", "size": "large", "economicView": 0, "socialView": 2, "activeFrom": 2001, "activeTo": 9999 },
-  { "id": "po",   "name": "PO", "ideology": "center", "size": "large", "economicView": 1, "socialView": 1, "activeFrom": 2001, "activeTo": 9999 },
-  { "id": "lew",  "name": "Lewica", "ideology": "moderate_left", "size": "medium", "economicView": -1, "socialView": -1, "activeFrom": 2005, "activeTo": 9999 },
-  { "id": "kon",  "name": "Konfederacja", "ideology": "extreme_right", "size": "small", "economicView": 2, "socialView": 2, "activeFrom": 2019, "activeTo": 9999 }
+  {
+    "id": "pzpr",
+    "name": "PZPR",
+    "descriptions": ["Polska Zjednoczona Partia Robotnicza."],
+    "descriptionAfterJoin": "Jesteśmy partią kierowniczą. Trzeba brać, ile się należy.",
+    "ideology": "moderate_left",
+    "sizeSchedule": [{ "from": 1989, "to": 1989, "size": "very_large" }],
+    "pzprAvailable": "yes",
+    "economicView": -1, "socialView": -1, "activeFrom": 1989, "activeTo": 1989
+  },
+  {
+    "id": "unisonarosc",
+    "name": "UNISONAROŚĆ",
+    "descriptions": ["Niezależny ruch społeczny."],
+    "descriptionAfterJoin": "Walczymy o wolną Polskę!",
+    "ideology": "center",
+    "sizeSchedule": [{ "from": 1989, "to": 1989, "size": "large" }],
+    "pzprAvailable": "no",
+    "economicView": 1, "socialView": 0, "activeFrom": 1989, "activeTo": 1989
+  },
+  {
+    "id": "psl",
+    "name": "PSL (Polskie Stowarzyszenie Ludowe)",
+    "descriptions": ["Narodowy agraryzm jedyną drogą dla kraju!", "Lorem ipsum"],
+    "descriptionAfterJoin": "Wejdziemy w koalicję z każdym dla dobra polskiej wsi.",
+    "ideology": "center",
+    "sizeSchedule": [{ "from": 1990, "to": 2030, "size": "large" }],
+    "pzprAvailable": "both", "isPSL": true,
+    "economicView": 0, "socialView": 0, "activeFrom": 1990, "activeTo": 2030
+  },
+  {
+    "id": "sld",
+    "name": "SLD (Solidni Liberalni Demokraci)",
+    "descriptions": ["Jesteśmy uczciwi, rzetelni i afery się nas w ogóle nie imają."],
+    "descriptionAfterJoin": "W sumie to z tą uczciwością to różnie u nas.",
+    "ideology": "moderate_left",
+    "sizeSchedule": [
+      { "from": 1990, "to": 2005, "size": "very_large" },
+      { "from": 2005, "to": 2019, "size": "medium" }
+    ],
+    "pzprAvailable": "yes",
+    "economicView": -1, "socialView": -1, "activeFrom": 1990, "activeTo": 2019
+  },
+  {
+    "id": "pc_ok",
+    "name": "PC OK (Porozumienie Centrystów oraz Katolików)",
+    "descriptions": ["Partia z centrum w nazwie na prawicy? Nie może być!"],
+    "descriptionAfterJoin": "Ale w sumie to my nie lubimy Radiohead.",
+    "ideology": "moderate_right",
+    "sizeSchedule": [{ "from": 1990, "to": 2001, "size": "medium" }],
+    "pzprAvailable": "no",
+    "economicView": 1, "socialView": 1, "activeFrom": 1990, "activeTo": 2001
+  },
+  {
+    "id": "kpn",
+    "name": "KPN (Kongres Polskich Nacjonalistów)",
+    "descriptions": ["Jechać PZPR! Je-je-chać PZPR!", "Nie przyjmiemy Makumby.", "Rewolucja bez rewolucji"],
+    "descriptionAfterJoin": "Precz z ruskimi, komuchami i nierymującymi się hasłami!",
+    "ideology": "radical_right",
+    "sizeSchedule": [
+      { "from": 1990, "to": 1993, "size": "small" },
+      { "from": 1993, "to": 2017, "size": "very_small" }
+    ],
+    "pzprAvailable": "no",
+    "economicView": 1, "socialView": 2, "activeFrom": 1990, "activeTo": 2017
+  },
+  {
+    "id": "ppbb",
+    "name": "PPBB (Polska Partia Braci Browarka)",
+    "descriptions": ["Rewolucja? Dla mnie to małe piwo przed śniadaniem.", "Lubię piwo pić i fajnie sobie żyć.", "Dołącz do nas, wcale nie jesteśmy zbieraniną losowych typów"],
+    "descriptionAfterJoin": "Kto piwo pije, temu staje.",
+    "ideology": "center",
+    "sizeSchedule": [{ "from": 1990, "to": 1993, "size": "small" }],
+    "pzprAvailable": "both",
+    "economicView": 0, "socialView": 0, "activeFrom": 1990, "activeTo": 1993
+  },
+  {
+    "id": "chunje",
+    "name": "ChUnJe (Chrześcijańska Unia Jedności)",
+    "descriptions": ["Chyba musimy dopracować ten skrót…", "Błagam, bez żadnych żartów ze skrótu.", "Tak, wiemy. SKRÓT."],
+    "descriptionAfterJoin": "Zablokujemy emisję każdej powtórki Emanuelle!",
+    "ideology": "radical_right",
+    "sizeSchedule": [
+      { "from": 1990, "to": 1993, "size": "large" },
+      { "from": 1993, "to": 1997, "size": "medium" },
+      { "from": 1997, "to": 2010, "size": "very_small" }
+    ],
+    "pzprAvailable": "no",
+    "economicView": 1, "socialView": 2, "activeFrom": 1990, "activeTo": 2010
+  },
+  {
+    "id": "psl_prawicowy",
+    "name": "PSL ale Prawicowy",
+    "descriptions": ["We would be honored if you would join us", "Dołącz do nas, mamy kasyna i pszenżyto!", "Narodowy agraryzm jedyną drogą dla kraju"],
+    "descriptionAfterJoin": "WSTAW PÓŹNIEJ",
+    "ideology": "moderate_right",
+    "sizeSchedule": [
+      { "from": 1990, "to": 1992, "size": "medium" },
+      { "from": 1992, "to": 1999, "size": "small" }
+    ],
+    "pzprAvailable": "no",
+    "economicView": 1, "socialView": 1, "activeFrom": 1990, "activeTo": 1999
+  },
+  {
+    "id": "upr",
+    "name": "UPR (Unia Polityki Prawdziwej)",
+    "descriptions": ["Może mamy literówkę w partii, ale to i tak najmniejsze co odwalił nasz szef.", "Ta wiosna będzie nasza.", "Q4 będzie nasz. W tym roku. Albo następnym. Albo kiedyś."],
+    "descriptionAfterJoin": "Pchamy się do władzy by ją rozwalić od środka.",
+    "ideology": "radical_right",
+    "sizeSchedule": [
+      { "from": 1990, "to": 1995, "size": "medium" },
+      { "from": 1995, "to": 2030, "size": "very_small" }
+    ],
+    "pzprAvailable": "no",
+    "economicView": 2, "socialView": 1, "activeFrom": 1990, "activeTo": 2030
+  }
 ]

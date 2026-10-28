@@ -1,3 +1,25 @@
+## 0.85 (2026-10-25) — Ekwipunek, Pory Roku i Minigra Ucieczki
+
+**Nowe mechaniki:**
+- **System Ekwipunku (`inventory`)** — firma może teraz posiadać przedmioty. Dodano pole `inventory: string[]` do stanu firmy oraz `hasItem` do warunków eventów (eventy mogą odpalać się tylko, jeśli gracz ma konkretny przedmiot).
+- **Sklep z wyposażeniem biura** — w zakładce Biuro można kupić przedmioty z pliku `office_items.json` (np. roślinę, ekspres, komputer, sejf).
+- **Minigra Ucieczka (Hamster Go!)** — nowy system walki/ucieczki przed mafią. Gracz porusza się po planszy 8x8, zamalowując kafelki (mechanika w stylu Qix/JezzBall). Przeciwnicy chodzą tylko po pustych polach. Cel: zamalować 40% planszy. Uruchamia się przy niskiej reputacji u mafii.
+- **Eventy zależne od przedmiotów** — dodano testowy event (Tajne pliki na komputerze), który pojawia się wyłącznie po zakupie przedmiotu "komputer".
+
+**Zmiany w UI:**
+- **Pory roku w biurze:** Widok `OfficeView` zmienia kolorystykę tła i ikonę w oknie w zależności od kwartału (wiosna, lato, jesień, zima).
+- **Przedmioty w biurze:** Kupione przedmioty (roślina, sejf, ekspres) są teraz widoczne na grafice biurka.
+- **Poprawki responsywności:** Pole nazwy firmy i sufiks są teraz w jednej linii na mobile, a działalność wybierana jest z rozwijanej listy.
+- **Ekran O grze:** Zaktualizowano dane autora (MENTOS GAMES) i poprawiono literówki.
+
+**Architektura i porządki:**
+- **Refaktoryzacja `gameStore`:** Podzielono główny sklep na mniejsze "slice'y": `gameSlice.ts` (tury, finanse, pracownicy), `combatSlice.ts` (skarbówka), `newsSlice.ts` (skrzynka) i `chaseSlice.ts` (minigra mafii). Główny plik `gameStore.ts` stał się cienką warstwą do zapisu/odczytu.
+- **Ujednolicenie typów:** Usunięto stare nazwy `Aktywa` i `Pasywa`. W całym projekcie (typach, akcjach i UI) używane są teraz `Wplywy` i `Wydatki`.
+- **Sprzątanie długu technologicznego:** Usunięto zbędne `Math.random()`, zduplikowane importy i martwe typy.
+
+**Testy:**
+- Wszystkie 66 testów przechodzi (w tym testy walidacji struktury JSON).
+
 ## (2026-10-19) — Nowe UI, Denominacja i Pracownicy
 
 **Nowe mechaniki:**

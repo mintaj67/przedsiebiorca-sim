@@ -5,8 +5,9 @@ import type {
   Ideology,
   PresidentialCandidate,
   PresidentialResult,
+  PartySize
 } from './types';
-import { COALITION_RULES, CANDIDATE_FIRST_NAMES, CANDIDATE_LAST_NAMES } from './constants';
+import { COALITION_RULES, CANDIDATE_FIRST_NAMES, CANDIDATE_LAST_NAMES, PARTY_SIZE_WEIGHT, ELECTION_YEARS } from './constants';
 import { makeRng } from './rng';
 import partiesData from '../data/parties.json';
 import presidentialElectionsData from '../data/presidential_elections.json';
@@ -33,9 +34,12 @@ interface PredefinedElection {
 export function tickPolitics(state: GameState): GameState {
   if (state.year >= state.politics.nextParliamentaryElection) {
     state.politics = runParliamentaryElection(state);
-    state.politics.nextParliamentaryElection += 4;
     state.lastElectionResult = state.politics.lastElection;
+
+    const nextElectionYear = ELECTION_YEARS.find(y => y > state.year);
+    state.politics.nextParliamentaryElection = nextElectionYear ?? (state.year + 4);
   }
+  
   if (state.year >= state.politics.nextPresidentialElection) {
     const result = computePresidentialElection(state);
     state.lastPresidentialResult = result;
@@ -54,12 +58,24 @@ export function tickPolitics(state: GameState): GameState {
   return state;
 }
 
+export function getPartySize(party: Party, year: number): PartySize {
+  const sched = party.sizeSchedule.find(s => year >= s.from && year <= s.to);
+  return sched ? sched.size : 'medium';
+}
+
 function activeParties(state: GameState): Party[] {
   return (partiesData as Party[]).filter(p => {
     if (p.isPSL && !state.politics.pslAvailable) return false;
     const sched = state.politics.partySchedule[p.id];
-    if (!sched) return false;
-    return state.year >= sched.from && state.year <= sched.to;
+    const isYearValid = sched ? (state.year >= sched.from && state.year <= sched.to) : (state.year >= p.activeFrom && state.year <= p.activeTo);
+    if (!isYearValid) return false;
+
+    if (p.pzprAvailable !== 'both') {
+      const playerIsPzpr = state.ceo.party === 'PZPR';
+      if (playerIsPzpr && p.pzprAvailable === 'no') return false;
+      if (!playerIsPzpr && p.pzprAvailable === 'yes') return false;
+    }
+    return true;
   });
 }
 
@@ -68,12 +84,8 @@ function randomName(rng: ReturnType<typeof makeRng>): string {
 }
 
 function computePresidentialElection(state: GameState): PresidentialResult {
-  const predefined = (presidentialElectionsData as PredefinedElection[])
-    .find(e => e.year === state.year);
-
-  if (predefined) {
-    return computeFromPredefined(state, predefined);
-  }
+  const predefined = (presidentialElectionsData as PredefinedElection[]).find(e => e.year === state.year);
+  if (predefined) return computeFromPredefined(state, predefined);
   return computeRandomElection(state);
 }
 
@@ -81,23 +93,21 @@ function computeFromPredefined(state: GameState, pre: PredefinedElection): Presi
   const rng = makeRng(state.seed, state.year * 100 + 2);
 
   const candidates: PresidentialCandidate[] = pre.candidates.map(c => {
-    // Trzy rzuty, uśrednione — daje rozkład dzwonowy wokół środka
     const mid = (c.minPercent + c.maxPercent) / 2;
     const pull = c.typicalPercent - mid;
     const rolls = (rng.next() + rng.next() + rng.next()) / 3;
     const base = c.minPercent + (c.maxPercent - c.minPercent) * rolls;
     const value = Math.max(c.minPercent, Math.min(c.maxPercent, base + pull));
 
-   return {
-  id: c.id,
-  name: c.name,
-  partyId: c.partyId,
-  partyLabel: c.partyLabel ?? (c.partyId ? c.partyId.replace(/_/g, ' ') : 'niezależny'),
-  votesPercent: value,
+    return {
+      id: c.id,
+      name: c.name,
+      partyId: c.partyId,
+      partyLabel: c.partyLabel,
+      votesPercent: value,
     };
   });
 
-  // Normalizacja do 100%
   const total = candidates.reduce((s, c) => s + c.votesPercent, 0);
   for (const c of candidates) c.votesPercent = (c.votesPercent / total) * 100;
   candidates.sort((a, b) => b.votesPercent - a.votesPercent);
@@ -125,23 +135,17 @@ function computeFromPredefined(state: GameState, pre: PredefinedElection): Presi
     }
   }
 
-  return {
-    year: state.year,
-    candidates,
-    winner,
-    secondRound,
-    secondRoundCandidates,
-  };
+  return { year: state.year, candidates, winner, secondRound, secondRoundCandidates };
 }
 
 function computeRandomElection(state: GameState): PresidentialResult {
   const rng = makeRng(state.seed, state.year * 100 + 2);
   const parties = activeParties(state);
-
   const candidates: PresidentialCandidate[] = [];
 
   for (const p of parties) {
-    const base = p.size === 'large' ? 0.28 : p.size === 'medium' ? 0.14 : 0.06;
+    const size = getPartySize(p, state.year);
+    const base = PARTY_SIZE_WEIGHT[size] || 0.1; // Pobiera wagę zależną od roku
     const noise = (rng.next() - 0.5) * 0.08;
     const strength = Math.max(0.02, base + noise);
     candidates.push({
@@ -180,13 +184,7 @@ function computeRandomElection(state: GameState): PresidentialResult {
     winner = rng.next() < c1Chance ? c1 : c2;
   }
 
-  return {
-    year: state.year,
-    candidates,
-    winner,
-    secondRound,
-    secondRoundCandidates,
-  };
+  return { year: state.year, candidates, winner, secondRound, secondRoundCandidates };
 }
 
 function runParliamentaryElection(state: GameState) {
@@ -196,13 +194,15 @@ function runParliamentaryElection(state: GameState) {
   let remaining = SEATS_TOTAL;
 
   for (const p of parties) {
-    const base = p.size === 'large' ? 0.25 : p.size === 'medium' ? 0.12 : 0.05;
-    const noise = (rng.next() - 0.5) * 0.1;
+    const size = getPartySize(p, state.year);
+    const base = PARTY_SIZE_WEIGHT[size] || 0.1; // Pobiera wagę zależną od roku
+    const noise = (rng.next() - 0.5) * 0.08;
     const share = Math.max(0, base + noise);
     const s = Math.floor(share * SEATS_TOTAL);
     seats[p.id] = s;
     remaining -= s;
   }
+  
   if (parties.length > 0) {
     const largest = parties.reduce((a, b) => (seats[a.id] > seats[b.id] ? a : b));
     seats[largest.id] += remaining;
@@ -211,12 +211,8 @@ function runParliamentaryElection(state: GameState) {
   const coalition = formCoalition(parties, seats);
   const premier = coalition[0] ?? null;
 
-  const result: ElectionResult = {
-    year: state.year,
-    seats,
-    coalition,
-    premierId: premier,
-  };
+  const result: ElectionResult = { year: state.year, seats, coalition, premierId: premier };
+  
   return {
     ...state.politics,
     parties,
