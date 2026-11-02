@@ -1,0 +1,20 @@
+{
+  "odziez": {
+    "suppliers": [
+      { "id": "azjata", "name": "Podejrzany Azjata", "quality": 1, "price": 50, "desc": "Oferuje ubrania bez metek z podejrzanej walizki.", "req": {} },
+      { "id": "spod_bramy", "name": "Podejrzany mężczyzna spod bramy", "quality": 2, "price": 100, "desc": "Twierdzi, że to 'oryginały z transportu'.", "req": {} },
+      { "id": "firma_polonijna", "name": "Firma Polonijna", "quality": 4, "price": 300, "desc": "Sprowadzane z Chicago ubrania z drugiej ręki.", "req": {} },
+      { "id": "marynarze", "name": "Marynarze", "quality": 5, "price": 500, "desc": "Przemyt z Tajwanu. Podobno nie przemokło.", "req": {} },
+      { "id": "lumpeks", "name": "Lumpeks z Niemiec", "quality": 7, "price": 1000, "desc": "Sortowany towar z zachodnich kontenerów.", "req": {} },
+      { "id": "importer", "name": "Importer z zagranicy", "quality": 9, "price": 3000, "desc": "Legalny towar, wysokiej jakości podróbki znanych marek.", "req": { "minRepBranza": 50 } },
+      { "id": "mafia", "name": "Mafia", "quality": 6, "price": 200, "desc": "Towar z 'wpadki'. Nie zadawaj pytań.", "req": { "minRepMafia": 31 } }
+    ],
+    "buyers": [
+      { "id": "podejrzani", "name": "Podejrzani handlarze bazarowi", "multiplier": 1.5, "desc": "Kupią wszystko, byle tanio.", "req": {}, "complaints": false },
+      { "id": "przecietni", "name": "Przeciętni handlarze bazarowi", "multiplier": 2.0, "desc": "Wymagają, żeby towar jakoś wyglądał.", "req": {}, "complaints": true },
+      { "id": "obrotni", "name": "Obrótni handlarze bazarowi", "multiplier": 2.5, "desc": "Odbiorą każdą ilość, jeśli cena jest dobra.", "req": {}, "complaints": true },
+      { "id": "sklepy_odziezowe", "name": "Sklepy odzieżowe", "multiplier": 3.5, "desc": "Płacą najwięcej, ale nienawidzą podróbek.", "req": { "minRepPubliczna": 40 }, "complaints": true },
+      { "id": "sklepy_uzywane", "name": "Sklepy z używaną odzieżą", "multiplier": 1.8, "desc": "Skupują hurtowo.", "req": {}, "complaints": false }
+    ]
+  }
+}

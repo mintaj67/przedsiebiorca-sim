@@ -1,3 +1,23 @@
+## 0.90 (2026-10-28) — Nowy system partii, działalności i ekran wprowadzający
+
+**Nowe mechaniki:**
+- **Nowy system Działalności (Branż):** Zamiast płaskiej listy mamy teraz 5 kategorii (Handel, Produkcja, Kultura, Usługi, Gastronomia) i podkategorie. Każda podkategoria ma własny bazowy wskaźnik reputacji i powiązań z mafią.
+- **Losowanie Działalności:** Ekran zmiany działalności losuje 4 opcje (3 z jednej głównej kategorii + 1 z innej). Posiadanie komputera w ekwipunku zwiększa tę liczbę do 6 opcji.
+- **Dynamiczne rozmiary partii (`sizeSchedule`):** Partie zmieniają swój rozmiar w zależności od roku (np. SLD to gigant w latach 90., a później traci na znaczeniu). Rozmiar bezpośrednio wpływa na wyniki wyborów i koalicje.
+- **Nowe Ideologie i Koalicje:** Wprowadzono 5 osi poglądów (od skrajnej lewicy do skrajnej prawicy) i zaktualizowano reguły zawiązywania koalicji.
+- **Ekran Wprowadzający (`IntroScreen`):** Po rozpoczęciu nowej gry wyświetla się fabularyzowane wprowadzenie (Etap 1: Chaos). Tekst dynamicznie dostosowuje się do wybranej partii (PZPR/opozycja), rozmiaru firmy, poziomu trudności i wybranej działalności.
+- **Opisy partii:** Partie mają teraz pule tekstów wyświetlanych na ekranie wyboru oraz osobny cytat wyświetlany po dołączeniu do ugrupowania.
+- **Losowanie partii:** Ekran Polityki pokazuje 4 losowe partie (z gwarancją, że jest po jednej z lewicy, centrum i prawicy), aby uniknąć pustych zakładek.
+
+**Zmiany w UI:**
+- **Ekran startowy:** Podzielono wybór działalności na dwa osobne dropdowny (Kategoria i Podkategoria). Usunięto opisy z sekcji trudności i przynależności politycznej.
+- **Nagłówek gry:** Zaktualizowano nazwę etapu na "Etap 1: Chaos".
+
+**Architektura i poprawki:**
+- **Rozdzielenie plików:** Przeniesiono definicje branż do `branches.json` (zostawiając codzienne akcje w `activities.json`).
+- **Aktualizacja testów:** Zaktualizowano testy walidacyjne JSON, dostosowując je do nowej struktury kategorii i dynamicznych partii.
+- **Porządki:** Usunięto setki nieużywanych importów, zmiennych i ostrzeżeń TypeScriptu.
+
 ## 0.85 (2026-10-25) — Ekwipunek, Pory Roku i Minigra Ucieczki
 
 **Nowe mechaniki:**

@@ -86,6 +86,10 @@ export function createInitialState(opts: {
       },
       loans: [],
       lastActivityChangeTurn: -999,
+      branches: 0,
+      resources: {},
+      audience: 0,
+      warehouseCapacity: 50,
     },
 
     politics: {
@@ -120,7 +124,11 @@ export function createInitialState(opts: {
     activeChase: null,    
     news: [],
     showIntro: true,
+    profitabilityScore: 50,
+    profitabilityTrend: 'neutral',
     gameOver: null,
+    pendingSales: [],
+    pendingComplaints: []  
   };
 }
 

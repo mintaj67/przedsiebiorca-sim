@@ -1,7 +1,19 @@
 import type { StateCreator } from 'zustand';
 import type { ContractType, Pace } from '../../engine/types';
 import { nextTurn, consumeActivity as consumeActivityEngine, resolveEventChoice, dismissConsequence } from '../../engine/turn';
-import { applyHire, applyLoan, applyChangeActivity, applyJoinParty, applyLeaveParty, applyEmergencyLoan, applySetPace, toggleAccountant, buyOfficeItem } from '../../engine/actions';
+import { 
+  applyHire, applyLoan, applyChangeActivity, applyJoinParty, applyLeaveParty, 
+  applyEmergencyLoan, applySetPace, toggleAccountant,
+  changeCompanySize as changeCompanySizeEngine, 
+  buildBranch as buildBranchEngine,
+  buyResource as buyResourceEngine,   
+  sellResource as sellResourceEngine, 
+  buyAd as buyAdEngine,
+  buyGoods as buyGoodsEngine,
+  sellGoods as sellGoodsEngine,
+  resolveComplaint as resolveComplaintEngine,
+  rentWarehouse as rentWarehouseEngine // <- DODANO BRAKUJĄCY IMPORT
+} from '../../engine/actions';
 import { autosave } from '../autosave';
 
 export interface GameSlice {
@@ -19,7 +31,17 @@ export interface GameSlice {
   toggleAccountant: () => void;
   dismissElection: () => void;
   dismissPresidentialResult: () => void;
-  buyOfficeItem: (itemId: string, price: number) => void;
+  changeCompanySize: (direction: 'up' | 'down') => void;
+  buildBranch: () => void;
+  buyResource: (resId: string, amount: number, basePrice: number) => void;
+  sellResource: (resId: string, amount: number, basePrice: number) => void;
+  buyAd: (type: 'radio' | 'tv' | 'internet') => void;
+  
+  // POPRAWIONE SYGNATURY HANDLU:
+  buyGoods: (supplier: any, amount: number) => void;
+  sellGoods: (buyer: any, resId: string, amount: number, baseValue: number) => void;
+  resolveComplaint: (id: string, accept: boolean) => void;
+  rentWarehouse: () => void;
 }
 
 export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) => ({
@@ -135,11 +157,76 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     set({ state: next, savesVersion: Date.now() });
   },
 
-   buyOfficeItem: (itemId, price) => {
+  changeCompanySize: (direction) => {
     const s = get().state;
     if (!s) return;
-    const next = buyOfficeItem(s, itemId, price);
+    const next = changeCompanySizeEngine(s, direction);
     autosave(next, get().currentSlotId);
     set({ state: next, savesVersion: Date.now() });
-  }, 
+  },
+
+  buildBranch: () => {
+    const s = get().state;
+    if (!s) return;
+    const next = buildBranchEngine(s);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  buyResource: (resId, amount, price) => {
+    const s = get().state;
+    if (!s) return;
+    const next = buyResourceEngine(s, resId, amount, price);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  sellResource: (resId, amount, price) => {
+    const s = get().state;
+    if (!s) return;
+    const next = sellResourceEngine(s, resId, amount, price);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  buyAd: (type) => {
+    const s = get().state;
+    if (!s) return;
+    const next = buyAdEngine(s, type);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  // NOWE WERSJE HANDLU Z POPRAWIONYMI ARGUMENTAMI:
+  buyGoods: (supplier, amount) => {
+    const s = get().state;
+    if (!s) return;
+    const next = buyGoodsEngine(s, supplier, amount);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  sellGoods: (buyer, resId, amount, baseValue) => {
+    const s = get().state;
+    if (!s) return;
+    const next = sellGoodsEngine(s, buyer, resId, amount, baseValue);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  resolveComplaint: (id, accept) => {
+    const s = get().state;
+    if (!s) return;
+    const next = resolveComplaintEngine(s, id, accept);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
+
+  rentWarehouse: () => {
+    const s = get().state;
+    if (!s) return;
+    const next = rentWarehouseEngine(s);
+    autosave(next, get().currentSlotId);
+    set({ state: next, savesVersion: Date.now() });
+  },
 });

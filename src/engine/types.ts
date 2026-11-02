@@ -1,7 +1,7 @@
 export type Phase = 'chaos' | 'duopol' | 'invasion';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Pace = 'quarter' | 'year';
-export type CompanySize = 'micro' | 'small' | 'medium';
+export type CompanySize = 'micro' | 'small' | 'medium' | 'large' | 'very_large' | 'corporation';
 export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about' | 'saves';
 export type PoliticalSide = 'PZPR' | 'independent' | 'opposition' | 'none';
 export type Ideology = 'radical_right' | 'moderate_right' | 'center' | 'moderate_left' | 'radical_left';
@@ -74,7 +74,11 @@ export interface Company {
   loans: Loan[];
   lastActivityChangeTurn: number;
   hasAccountant: boolean;
-  inventory: string[]; // <-- Nowe pole na przyszłe przedmioty
+  inventory: string[];
+  branches: number;
+  resources: Record<string, number>;
+  audience: number;
+  warehouseCapacity: number; 
 }
 
 export interface PartySizeSchedule {
@@ -332,6 +336,24 @@ export interface ChaseState {
   result: 'escaped' | 'caught' | null;
 }
 
+export interface Complaint {
+  id: string;
+  itemName: string;
+  buyerName: string;
+  penalty: number; // Ile tracimy reputacji, jeśli zignorujemy
+}
+
+export interface PendingSale {
+  id: string;
+  buyerName: string;
+  resId: string;
+  amount: number;
+  estimatedRevenue: number;
+  quality: number;
+  hasComplaints: boolean;
+}
+
+
 export interface GameState {
   schemaVersion: number;
   seed: string;
@@ -341,9 +363,6 @@ export interface GameState {
   phase: Phase;
   difficulty: Difficulty;
   pace: Pace;
-  
-
-
   ceo: CEO;
   company: Company;
   politics: PoliticsState;
@@ -360,6 +379,9 @@ export interface GameState {
   news: NewsItem[];
   activeChase: ChaseState | null;
   showIntro: boolean;
-  
+  profitabilityScore: number;
+  profitabilityTrend: 'up2' | 'up1' | 'neutral' | 'down1' | 'down2';
+  pendingComplaints: Complaint[]; // <-- DODAJ
+  pendingSales: PendingSale[];
   gameOver: null | { reason: string };
 }

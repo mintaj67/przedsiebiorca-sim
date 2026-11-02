@@ -10,6 +10,7 @@ import { generatePassiveNews, processExpiredActions, checkMafiaInvitation, check
 import { applyEffects } from './actions';
 import { startTaxCombat } from './combat';
 import { startChase } from './chase';
+import { resolvePendingSales } from './actions';
 
 const REPUTATION_LABELS: Record<string, string> = {
   branza: 'Branża',
@@ -59,7 +60,8 @@ export function nextTurn(state: GameState): GameState {
   const oldPhase = s.phase;
 
   for (let i = 0; i < quarters; i++) {
-    s = tickEconomy(s);
+    resolvePendingSales(s);
+    s = tickEconomy(s); 
   }
 
   s = tickPolitics(s);

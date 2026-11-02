@@ -83,36 +83,25 @@ export const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, { title: string; descri
 
 import type { CompanySize } from './types';
 
-export const COMPANY_SIZE_CONFIG: Record<CompanySize, {
-  label: string;
-  description: string;
-  requiredWorkers: number;
-  cashMultiplier: number;
-  startingEmployees: { bezUmowy: number; zlecenie: number; uop: number };
-}> = {
-  micro: {
-    label: 'Mikro',
-    description: 'Firma jednoosobowa lub z kilkoma współpracownikami. Minimum formalności, minimum kosztów. Trudno o duże kontrakty.',
-    requiredWorkers: 0,
-    cashMultiplier: 1.0,
-    startingEmployees: { bezUmowy: 0, zlecenie: 0, uop: 0 },
-  },
-  small: {
-    label: 'Mała',
-    description: 'Kilku pracowników na zleceniach. Większe możliwości, ale i większe koszty stałe.',
-    requiredWorkers: 3,
-    cashMultiplier: 1.5,
-    startingEmployees: { bezUmowy: 0, zlecenie: 3, uop: 0 },
-  },
-  medium: {
-    label: 'Średnia',
-    description: 'Kilkunastu pracowników, lokal, księgowość. Prawdziwy biznes i prawdziwe ryzyko.',
-    requiredWorkers: 10,
-    cashMultiplier: 2.2,
-    startingEmployees: { bezUmowy: 0, zlecenie: 7, uop: 3 },
-  },
+export const COMPANY_SIZE_CONFIG: Record<CompanySize, { label: string, requiredWorkers: number, cashMultiplier: number, startingEmployees: { bezUmowy: number, zlecenie: number, uop: number } }> = {
+  micro: { label: 'Mikro', requiredWorkers: 0, cashMultiplier: 1.0, startingEmployees: { bezUmowy: 0, zlecenie: 0, uop: 0 } },
+  small: { label: 'Mała', requiredWorkers: 5, cashMultiplier: 1.5, startingEmployees: { bezUmowy: 0, zlecenie: 3, uop: 0 } },
+  medium: { label: 'Średnia', requiredWorkers: 15, cashMultiplier: 2.2, startingEmployees: { bezUmowy: 0, zlecenie: 7, uop: 3 } },
+  large: { label: 'Duża', requiredWorkers: 50, cashMultiplier: 4.0, startingEmployees: { bezUmowy: 0, zlecenie: 30, uop: 20 } },
+  very_large: { label: 'Bardzo duża', requiredWorkers: 150, cashMultiplier: 8.0, startingEmployees: { bezUmowy: 0, zlecenie: 100, uop: 50 } },
+  corporation: { label: 'Korporacja', requiredWorkers: 500, cashMultiplier: 15.0, startingEmployees: { bezUmowy: 0, zlecenie: 300, uop: 200 } },
 };
 
+export const COMPANY_EXPANSION_CONFIG: Record<CompanySize, { cost: number, repBonus: number, repPenalty: number }> = {
+  micro: { cost: 0, repBonus: 0, repPenalty: -10 },
+  small: { cost: 50000, repBonus: 5, repPenalty: -15 },
+  medium: { cost: 150000, repBonus: 10, repPenalty: -20 },
+  large: { cost: 500000, repBonus: 15, repPenalty: -25 },
+  very_large: { cost: 1500000, repBonus: 20, repPenalty: -30 },
+  corporation: { cost: 5000000, repBonus: 25, repPenalty: -35 },
+};
+
+export const BRANCH_COST = 250000;
 export const PSL_AVAILABILITY_CHANCE = 0.67;
 export const BELOW_REQUIRED_WORKERS_PENALTY = 2;
 

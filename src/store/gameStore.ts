@@ -4,7 +4,6 @@ import { createInitialState, getEligibleActivities } from '../engine/initialStat
 import { useSettingsStore } from './settingsStore';
 import { loadSlotsFromStorage, persistSlots } from './autosave';
 import type { SaveSlots } from './autosave';
-
 import type { CombatSlice } from './slices/combatSlice';
 import { createCombatSlice } from './slices/combatSlice';
 import type { NewsSlice } from './slices/newsSlice';

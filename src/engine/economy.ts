@@ -25,6 +25,7 @@ function calculateWorkerRevenue(count: number, baseRevenue: number): number {
 }
 
 export function tickEconomy(state: GameState): GameState {
+  const oldProfitability = state.profitabilityScore;  
   const c = structuredClone(state.company);
   const f = c.finances;
 
@@ -79,6 +80,39 @@ export function tickEconomy(state: GameState): GameState {
   } else {
     state.bankruptWarningTurns = 0;
   }
+
+    // --- OBLICZANIE RENTOWNOŚCI ---
+  // 1. Baza
+  let score = 50;
+
+  // 2. Wpływ rozmiaru firmy (większa firma = trudniej o rentowność)
+  if (c.size === 'micro') score += 10;
+  else if (c.size === 'small') score += 5;
+  else if (c.size === 'medium') score -= 5;
+
+  // 3. Wpływ wydajności pracowników (stosunek przychodu do kosztów pracowniczych)
+  if (f.wydatki.pracownicy > 0) {
+    const ratio = f.wplywy.przychodyZDzialalnosci / f.wydatki.pracownicy;
+    // Jeśli przychód z pracowników jest 2x większy niż ich pensje, dodajemy punkty
+    score += Math.min(20, (ratio - 1) * 10);
+  }
+
+  // 4. Wpływ jakości/reputacji (opinia w branży i publiczna)
+  const avgRep = (c.reputation.opiniaBranza + c.reputation.opiniaPubliczna) / 2;
+  score += (avgRep - 50) / 2;
+
+  // (Miejsce na przyszły popyt rynkowy: score += marketDemand;)
+
+  // Klamrowanie 0-100
+  state.profitabilityScore = Math.max(0, Math.min(100, Math.round(score)));
+
+  // Ustalanie trendu na podstawie różnicy
+  const diff = state.profitabilityScore - oldProfitability;
+  if (diff > 5) state.profitabilityTrend = 'up2';
+  else if (diff > 0) state.profitabilityTrend = 'up1';
+  else if (diff < -5) state.profitabilityTrend = 'down2';
+  else if (diff < 0) state.profitabilityTrend = 'down1';
+  else state.profitabilityTrend = 'neutral';
 
   return state;
 }

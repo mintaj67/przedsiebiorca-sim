@@ -1,12 +1,14 @@
-import type { GameState, ContractType, Pace, EventEffects } from './types';
+import type { GameState, ContractType, Pace, EventEffects, CompanySize, NewsItem} from './types';
 import {
   MAX_PARTY_SWITCHES_PER_PHASE,
   ACTIVITY_CHANGE_COOLDOWN,
   BANKRUPT_EMERGENCY_LOAN,
   WORKER_CONFIG,
-  ACTIVITY_MAFIA_BASELINE,
+  COMPANY_EXPANSION_CONFIG,
+  BRANCH_COST,
+  MAX_NEWS
 } from './constants';
-import { getActivityData } from './activityHelper'
+import { getActivityData } from './activityHelper';
 import { recomputeReputation } from './reputation';
 
 const clamp = (x: number) => Math.max(0, Math.min(100, x));
@@ -67,16 +69,19 @@ export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amo
 export function applyChangeActivity(state: GameState, activity: string): GameState {
   const s = structuredClone(state);
   if (s.turn - s.company.lastActivityChangeTurn < ACTIVITY_CHANGE_COOLDOWN) return s;
+  
   const oldBranza = s.company.reputation.branza;
-  const actData = getActivityData(activity);
+  const actData = getActivityData(activity); 
+  
   s.company.activity = activity;
   s.company.reputation.branza = actData?.rep ?? 50;
-  s.company.reputation.opiniaMafia = actData?.mafia ?? 25; // <-- Aktualizujemy też mafię!
+  s.company.reputation.opiniaMafia = actData?.mafia ?? 25; 
   s.company.lastActivityChangeTurn = s.turn;
+  
   const delta = s.company.reputation.branza - oldBranza;
   s.company.reputation.opiniaBranza = clamp(s.company.reputation.opiniaBranza + delta * 0.3);
   s.company.reputation = recomputeReputation(s);
-  s.company.reputation.opiniaMafia = ACTIVITY_MAFIA_BASELINE[activity] ?? 25;
+  
   return s;
 }
 
@@ -180,5 +185,220 @@ export function applyEffects(state: GameState, e: EventEffects) {
 export function toggleAccountant(state: GameState): GameState {
   const s = structuredClone(state);
   s.company.hasAccountant = !s.company.hasAccountant;
+  return s;
+}
+
+export function changeCompanySize(state: GameState, direction: 'up' | 'down'): GameState {
+  const s = structuredClone(state);
+  const sizes: CompanySize[] = ['micro', 'small', 'medium', 'large', 'very_large', 'corporation'];
+  const currentIndex = sizes.indexOf(s.company.size);
+  
+  let newIndex = currentIndex;
+  if (direction === 'up' && currentIndex < sizes.length - 1) newIndex++;
+  if (direction === 'down' && currentIndex > 0) newIndex--;
+  if (newIndex === currentIndex) return s;
+
+  const newSize = sizes[newIndex];
+  const config = COMPANY_EXPANSION_CONFIG[newSize];
+  
+  if (direction === 'up') {
+    if (s.company.finances.stateKonta < config.cost) return s;
+    s.company.finances.stateKonta -= config.cost;
+    s.company.reputation.opiniaPubliczna += config.repBonus;
+    s.company.reputation.opiniaPracownicy += config.repBonus;
+    s.company.reputation.opiniaBranza += config.repBonus;
+    s.company.reputation.opiniaMedia += config.repBonus;
+  } else {
+    s.company.reputation.opiniaPubliczna += config.repPenalty;
+    s.company.reputation.opiniaPracownicy += config.repPenalty;
+    s.company.reputation.opiniaBranza += config.repPenalty;
+    s.company.reputation.opiniaMedia += config.repPenalty;
+  }
+  
+  s.company.size = newSize;
+  s.company.reputation = recomputeReputation(s);
+  return s;
+}
+
+export function buildBranch(state: GameState): GameState {
+  const s = structuredClone(state);
+  if (!['large', 'very_large', 'corporation'].includes(s.company.size)) return s;
+  if (s.company.finances.stateKonta < BRANCH_COST) return s;
+  
+  s.company.finances.stateKonta -= BRANCH_COST;
+  s.company.branches += 1;
+  s.company.reputation.opiniaBranza += 5;
+  s.company.reputation = recomputeReputation(s);
+  return s;
+}
+
+export function buyResource(state: GameState, resourceId: string, amount: number, basePrice: number): GameState {
+  const s = structuredClone(state);
+  // Im wyższa reputacja w branży i mediach, tym taniej kupujemy (max 50% zniżki)
+  const discount = Math.min(0.5, (s.company.reputation.opiniaBranza + s.company.reputation.opiniaMedia) / 400);
+  const totalCost = Math.round(amount * basePrice * (1 - discount));
+  
+  if (s.company.finances.stateKonta < totalCost) return s;
+  
+  s.company.finances.stateKonta -= totalCost;
+  s.company.resources[resourceId] = (s.company.resources[resourceId] || 0) + amount;
+  return s;
+}
+
+export function sellResource(state: GameState, resourceId: string, amount: number, basePrice: number): GameState {
+  const s = structuredClone(state);
+  const available = s.company.resources[resourceId] || 0;
+  if (available < amount) return s; // Nie masz tyle towaru
+  
+  // Im wyższa reputacja, tym drożej sprzedajemy (do 100% narzutu)
+  const bonus = Math.min(1.0, (s.company.reputation.opiniaBranza + s.company.reputation.opiniaMedia) / 200);
+  const totalRevenue = Math.round(amount * basePrice * (1 + bonus));
+  
+  s.company.finances.stateKonta += totalRevenue;
+  s.company.resources[resourceId] -= amount;
+  
+  // W Kulturze "sprzedaż" to pozyskiwanie odbiorców
+  if (s.company.activity.includes('kult_')) {
+    s.company.audience += amount * 10; 
+  }
+  
+  return s;
+}
+
+export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): GameState {
+  const s = structuredClone(state);
+  let cost = 0;
+  let repGain = 0;
+  let mediaGain = 0;
+
+  if (type === 'radio') { cost = 5000; repGain = 2; mediaGain = 2; }
+  if (type === 'tv') { cost = 50000; repGain = 8; mediaGain = 10; }
+  if (type === 'internet') { cost = 15000; repGain = 4; mediaGain = 5; }
+
+  if (s.company.finances.stateKonta < cost) return s;
+
+  s.company.finances.stateKonta -= cost;
+  s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna + repGain);
+  s.company.reputation.opiniaMedia = clamp(s.company.reputation.opiniaMedia + mediaGain);
+  s.company.reputation = recomputeReputation(s);
+  
+  return s;
+}
+
+export function buyGoods(state: GameState, supplier: any, amount: number): GameState {
+  const s = structuredClone(state);
+
+  const currentStock = Object.values(s.company.resources).reduce((a, b) => a + b, 0);
+  if (currentStock + amount > s.company.warehouseCapacity) return s;
+
+  // Obliczanie ceny hurtowej (im więcej, tym taniej)
+  let discount = 0;
+  if (amount === 10) discount = 0.1; // 10% taniej
+  if (amount === 100) discount = 0.25; // 25% taniej
+
+  const totalCost = Math.round(supplier.price * amount * (1 - discount));
+  if (s.company.finances.stateKonta < totalCost) return s;
+
+  s.company.finances.stateKonta -= totalCost;
+  const resId = `${supplier.id}_${supplier.quality}`;
+  s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
+  
+  return s;
+}
+
+export function sellGoods(state: GameState, buyer: any, resId: string, amount: number, baseValue: number): GameState {
+  const s = structuredClone(state);
+  const available = s.company.resources[resId] || 0;
+  if (available < amount) return s;
+
+  // Zabieramy towar z magazynu od razu
+  s.company.resources[resId] -= amount;
+
+  const quality = parseInt(resId.split('_')[1]);
+  const estimatedRevenue = Math.round(baseValue * buyer.multiplier * amount);
+
+  // Dodajemy do kolejki sprzedaży (rozliczy się w następnej turze)
+  s.pendingSales.push({
+    id: `sale_${Date.now()}_${Math.random()}`,
+    buyerName: buyer.name,
+    resId,
+    amount,
+    estimatedRevenue,
+    quality,
+    hasComplaints: buyer.complaints
+  });
+
+  return s;
+}
+
+export function rentWarehouse(state: GameState): GameState {
+  const s = structuredClone(state);
+  const cost = 10000;
+  if (s.company.finances.stateKonta < cost) return s;
+  
+  s.company.finances.stateKonta -= cost;
+  s.company.warehouseCapacity += 50;
+  return s;
+}
+
+export function resolvePendingSales(state: GameState): void {
+  if (state.pendingSales.length === 0) return;
+
+  let totalRevenue = 0;
+
+  for (const sale of state.pendingSales) {
+    const variance = 0.9 + (Math.random() * 0.2);
+    const actualRevenue = Math.round(sale.estimatedRevenue * variance);
+    totalRevenue += actualRevenue;
+    
+    state.company.finances.stateKonta += actualRevenue;
+
+    // Szansa na reklamację
+    if (sale.hasComplaints && sale.quality < 5) {
+      const chance = 0.6 - (sale.quality * 0.1);
+      if (Math.random() < chance) {
+        state.pendingComplaints.push({
+          id: `comp_${Date.now()}_${Math.random()}`,
+          itemName: sale.resId.split('_')[0],
+          buyerName: sale.buyerName,
+          penalty: 10 - sale.quality
+        });
+      }
+    }
+  }
+
+  // Generowanie wiadomości z podsumowaniem
+  if (totalRevenue > 0) {
+    const newsItem: NewsItem = {
+      id: `sales_report_${state.turn}_${Date.now()}`,
+      turn: state.turn,
+      year: state.year,
+      quarter: state.quarter,
+      headline: 'Rozliczenie sprzedaży',
+      body: `Kontrahenci uiścili płatności za dostarczone towary. Na Twoje konto wpłynęło ${totalRevenue.toLocaleString('pl-PL')} PLN.`,
+      category: 'economy',
+      read: false
+    };
+    state.news.unshift(newsItem);
+    if (state.news.length > MAX_NEWS) state.news.pop();
+  }
+
+  state.pendingSales = []; // Czyścimy kolejkę
+}
+
+export function resolveComplaint(state: GameState, id: string, accept: boolean): GameState {
+  const s = structuredClone(state);
+  const comp = s.pendingComplaints.find(c => c.id === id);
+  if (!comp) return s;
+
+  if (accept) {
+    s.company.finances.stateKonta -= 5000; // Koszt przyjęcia zwrotu
+    s.company.reputation.opiniaPubliczna += 2; // Lekki plus za uczciwość
+  } else {
+    s.company.reputation.opiniaPubliczna -= comp.penalty;
+    s.company.reputation.opiniaBranza -= comp.penalty;
+  }
+
+  s.pendingComplaints = s.pendingComplaints.filter(c => c.id !== id);
   return s;
 }

@@ -1,5 +1,5 @@
 import { useGameStore, SLOT_IDS, MAX_SLOTS } from '../../store/gameStore';
-import type { SaveSlot } from '../../store/gameStore';
+import type { SaveSlot } from '../../store/autosave';
 
 export function SavesScreen() {
   const {
