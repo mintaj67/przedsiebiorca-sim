@@ -278,7 +278,7 @@ export function checkTaxOfficeNotice(state: GameState): void {
         label: 'Wysyłasz kwiaty do urzędu',
         description: `Kosztuje ${FLOWERS_COST} PLN, ale może poprawić nastroje.`,
         effects: {
-          stateKonta: -FLOWERS_COST,
+          stanKonta: -FLOWERS_COST,
           reputation: { opiniaSkarbowa: FLOWERS_BONUS },
         },
       },

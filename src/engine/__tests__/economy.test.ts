@@ -71,11 +71,11 @@ describe('tickEconomy', () => {
 
   it('po turze z dodatnim saldem stanKonta rośnie', () => {
     const state = makeState();
-    const before = state.company.finances.stateKonta;
+    const before = state.company.finances.stanKonta;
 
     const result = tickEconomy(state);
 
-    expect(result.company.finances.stateKonta).toBeGreaterThan(before);
+    expect(result.company.finances.stanKonta).toBeGreaterThan(before);
   });
 
   it('resetuje bankruptWarningTurns gdy saldo dodatnie', () => {
@@ -89,7 +89,7 @@ describe('tickEconomy', () => {
 
   it('zwiększa bankruptWarningTurns gdy saldo ujemne', () => {
     const state = makeState();
-    state.company.finances.stateKonta = -100_000;
+    state.company.finances.stanKonta = -100_000;
     state.bankruptWarningTurns = 0;
 
     const result = tickEconomy(state);

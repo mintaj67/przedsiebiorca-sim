@@ -30,7 +30,7 @@ export function OfficeScreen() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {(officeItems as Array<{ id: string; name: string; price: number; description: string }>).map(item => {
           const owned = state.company.inventory.includes(item.id);
-          const canAfford = state.company.finances.stateKonta >= item.price;
+          const canAfford = state.company.finances.stanKonta >= item.price;
 
           return (
             <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 flex flex-col justify-between">

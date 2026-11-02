@@ -10,6 +10,7 @@ import {
 } from './constants';
 import { getActivityData } from './activityHelper';
 import { recomputeReputation } from './reputation';
+import { makeRng } from './rng';
 
 const clamp = (x: number) => Math.max(0, Math.min(100, x));
 
@@ -22,10 +23,10 @@ export function applyHire(state: GameState, contract: ContractType, delta: numbe
   if (actualDelta < 0 && contract === 'uop') {
     const fired = Math.abs(actualDelta);
     const severance = fired * WORKER_CONFIG.uop.severance;
-    if (s.company.finances.stateKonta < severance) {
+    if (s.company.finances.stanKonta < severance) {
       return s;
     }
-    s.company.finances.stateKonta -= severance;
+    s.company.finances.stanKonta -= severance;
   }
 
   if (actualDelta < 0 && contract !== 'uop') {
@@ -60,7 +61,7 @@ export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amo
     interestRate: rate,
     quartersLeft: 12,
   });
-  s.company.finances.stateKonta += amount;
+  s.company.finances.stanKonta += amount;
   if (source === 'bank') s.company.finances.wplywy.srodkiZKredytow += amount;
   else s.company.finances.wplywy.dofinansowaniaSzaraStrefa += amount;
   return s;
@@ -104,6 +105,7 @@ export function applyLeaveParty(state: GameState): GameState {
 
 export function applyEmergencyLoan(state: GameState): GameState {
   const s = structuredClone(state);
+  if (s.company.finances.stanKonta > 0) return s; // Kredyt tylko gdy jesteśmy pod wodą
   s.company.loans.push({
     id: `emergency_${s.turn}`,
     source: 'bank',
@@ -112,7 +114,7 @@ export function applyEmergencyLoan(state: GameState): GameState {
     interestRate: BANKRUPT_EMERGENCY_LOAN.interestRate,
     quartersLeft: BANKRUPT_EMERGENCY_LOAN.quartersLeft,
   });
-  s.company.finances.stateKonta += BANKRUPT_EMERGENCY_LOAN.amount;
+  s.company.finances.stanKonta += BANKRUPT_EMERGENCY_LOAN.amount;
   s.bankruptWarningTurns = 0;
   return s;
 }
@@ -125,10 +127,10 @@ export function applySetPace(state: GameState, pace: Pace): GameState {
 
 export function buyOfficeItem(state: GameState, itemId: string, price: number): GameState {
   const s = structuredClone(state);
-  if (s.company.finances.stateKonta < price) return s; // Brak kasy
+  if (s.company.finances.stanKonta < price) return s; // Brak kasy
   if (s.company.inventory.includes(itemId)) return s; // Już to masz
   
-  s.company.finances.stateKonta -= price;
+  s.company.finances.stanKonta -= price;
   s.company.inventory.push(itemId);
   return s;
 }
@@ -139,7 +141,7 @@ export function applyEffects(state: GameState, e: EventEffects) {
       (state.company.reputation as any)[k] = clamp((state.company.reputation as any)[k] + (v as number));
     }
   }
-  if (e.stateKonta) state.company.finances.stateKonta += e.stateKonta;
+  if (e.stanKonta) state.company.finances.stanKonta += e.stanKonta;
   if (e.wplywy) for (const [k, v] of Object.entries(e.wplywy)) {
     (state.company.finances.wplywy as any)[k] += v as number;
   }
@@ -155,7 +157,7 @@ export function applyEffects(state: GameState, e: EventEffects) {
   if (e.divideFinances) {
     const div = (n: number) => Math.round((n / 10000) * 100) / 100;
     
-    state.company.finances.stateKonta = div(state.company.finances.stateKonta);
+    state.company.finances.stanKonta = div(state.company.finances.stanKonta);
     
     const wplywy = (state.company.finances as any).wplywy || (state.company.finances as any).aktywa;
     if (wplywy) {
@@ -202,8 +204,8 @@ export function changeCompanySize(state: GameState, direction: 'up' | 'down'): G
   const config = COMPANY_EXPANSION_CONFIG[newSize];
   
   if (direction === 'up') {
-    if (s.company.finances.stateKonta < config.cost) return s;
-    s.company.finances.stateKonta -= config.cost;
+    if (s.company.finances.stanKonta < config.cost) return s;
+    s.company.finances.stanKonta -= config.cost;
     s.company.reputation.opiniaPubliczna += config.repBonus;
     s.company.reputation.opiniaPracownicy += config.repBonus;
     s.company.reputation.opiniaBranza += config.repBonus;
@@ -223,9 +225,9 @@ export function changeCompanySize(state: GameState, direction: 'up' | 'down'): G
 export function buildBranch(state: GameState): GameState {
   const s = structuredClone(state);
   if (!['large', 'very_large', 'corporation'].includes(s.company.size)) return s;
-  if (s.company.finances.stateKonta < BRANCH_COST) return s;
+  if (s.company.finances.stanKonta < BRANCH_COST) return s;
   
-  s.company.finances.stateKonta -= BRANCH_COST;
+  s.company.finances.stanKonta -= BRANCH_COST;
   s.company.branches += 1;
   s.company.reputation.opiniaBranza += 5;
   s.company.reputation = recomputeReputation(s);
@@ -234,34 +236,34 @@ export function buildBranch(state: GameState): GameState {
 
 export function buyResource(state: GameState, resourceId: string, amount: number, basePrice: number): GameState {
   const s = structuredClone(state);
-  // Im wyższa reputacja w branży i mediach, tym taniej kupujemy (max 50% zniżki)
-  const discount = Math.min(0.5, (s.company.reputation.opiniaBranza + s.company.reputation.opiniaMedia) / 400);
+  if (amount <= 0) return s; // Blokada ujemnych ilości
+  
+  const discount = Math.min(0.4, (s.company.reputation.opiniaBranza + s.company.reputation.opiniaMedia) / 500);
   const totalCost = Math.round(amount * basePrice * (1 - discount));
   
-  if (s.company.finances.stateKonta < totalCost) return s;
+  if (s.company.finances.stanKonta < totalCost) return s;
   
-  s.company.finances.stateKonta -= totalCost;
+  s.company.finances.stanKonta -= totalCost;
   s.company.resources[resourceId] = (s.company.resources[resourceId] || 0) + amount;
   return s;
 }
 
 export function sellResource(state: GameState, resourceId: string, amount: number, basePrice: number): GameState {
   const s = structuredClone(state);
+  if (amount <= 0) return s;
+  
   const available = s.company.resources[resourceId] || 0;
-  if (available < amount) return s; // Nie masz tyle towaru
+  if (available < amount) return s;
   
-  // Im wyższa reputacja, tym drożej sprzedajemy (do 100% narzutu)
-  const bonus = Math.min(1.0, (s.company.reputation.opiniaBranza + s.company.reputation.opiniaMedia) / 200);
-  const totalRevenue = Math.round(amount * basePrice * (1 + bonus));
+  const bonus = Math.min(0.8, (s.company.reputation.opiniaBranza + s.company.reputation.opiniaMedia) / 250);
+  const totalRevenue = Math.round(amount * basePrice * 0.8 * (1 + bonus));
   
-  s.company.finances.stateKonta += totalRevenue;
+  s.company.finances.stanKonta += totalRevenue;
   s.company.resources[resourceId] -= amount;
   
-  // W Kulturze "sprzedaż" to pozyskiwanie odbiorców
   if (s.company.activity.includes('kult_')) {
-    s.company.audience += amount * 10; 
+    s.company.audience += amount * 5; 
   }
-  
   return s;
 }
 
@@ -275,9 +277,9 @@ export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): Game
   if (type === 'tv') { cost = 50000; repGain = 8; mediaGain = 10; }
   if (type === 'internet') { cost = 15000; repGain = 4; mediaGain = 5; }
 
-  if (s.company.finances.stateKonta < cost) return s;
+  if (s.company.finances.stanKonta < cost) return s;
 
-  s.company.finances.stateKonta -= cost;
+  s.company.finances.stanKonta -= cost;
   s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna + repGain);
   s.company.reputation.opiniaMedia = clamp(s.company.reputation.opiniaMedia + mediaGain);
   s.company.reputation = recomputeReputation(s);
@@ -297,9 +299,9 @@ export function buyGoods(state: GameState, supplier: any, amount: number): GameS
   if (amount === 100) discount = 0.25; // 25% taniej
 
   const totalCost = Math.round(supplier.price * amount * (1 - discount));
-  if (s.company.finances.stateKonta < totalCost) return s;
+  if (s.company.finances.stanKonta < totalCost) return s;
 
-  s.company.finances.stateKonta -= totalCost;
+  s.company.finances.stanKonta -= totalCost;
   const resId = `${supplier.id}_${supplier.quality}`;
   s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
   
@@ -314,7 +316,8 @@ export function sellGoods(state: GameState, buyer: any, resId: string, amount: n
   // Zabieramy towar z magazynu od razu
   s.company.resources[resId] -= amount;
 
-  const quality = parseInt(resId.split('_')[1]);
+  const parts = resId.split('_');
+  const quality = parseInt(parts[parts.length - 1]) || 1;
   const estimatedRevenue = Math.round(baseValue * buyer.multiplier * amount);
 
   // Dodajemy do kolejki sprzedaży (rozliczy się w następnej turze)
@@ -334,9 +337,9 @@ export function sellGoods(state: GameState, buyer: any, resId: string, amount: n
 export function rentWarehouse(state: GameState): GameState {
   const s = structuredClone(state);
   const cost = 10000;
-  if (s.company.finances.stateKonta < cost) return s;
+  if (s.company.finances.stanKonta < cost) return s;
   
-  s.company.finances.stateKonta -= cost;
+  s.company.finances.stanKonta -= cost;
   s.company.warehouseCapacity += 50;
   return s;
 }
@@ -347,16 +350,17 @@ export function resolvePendingSales(state: GameState): void {
   let totalRevenue = 0;
 
   for (const sale of state.pendingSales) {
-    const variance = 0.9 + (Math.random() * 0.2);
+    const rng = makeRng(state.seed, state.turn * 13 + 9);
+    const variance = 0.9 + (rng.next() * 0.2);
     const actualRevenue = Math.round(sale.estimatedRevenue * variance);
     totalRevenue += actualRevenue;
     
-    state.company.finances.stateKonta += actualRevenue;
+    state.company.finances.stanKonta += actualRevenue;
 
     // Szansa na reklamację
     if (sale.hasComplaints && sale.quality < 5) {
       const chance = 0.6 - (sale.quality * 0.1);
-      if (Math.random() < chance) {
+      if (rng.next() < chance) {
         state.pendingComplaints.push({
           id: `comp_${Date.now()}_${Math.random()}`,
           itemName: sale.resId.split('_')[0],
@@ -392,7 +396,7 @@ export function resolveComplaint(state: GameState, id: string, accept: boolean):
   if (!comp) return s;
 
   if (accept) {
-    s.company.finances.stateKonta -= 5000; // Koszt przyjęcia zwrotu
+    s.company.finances.stanKonta -= 5000; // Koszt przyjęcia zwrotu
     s.company.reputation.opiniaPubliczna += 2; // Lekki plus za uczciwość
   } else {
     s.company.reputation.opiniaPubliczna -= comp.penalty;

@@ -102,12 +102,12 @@ function endChase(state: GameState, result: 'escaped' | 'caught') {
 
   if (result === 'escaped') {
     applyEffects(state, {
-      stateKonta: -10000,
+      stanKonta: -10000,
       reputation: { opiniaPubliczna: 10, opiniaMafia: -10 },
     });
   } else {
     applyEffects(state, {
-      stateKonta: -50000,
+      stanKonta: -50000,
       reputation: { opiniaPubliczna: -15, opiniaMafia: -20 },
     });
   }

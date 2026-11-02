@@ -53,7 +53,7 @@ export function createInitialState(opts: {
       hasAccountant: false,
       inventory: [], // <-- Inicjalizacja nowego pola inventory jako pustej tablicy
       finances: {
-        stateKonta: cash,
+        stanKonta: cash,
         wplywy: {
           przychodyZDzialalnosci: 0,
           srodkiZKredytow: 0,

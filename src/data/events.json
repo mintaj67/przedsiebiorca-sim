@@ -10,7 +10,7 @@
         "id": "buy",
         "label": "Wchodzę w to",
         "effects": {
-          "stateKonta": -50000,
+          "stanKonta": -50000,
           "Wydatki": { "czynsz": -5000 },
           "flagsAdd": ["fotowoltaika"]
         }
@@ -33,7 +33,7 @@
           },
           "onLose": {
             "reputation": { "opiniaMafia": -10 },
-            "stateKonta": -20000,
+            "stanKonta": -20000,
             "flagsAdd": ["konflikt_z_mafia"]
           }
         }
@@ -45,7 +45,7 @@
     "title": "Kontrola z banku",
     "description": "Bank, w którym masz kredyt, przeprowadza kontrolę. Martwią się o twoją zdolność kredytową.",
     "weight": 10,
-    "conditions": { "minStateKonta": -50000 },
+    "conditions": { "minStanKonta": -50000 },
     "choices": [
       {
         "id": "show_books",
@@ -58,7 +58,7 @@
         "gamble": {
           "winChance": 0.6,
           "onWin": {},
-          "onLose": { "stateKonta": -40000, "reputation": { "opiniaBranza": -15 } }
+          "onLose": { "stanKonta": -40000, "reputation": { "opiniaBranza": -15 } }
         }
       }
     ]
@@ -75,7 +75,7 @@
         "id": "support",
         "label": "Wspierasz swoją partię finansowo",
         "effects": {
-          "stateKonta": -20000,
+          "stanKonta": -20000,
           "reputation": { "opiniaPolitycy": 10 }
         }
       },
@@ -96,7 +96,7 @@
       "yearMin": 1989,
       "yearMax": 1997,
       "phase": ["chaos"],
-      "minStateKonta": 0
+      "minStanKonta": 0
     },
     "choices": [
       {
@@ -108,11 +108,11 @@
           "winText": "Polska kinematografia ci tego nie zapomni.",
           "loseText": "Zostałeś z tymi kasetami jak Himilsbach z angielskim.",
           "onWin": {
-            "stateKonta": 50000,
+            "stanKonta": 50000,
             "reputation": { "opiniaMafia": 5 }
           },
           "onLose": {
-            "stateKonta": -30000,
+            "stanKonta": -30000,
             "reputation": { "opiniaMafia": -15 }
           }
         }
@@ -179,7 +179,7 @@
             "description": "Opinia publiczna ma cię za tchórza unikającego odpowiedzialności, a skarbówka dokonuje kontroli w twojej firmie.",
             "effects": {
               "reputation": { "opiniaPubliczna": -10 },
-              "stateKonta": -5000,
+              "stanKonta": -5000,
               "flagsAdd": ["skarbowka_po_weissie"]
             }
           },
@@ -187,7 +187,7 @@
             "weight": 2,
             "description": "Jakimś sposobem zwichnąłeś nadgarstek przy odkładaniu telefonu.",
             "effects": {
-              "stateKonta": -1000
+              "stanKonta": -1000
             }
           }
         ]
@@ -209,7 +209,7 @@
         "id": "policja",
         "label": "Zgłaszasz na policję",
         "effects": {
-          "stateKonta": -20000,
+          "stanKonta": -20000,
           "reputation": { "opiniaPubliczna": 5, "opiniaMafia": -5 }
         }
       },
@@ -217,7 +217,7 @@
         "id": "ochrona",
         "label": "Wynajmujesz prywatną ochronę",
         "effects": {
-          "stateKonta": -40000,
+          "stanKonta": -40000,
           "Wydatki": { "inne": 5000 },
           "reputation": { "opiniaPubliczna": -3 }
         }
@@ -273,7 +273,7 @@
         "id": "sell",
         "label": "Sprzedajesz akta dziennikarzowi",
         "effects": {
-          "stateKonta": 50000,
+          "stanKonta": 50000,
           "reputation": { "opiniaPubliczna": 10, "opiniaPolitycy": -20 }
         }
       },

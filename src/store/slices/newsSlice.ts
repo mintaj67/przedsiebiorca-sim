@@ -52,8 +52,8 @@ export const createNewsSlice: StateCreator<any, [], [], NewsSlice> = (set, get) 
       resolved: false,
       expiresAtTurn: next.turn + 3,
       choices: [
-        { id: 'a', label: 'Opcja A — dostajesz 10 000 PLN', effects: { stateKonta: 10000 } },
-        { id: 'b', label: 'Opcja B — tracisz 5 000 PLN', effects: { stateKonta: -5000 } },
+        { id: 'a', label: 'Opcja A — dostajesz 10 000 PLN', effects: { stanKonta: 10000 } },
+        { id: 'b', label: 'Opcja B — tracisz 5 000 PLN', effects: { stanKonta: -5000 } },
       ],
       onExpireEffects: { reputation: { opiniaPubliczna: -3 } },
     });

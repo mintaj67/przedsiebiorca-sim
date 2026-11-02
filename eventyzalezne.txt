@@ -15,7 +15,7 @@
         "id": "opcja_a",
         "label": "[Wybór 1]",
         "effects": {
-          "stateKonta": -10000,
+          "stanKonta": -10000,
           "flagsAdd": ["chain1_droga_a"]
         }
       },
@@ -23,7 +23,7 @@
         "id": "opcja_b",
         "label": "[Wybór 2]",
         "effects": {
-          "stateKonta": 20000,
+          "stanKonta": 20000,
           "flagsAdd": ["chain1_droga_b"]
         }
       },
@@ -60,7 +60,7 @@
         "id": "wycofaj",
         "label": "[Wycofujesz się]",
         "effects": {
-          "stateKonta": -5000,
+          "stanKonta": -5000,
           "flagsRemove": ["chain1_droga_a"],
           "flagsAdd": ["chain1_a_wycofany"]
         }
@@ -83,7 +83,7 @@
         "id": "final",
         "label": "[Reakcja]",
         "effects": {
-          "stateKonta": 50000,
+          "stanKonta": 50000,
           "reputation": { "opiniaBranza": 10 }
         }
       }

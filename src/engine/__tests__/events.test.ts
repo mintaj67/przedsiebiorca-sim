@@ -50,18 +50,18 @@ describe('matchesConditions', () => {
     expect(matchesConditions(state, { phase: ['chaos', 'duopol'] })).toBe(true);
   });
 
-  it('minStateKonta wyklucza gdy gracz ma za mało', () => {
+  it('minStanKonta wyklucza gdy gracz ma za mało', () => {
     const state = makeState();
-    state.company.finances.stateKonta = 10_000;
-    expect(matchesConditions(state, { minStateKonta: 50_000 })).toBe(false);
-    expect(matchesConditions(state, { minStateKonta: 5_000 })).toBe(true);
+    state.company.finances.stanKonta = 10_000;
+    expect(matchesConditions(state, { minStanKonta: 50_000 })).toBe(false);
+    expect(matchesConditions(state, { minStanKonta: 5_000 })).toBe(true);
   });
 
-  it('maxStateKonta wyklucza gdy gracz ma za dużo', () => {
+  it('maxStanKonta wyklucza gdy gracz ma za dużo', () => {
     const state = makeState();
-    state.company.finances.stateKonta = 100_000;
-    expect(matchesConditions(state, { maxStateKonta: 50_000 })).toBe(false);
-    expect(matchesConditions(state, { maxStateKonta: 200_000 })).toBe(true);
+    state.company.finances.stanKonta = 100_000;
+    expect(matchesConditions(state, { maxStanKonta: 50_000 })).toBe(false);
+    expect(matchesConditions(state, { maxStanKonta: 200_000 })).toBe(true);
   });
 
   it('mafiaMember true wyklucza graczy spoza mafii', () => {

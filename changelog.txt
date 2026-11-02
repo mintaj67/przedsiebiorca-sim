@@ -1,3 +1,18 @@
+## 0.95 (2026-11-02) — Ekonomia Handlu, Magazyn i Reklamacje
+
+**Nowe mechaniki:**
+- **System Magazynu:** Firma ma teraz limit pojemności (domyślnie 50 szt.). Można wynająć więcej za 10 000 PLN (+50 miejsca).
+- **Handel detaliczny i hurtowy:** Możliwość kupowania towarów pojedynczo, w paczkach po 10 (10% zniżki) i 100 szt. (25% zniżki).
+- **Opóźniona sprzedaż (Turowa):** Sprzedany towar znika z magazynu od razu, ale gotówka i ewentualne reklamacje są rozliczane na początku następnej tury. Zysk jest orientacyjny (wahania +/- 10%).
+- **System Reklamacji:** Sprzedaż towarów o niskiej jakości (poniżej 5) wybrednym kontrahentom generuje reklamacje. Gracz może uznać zwrot (koszt 5k PLN, +reputacja) lub odrzucić (kara do reputacji publicznej i branżowej).
+- **Dostawcy i Odbiorcy:** Handlując podrabianą odzieżą, losowane jest 3 dostawców i 3 odbiorców. Dostęp do niektórych (np. Importer, Mafia) wymaga odpowiedniej reputacji.
+- **Raport sprzedaży:** Po rozliczeniu transakcji w turze, do skrzynki odbiorczej trafia wiadomość z podsumowaniem wpływów.
+
+**Zmiany w Architekturze i Danych:**
+- **`trade_data.json`:** Nowy plik definiujący dostawców (z ich jakością i wymaganiami) oraz odbiorców (z mnożnikami cen).
+- **`pendingComplaints` i `pendingSales`:** Nowe pola w `GameState` obsługujące kolejkę zdarzeń ekonomicznych.
+- **`warehouseCapacity`:** Nowe pole w `Company`.
+
 ## 0.90 (2026-10-28) — Nowy system partii, działalności i ekran wprowadzający
 
 **Nowe mechaniki:**

@@ -79,7 +79,7 @@ export function Dashboard() {
         </div>
         <div className="flex items-center gap-3 md:gap-4">
           <div className="text-left md:text-right">
-            <p className="text-xl md:text-2xl font-mono">{state.company.finances.stateKonta.toLocaleString('pl-PL')} PLN</p>
+            <p className="text-xl md:text-2xl font-mono">{state.company.finances.stanKonta.toLocaleString('pl-PL')} PLN</p>
             <p className="text-xs md:text-sm text-stone-600">Reputacja: {Math.round(state.company.reputation.ogolna)}%</p>
           </div>
           <button onClick={() => setShowOptions(true)} className="bg-white border px-3 py-2 rounded text-sm hover:bg-stone-50 shrink-0">⚙</button>
@@ -151,7 +151,7 @@ export function Dashboard() {
       )}
 
       {/* ZAWARTOŚĆ EKRANÓW */}
-      {state.bankruptWarningTurns > 0 && state.company.finances.stateKonta < 0 && (
+      {state.bankruptWarningTurns > 0 && state.company.finances.stanKonta < 0 && (
         <div className="bg-red-100 border border-red-500 p-3 rounded mb-4 mt-4">
           <p className="font-bold">⚠ Bankructwo za {2 - state.bankruptWarningTurns} tur!</p>
           <button onClick={takeEmergencyLoan} className="mt-2 bg-red-600 text-white px-3 py-1 rounded">Weź kredyt ratunkowy (50 000 PLN, 15%)</button>

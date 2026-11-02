@@ -93,7 +93,7 @@ export function ChangeActivityScreen() {
               <button onClick={() => changeCompanySize('down')} className="px-4 py-2 border border-red-200 text-red-700 bg-red-50 rounded hover:bg-red-100 transition text-sm font-semibold">Zmniejsz</button>
             )}
             {nextConfig && (
-              <button onClick={() => changeCompanySize('up')} disabled={state.company.finances.stateKonta < nextConfig.cost} className="px-4 py-2 bg-stone-900 text-white rounded hover:bg-stone-800 transition text-sm font-semibold disabled:opacity-50">
+              <button onClick={() => changeCompanySize('up')} disabled={state.company.finances.stanKonta < nextConfig.cost} className="px-4 py-2 bg-stone-900 text-white rounded hover:bg-stone-800 transition text-sm font-semibold disabled:opacity-50">
                 Zwiększ na {COMPANY_SIZE_CONFIG[nextSize]?.label} ({nextConfig.cost.toLocaleString()} PLN)
               </button>
             )}
@@ -102,7 +102,7 @@ export function ChangeActivityScreen() {
         {['large', 'very_large', 'corporation'].includes(state.company.size) && (
           <div className="border-t border-stone-200 pt-4 mt-2 flex justify-between items-center">
             <div><h3 className="font-bold text-sm">Ekspansja (Filie)</h3></div>
-            <button onClick={buildBranch} disabled={state.company.finances.stateKonta < BRANCH_COST} className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800 text-xs font-semibold disabled:opacity-50">Zbuduj filię ({BRANCH_COST.toLocaleString()} PLN)</button>
+            <button onClick={buildBranch} disabled={state.company.finances.stanKonta < BRANCH_COST} className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800 text-xs font-semibold disabled:opacity-50">Zbuduj filię ({BRANCH_COST.toLocaleString()} PLN)</button>
           </div>
         )}
       </div>
@@ -115,7 +115,7 @@ export function ChangeActivityScreen() {
         </div>
         <button 
           onClick={rentWarehouse} 
-          disabled={state.company.finances.stateKonta < 10000}
+          disabled={state.company.finances.stanKonta < 10000}
           className="px-4 py-2 border border-stone-300 text-stone-700 bg-stone-100 rounded hover:bg-stone-200 transition text-sm font-semibold disabled:opacity-50"
         >
           Wynajmij +50 miejsca (10 000 PLN)
@@ -138,9 +138,9 @@ export function ChangeActivityScreen() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => buyGoods(sup, 1)} disabled={isFull || state.company.finances.stateKonta < sup.price} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-1 rounded text-xs font-bold disabled:opacity-50">1 szt.</button>
-                  <button onClick={() => buyGoods(sup, 10)} disabled={currentStock + 10 > capacity || state.company.finances.stateKonta < sup.price * 9} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-1 rounded text-xs font-bold disabled:opacity-50">10 szt. (-10%)</button>
-                  <button onClick={() => buyGoods(sup, 100)} disabled={currentStock + 100 > capacity || state.company.finances.stateKonta < sup.price * 75} className="flex-1 bg-blue-800 hover:bg-blue-900 text-white py-1 rounded text-xs font-bold disabled:opacity-50">100 szt. (-25%)</button>
+                  <button onClick={() => buyGoods(sup, 1)} disabled={isFull || state.company.finances.stanKonta < sup.price} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-1 rounded text-xs font-bold disabled:opacity-50">1 szt.</button>
+                  <button onClick={() => buyGoods(sup, 10)} disabled={currentStock + 10 > capacity || state.company.finances.stanKonta < sup.price * 9} className="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-1 rounded text-xs font-bold disabled:opacity-50">10 szt. (-10%)</button>
+                  <button onClick={() => buyGoods(sup, 100)} disabled={currentStock + 100 > capacity || state.company.finances.stanKonta < sup.price * 75} className="flex-1 bg-blue-800 hover:bg-blue-900 text-white py-1 rounded text-xs font-bold disabled:opacity-50">100 szt. (-25%)</button>
                 </div>
               </div>
             ))}
@@ -199,9 +199,9 @@ export function ChangeActivityScreen() {
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">Kampanie Reklamowe</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <button onClick={() => buyAd('radio')} disabled={state.company.finances.stateKonta < 5000} className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"><span className="text-lg">📻 Radio</span><span className="text-xs text-stone-500">5 000 PLN</span></button>
-          <button onClick={() => buyAd('internet')} disabled={state.company.finances.stateKonta < 15000} className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"><span className="text-lg">🌐 Internet</span><span className="text-xs text-stone-500">15 000 PLN</span></button>
-          <button onClick={() => buyAd('tv')} disabled={state.company.finances.stateKonta < 50000} className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"><span className="text-lg">📺 Telewizja</span><span className="text-xs text-stone-500">50 000 PLN</span></button>
+          <button onClick={() => buyAd('radio')} disabled={state.company.finances.stanKonta < 5000} className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"><span className="text-lg">📻 Radio</span><span className="text-xs text-stone-500">5 000 PLN</span></button>
+          <button onClick={() => buyAd('internet')} disabled={state.company.finances.stanKonta < 15000} className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"><span className="text-lg">🌐 Internet</span><span className="text-xs text-stone-500">15 000 PLN</span></button>
+          <button onClick={() => buyAd('tv')} disabled={state.company.finances.stanKonta < 50000} className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"><span className="text-lg">📺 Telewizja</span><span className="text-xs text-stone-500">50 000 PLN</span></button>
         </div>
       </div>
 

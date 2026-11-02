@@ -42,8 +42,8 @@ export function executeCombatMove(state: GameState, move: CombatMove): void {
       playerMsg = 'Zapewniasz o pełnej współpracy. Urzędnik kiwa głową.';
       break;
     case 'adwokat':
-      if (state.company.finances.stateKonta >= 20000) {
-        state.company.finances.stateKonta -= 20000;
+      if (state.company.finances.stanKonta >= 20000) {
+        state.company.finances.stanKonta -= 20000;
         playerDamage = 25;
         playerMsg = 'Twój adwokat przejmuje rozmowę. Powołuje się na paragrafy. Urzędnik blednie. (-20 000 PLN)';
       } else {
@@ -129,10 +129,10 @@ function endCombat(state: GameState, result: 'win' | 'lose' | 'draw') {
     applyEffects(state, { reputation: { opiniaSkarbowa: 15 } });
   } else if (result === 'lose') {
     c.log.push({ text: 'Urzędnik dopina swego. Wystawia mandat na 50 000 PLN.', type: 'system' });
-    applyEffects(state, { stateKonta: -50000, reputation: { opiniaPubliczna: -10, opiniaSkarbowa: 10 } });
+    applyEffects(state, { stanKonta: -50000, reputation: { opiniaPubliczna: -10, opiniaSkarbowa: 10 } });
   } else {
     c.log.push({ text: 'Urzędnik jest zmęczony, ale znajduje błędy. Mandat 20 000 PLN.', type: 'system' });
-    applyEffects(state, { stateKonta: -20000, reputation: { opiniaSkarbowa: 5 } });
+    applyEffects(state, { stanKonta: -20000, reputation: { opiniaSkarbowa: 5 } });
   }
 
   state.company.reputation = recomputeReputation(state);

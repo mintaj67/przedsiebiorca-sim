@@ -5,7 +5,7 @@ export function CombatScreen() {
   if (!state || !state.activeCombat) return null;
   const c = state.activeCombat;
 
-  const canLawyer = state.company.finances.stateKonta >= 20000;
+  const canLawyer = state.company.finances.stanKonta >= 20000;
   const canInfluence = state.company.reputation.opiniaPolitycy > 60;
   const canMafia = state.ceo.inMafia;  
 

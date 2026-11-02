@@ -11,8 +11,8 @@ export function StatisticsScreen() {
   const f = state.company.finances;
   const r = state.company.reputation;
 
-  const visibleRep: (keyof typeof r)[] = ['branza', 'opiniaPubliczna', 'opiniaPracownicy'];
-  const hiddenRep: (keyof typeof r)[] = ['opiniaBranza', 'opiniaMafia', 'opiniaMedia', 'opiniaPolitycy', 'opiniaSkarbowa'];
+  const visibleRep: (keyof typeof r)[] = ['branza', 'opiniaPubliczna', 'opiniaBranza', 'opiniaPracownicy'];
+  const hiddenRep: (keyof typeof r)[] = ['opiniaMafia', 'opiniaMedia', 'opiniaPolitycy', 'opiniaSkarbowa'];  
 
   return (
     <div className="p-6">
@@ -21,7 +21,7 @@ export function StatisticsScreen() {
       {/* FINANSE */}
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-1">Finanse</h2>
-        <p className="text-2xl font-mono mb-4">{f.stateKonta.toLocaleString('pl-PL')} PLN</p>
+        <p className="text-2xl font-mono mb-4">{f.stanKonta.toLocaleString('pl-PL')} PLN</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4">

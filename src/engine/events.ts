@@ -13,12 +13,14 @@ export function matchesConditions(state: GameState, c: EventConditions): boolean
   if (c.currentPartyId && (!state.ceo.currentPartyId || !c.currentPartyId.includes(state.ceo.currentPartyId))) return false;
   if (c.rulingParty && !c.rulingParty.some(p => state.politics.rulingCoalition.includes(p))) return false;
   if (c.mafiaMember !== undefined && state.ceo.inMafia !== c.mafiaMember) return false;
-  if (c.minStateKonta !== undefined && state.company.finances.stateKonta < c.minStateKonta) return false;
-  if (c.maxStateKonta !== undefined && state.company.finances.stateKonta > c.maxStateKonta) return false;
+  if (c.minStanKonta !== undefined && state.company.finances.stanKonta < c.minStanKonta) return false;
+  if (c.maxStanKonta !== undefined && state.company.finances.stanKonta > c.maxStanKonta) return false;
   if (c.legalForm && !c.legalForm.includes(state.company.legalForm)) return false;
   if (c.activities && !c.activities.includes(state.company.activity)) return false;
   if (c.flags && !c.flags.every(f => state.ceo.flags.includes(f))) return false;
   if (c.notFlags && c.notFlags.some(f => state.ceo.flags.includes(f))) return false;
+  if ((c as any).hasParty === true && !state.ceo.currentPartyId) return false;
+  if ((c as any).hasParty === false && state.ceo.currentPartyId) return false;
 
   if (c.minReputation) {
     for (const [k, v] of Object.entries(c.minReputation)) {
@@ -41,6 +43,7 @@ export function rollEvents(state: GameState): GameEvent[] {
     return matchesConditions(state, e.conditions);
   });
   if (eligible.length === 0) return [];
+  
   const picked = rng.weighted(eligible);
   return [picked];
 }

@@ -1,20 +1,35 @@
 import type { StateCreator } from 'zustand';
-import type { ContractType, Pace } from '../../engine/types';
-import { nextTurn, consumeActivity as consumeActivityEngine, resolveEventChoice, dismissConsequence } from '../../engine/turn';
-import { 
-  applyHire, applyLoan, applyChangeActivity, applyJoinParty, applyLeaveParty, 
-  applyEmergencyLoan, applySetPace, toggleAccountant,
-  changeCompanySize as changeCompanySizeEngine, 
+import type { ContractType, GameState, Pace } from '../../engine/types';
+import {
+  nextTurn,
+  consumeActivity as consumeActivityEngine,
+  resolveEventChoice,
+  dismissConsequence,
+} from '../../engine/turn';
+import {
+  applyHire,
+  applyLoan,
+  applyChangeActivity,
+  applyJoinParty,
+  applyLeaveParty,
+  applyEmergencyLoan,
+  applySetPace,
+  toggleAccountant,
+  changeCompanySize as changeCompanySizeEngine,
   buildBranch as buildBranchEngine,
-  buyResource as buyResourceEngine,   
-  sellResource as sellResourceEngine, 
+  buyResource as buyResourceEngine,
+  sellResource as sellResourceEngine,
   buyAd as buyAdEngine,
   buyGoods as buyGoodsEngine,
   sellGoods as sellGoodsEngine,
   resolveComplaint as resolveComplaintEngine,
-  rentWarehouse as rentWarehouseEngine // <- DODANO BRAKUJĄCY IMPORT
+  rentWarehouse as rentWarehouseEngine,
 } from '../../engine/actions';
 import { autosave } from '../autosave';
+
+// Typy argumentów handlu bierzemy prosto z silnika, zamiast `any`.
+type Supplier = Parameters<typeof buyGoodsEngine>[1];
+type Buyer = Parameters<typeof sellGoodsEngine>[1];
 
 export interface GameSlice {
   doTurn: () => void;
@@ -36,197 +51,74 @@ export interface GameSlice {
   buyResource: (resId: string, amount: number, basePrice: number) => void;
   sellResource: (resId: string, amount: number, basePrice: number) => void;
   buyAd: (type: 'radio' | 'tv' | 'internet') => void;
-  
-  // POPRAWIONE SYGNATURY HANDLU:
-  buyGoods: (supplier: any, amount: number) => void;
-  sellGoods: (buyer: any, resId: string, amount: number, baseValue: number) => void;
+  buyGoods: (supplier: Supplier, amount: number) => void;
+  sellGoods: (buyer: Buyer, resId: string, amount: number, baseValue: number) => void;
   resolveComplaint: (id: string, accept: boolean) => void;
   rentWarehouse: () => void;
 }
 
-export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) => ({
-  doTurn: () => {
-    const s = get().state;
-    if (!s || s.gameOver) return;
-    const next = nextTurn(s);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+interface CommitOptions {
+  /** Akcje „zamykające okienka” mają działać także po końcu gry. */
+  allowAfterGameOver?: boolean;
+}
 
-  consumeActivity: (id) => {
-    const s = get().state;
-    if (!s || s.gameOver) return;
-    const next = consumeActivityEngine(s, id);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  resolveEvent: (eventId, choiceId) => {
-    const s = get().state;
-    if (!s || s.gameOver) return;
-    const next = resolveEventChoice(s, eventId, choiceId);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  dismissConsequence: () => {
-    const s = get().state;
+export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) => {
+  /**
+   * Jedyne miejsce, które: pobiera stan, blokuje akcje po końcu gry,
+   * odpala funkcję silnika, zapisuje stan w store i robi autosave.
+   */
+  const commit = (fn: (s: GameState) => GameState, opts: CommitOptions = {}) => {
+    const s: GameState | null = get().state;
     if (!s) return;
-    const next = dismissConsequence(s);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+    if (s.gameOver && !opts.allowAfterGameOver) return;
 
-  joinParty: (partyId) => {
-    const s = get().state;
-    if (!s) return;
-    const next = applyJoinParty(s, partyId);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+    const next = fn(s);
+    if (next === s) return; // nic się nie zmieniło — bez zbędnego zapisu
 
-  leaveParty: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = applyLeaveParty(s);
-    autosave(next, get().currentSlotId);
+    // Najpierw stan, potem zapis: błąd localStorage (np. pełny) nie może zgubić akcji gracza.
     set({ state: next, savesVersion: Date.now() });
-  },
+    try {
+      autosave(next, get().currentSlotId);
+    } catch (err) {
+      console.error('[autosave] zapis nie powiódł się:', err);
+    }
+  };
 
-  changeActivity: (activity) => {
-    const s = get().state;
-    if (!s) return;
-    const next = applyChangeActivity(s, activity);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+  return {
+    // --- Tura ---
+    doTurn: () => commit(nextTurn),
+    consumeActivity: (id) => commit((s) => consumeActivityEngine(s, id)),
+    resolveEvent: (eventId, choiceId) => commit((s) => resolveEventChoice(s, eventId, choiceId)),
+    dismissConsequence: () => commit(dismissConsequence, { allowAfterGameOver: true }),
 
-  takeEmergencyLoan: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = applyEmergencyLoan(s);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+    // --- Polityka ---
+    joinParty: (partyId) => commit((s) => applyJoinParty(s, partyId)),
+    leaveParty: () => commit(applyLeaveParty),
+    dismissElection: () =>
+      commit((s) => ({ ...s, lastElectionResult: null }), { allowAfterGameOver: true }),
+    dismissPresidentialResult: () =>
+      commit((s) => ({ ...s, lastPresidentialResult: null }), { allowAfterGameOver: true }),
 
-  hireWorker: (contract, delta) => {
-    const s = get().state;
-    if (!s) return;
-    const next = applyHire(s, contract, delta);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+    // --- Firma ---
+    changeActivity: (activity) => commit((s) => applyChangeActivity(s, activity)),
+    hireWorker: (contract, delta) => commit((s) => applyHire(s, contract, delta)),
+    setPace: (pace) => commit((s) => applySetPace(s, pace)),
+    toggleAccountant: () => commit(toggleAccountant),
+    changeCompanySize: (direction) => commit((s) => changeCompanySizeEngine(s, direction)),
+    buildBranch: () => commit(buildBranchEngine),
+    buyAd: (type) => commit((s) => buyAdEngine(s, type)),
 
-  takeLoan: (source, amount) => {
-    const s = get().state;
-    if (!s) return;
-    const next = applyLoan(s, source, amount);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
+    // --- Finanse ---
+    takeEmergencyLoan: () => commit(applyEmergencyLoan),
+    takeLoan: (source, amount) => commit((s) => applyLoan(s, source, amount)),
 
-  setPace: (pace) => {
-    const s = get().state;
-    if (!s) return;
-    const next = applySetPace(s, pace);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  toggleAccountant: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = toggleAccountant(s);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  dismissElection: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = { ...s, lastElectionResult: null };
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  dismissPresidentialResult: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = { ...s, lastPresidentialResult: null };
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  changeCompanySize: (direction) => {
-    const s = get().state;
-    if (!s) return;
-    const next = changeCompanySizeEngine(s, direction);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  buildBranch: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = buildBranchEngine(s);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  buyResource: (resId, amount, price) => {
-    const s = get().state;
-    if (!s) return;
-    const next = buyResourceEngine(s, resId, amount, price);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  sellResource: (resId, amount, price) => {
-    const s = get().state;
-    if (!s) return;
-    const next = sellResourceEngine(s, resId, amount, price);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  buyAd: (type) => {
-    const s = get().state;
-    if (!s) return;
-    const next = buyAdEngine(s, type);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  // NOWE WERSJE HANDLU Z POPRAWIONYMI ARGUMENTAMI:
-  buyGoods: (supplier, amount) => {
-    const s = get().state;
-    if (!s) return;
-    const next = buyGoodsEngine(s, supplier, amount);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  sellGoods: (buyer, resId, amount, baseValue) => {
-    const s = get().state;
-    if (!s) return;
-    const next = sellGoodsEngine(s, buyer, resId, amount, baseValue);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  resolveComplaint: (id, accept) => {
-    const s = get().state;
-    if (!s) return;
-    const next = resolveComplaintEngine(s, id, accept);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-
-  rentWarehouse: () => {
-    const s = get().state;
-    if (!s) return;
-    const next = rentWarehouseEngine(s);
-    autosave(next, get().currentSlotId);
-    set({ state: next, savesVersion: Date.now() });
-  },
-});
+    // --- Handel ---
+    buyResource: (resId, amount, price) => commit((s) => buyResourceEngine(s, resId, amount, price)),
+    sellResource: (resId, amount, price) => commit((s) => sellResourceEngine(s, resId, amount, price)),
+    buyGoods: (supplier, amount) => commit((s) => buyGoodsEngine(s, supplier, amount)),
+    sellGoods: (buyer, resId, amount, baseValue) =>
+      commit((s) => sellGoodsEngine(s, buyer, resId, amount, baseValue)),
+    resolveComplaint: (id, accept) => commit((s) => resolveComplaintEngine(s, id, accept)),
+    rentWarehouse: () => commit(rentWarehouseEngine),
+  };
+};

@@ -6,8 +6,8 @@ import { REPUTATION_LABELS } from '../ui-labels';
 function describeEffects(e: EventEffects | undefined): string[] {
   if (!e) return [];
   const lines: string[] = [];
-  if (e.stateKonta) {
-    lines.push(`${e.stateKonta > 0 ? '+' : ''}${e.stateKonta.toLocaleString('pl-PL')} PLN`);
+  if (e.stanKonta) {
+    lines.push(`${e.stanKonta > 0 ? '+' : ''}${e.stanKonta.toLocaleString('pl-PL')} PLN`);
   }
   if (e.reputation) {
     for (const [k, v] of Object.entries(e.reputation)) {

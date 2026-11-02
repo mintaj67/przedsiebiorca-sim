@@ -42,7 +42,7 @@ export interface Wydatki {
 }
 
 export interface Finances {
-  stateKonta: number;
+  stanKonta: number;
   wplywy: Wplywy;
   wydatki: Wydatki;
 }
@@ -94,21 +94,6 @@ export interface Party {
   descriptionAfterJoin: string;
   ideology: Ideology;
   sizeSchedule: PartySizeSchedule[];
-  pzprAvailable: 'yes' | 'no' | 'both';
-  isPSL?: boolean;
-  special?: string;
-  economicView: number;
-  socialView: number;
-  activeFrom: number;
-  activeTo: number;
-}
-
-export interface Party {
-  id: string;
-  name: string;
-  description: string;
-  ideology: Ideology;
-  size: PartySize;
   pzprAvailable: 'yes' | 'no' | 'both';
   isPSL?: boolean;
   special?: string;
@@ -183,8 +168,8 @@ export interface EventConditions {
   mafiaMember?: boolean;
   minReputation?: Partial<Reputation>;
   maxReputation?: Partial<Reputation>;
-  minStateKonta?: number;
-  maxStateKonta?: number;
+  minStanKonta?: number;
+  maxStanKonta?: number;
   legalForm?: LegalForm[];
   activities?: string[];
   flags?: string[];
@@ -195,7 +180,7 @@ export interface EventConditions {
 
 export interface EventEffects {
   reputation?: Partial<Reputation>;
-  stateKonta?: number;
+  stanKonta?: number;
   wplywy?: Partial<Wplywy>;
   wydatki?: Partial<Wydatki>;
   flagsAdd?: string[];

@@ -58,13 +58,16 @@ export function tickEconomy(state: GameState): GameState {
 
   if (c.hasAccountant) {
     skarbowkaDelta += ACCOUNTANT_BONUS;
-    f.wydatki.inne += ACCOUNTANT_COST; // Dodatkowy koszt co turę
+    f.wydatki.inne = ACCOUNTANT_COST; // Zamiast +=
+  } else {
+    f.wydatki.inne = 0; // Zerujemy, jeśli zwolniliśmy księgową
   }
+
   c.reputation.opiniaSkarbowa = Math.max(0, Math.min(100, c.reputation.opiniaSkarbowa + skarbowkaDelta));
 
-  const inflow  = sum(f.wplywy);
+  const inflow = sum(f.wplywy) - f.wplywy.srodkiZKredytow - f.wplywy.dofinansowaniaSzaraStrefa;
   const outflow = sum(f.wydatki);
-  f.stateKonta += inflow - outflow;
+  f.stanKonta += inflow - outflow;
 
   // Kara reputacyjna za za mało pracowników
   const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
@@ -75,7 +78,7 @@ export function tickEconomy(state: GameState): GameState {
 
   state.company = c;
 
-  if (f.stateKonta < 0) {
+  if (f.stanKonta < 0) {
     state.bankruptWarningTurns = (state.bankruptWarningTurns ?? 0) + 1;
   } else {
     state.bankruptWarningTurns = 0;

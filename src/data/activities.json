@@ -5,7 +5,7 @@
     "description": "Masz w firmie pracownika, który donosi mafii. Możesz go zwolnić.",
     "weight": 10,
     "conditions": { "mafiaMember": true, "yearMax": 2005 },
-    "effects": { "reputation": { "opiniaMafia": 5, "opiniaPracownicy": -10 }, "stateKonta": 5000 }
+    "effects": { "reputation": { "opiniaMafia": 5, "opiniaPracownicy": -10 }, "stanKonta": 5000 }
   },
   {
     "id": "karetki",
@@ -13,7 +13,7 @@
     "description": "Lokalny szpital potrzebuje sprzętu. Możesz pomóc.",
     "weight": 10,
     "conditions": {},
-    "effects": { "reputation": { "opiniaPubliczna": 8 }, "stateKonta": -15000 }
+    "effects": { "reputation": { "opiniaPubliczna": 8 }, "stanKonta": -15000 }
   },
   {
     "id": "poparcie_kandydata",
@@ -28,15 +28,15 @@
     "label": "Sponsorujesz lokalny klub sportowy",
     "description": "Klub piłkarski w twoim mieście potrzebuje sponsora.",
     "weight": 10,
-    "conditions": { "minStateKonta": 50000 },
-    "effects": { "reputation": { "opiniaPubliczna": 6, "opiniaMedia": 5 }, "stateKonta": -10000 }
+    "conditions": { "minStanKonta": 50000 },
+    "effects": { "reputation": { "opiniaPubliczna": 6, "opiniaMedia": 5 }, "stanKonta": -10000 }
   },
   {
     "id": "szkolenie_pracownikow",
     "label": "Finansujesz szkolenie pracowników",
     "description": "Inwestycja w kadry.",
     "weight": 10,
-    "conditions": { "minStateKonta": 20000 },
-    "effects": { "reputation": { "opiniaPracownicy": 10 }, "stateKonta": -8000 }
+    "conditions": { "minStanKonta": 20000 },
+    "effects": { "reputation": { "opiniaPracownicy": 10 }, "stanKonta": -8000 }
   }
 ]
