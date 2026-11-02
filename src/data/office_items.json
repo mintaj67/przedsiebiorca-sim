@@ -22,5 +22,11 @@
     "name": "Nowoczesny komputer",
     "price": 15000,
     "description": "Ułatwia księgowość i zarządzanie."
+  },
+  {
+  "id": "kapeć_hipnotyzera",
+  "name": "Kapeć hipnotyzera",
+  "price": 99999,
+  "description": "Pamiątka po spotkaniu z radziecką myślą technologiczną. Nie da się go kupić, można tylko dostać w twarz."
   }
-]
+  ]

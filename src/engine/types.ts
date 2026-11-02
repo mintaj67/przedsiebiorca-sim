@@ -63,6 +63,7 @@ export interface Loan {
 }
 
 export interface Company {
+  flags: any;
   name: string;
   suffix: string;
   size: CompanySize;

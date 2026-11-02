@@ -286,5 +286,89 @@
         }
       }
     ]
+  },
+  {
+    "id": "hipnotyzer_tv",
+    "title": "Radziecki hipnotyzer",
+    "description": "Oglądasz pokaz słynnego radzieckiego hipnotyzera w telewizji publicznej. Mówi, że może uleczyć cię z wszystkich chorób, jeśli tylko mu zaufasz i pozwolisz się zahipnotyzować.",
+    "weight": 15,
+    "once": true,
+    "conditions": {
+      "yearMin": 1989,
+      "yearMax": 1992
+    },
+    "choices": [
+      {
+        "id": "hipnoza",
+        "label": "Dajesz się zahipnotyzować",
+        "outcomes": [
+          {
+            "weight": 10,
+            "description": "Choroby cię omijają, twoje kości są pełne wapnia i mocy, a ty uchodzisz za dziecko szczęścia.",
+            "effects": {
+              "reputation": {
+                "opiniaPubliczna": 10,
+                "opiniaPracownicy": 10,
+                "opiniaBranza": 10,
+                "opiniaMedia": 10,
+                "opiniaPolitycy": 10,
+                "opiniaMafia": 10,
+                "opiniaSkarbowa": 10
+              },
+              "stanKonta": 5000,
+              "flagsAdd": ["hipnoza_dziala"]
+            }
+          },
+          {
+            "weight": 80,
+            "description": "Nic nie zyskałeś, nic nie straciłeś. Może poza tymi kilkoma godzinami przed teleodbiornikiem.",
+            "effects": {}
+          },
+          {
+            "weight": 10,
+            "description": "Ta hipnoza nie działa tylko na specjalne jednostki. Tylko mówię.",
+            "effects": {
+              "reputation": {
+                "opiniaPubliczna": -10,
+                "opiniaPracownicy": -10,
+                "opiniaBranza": -10,
+                "opiniaMedia": -10,
+                "opiniaPolitycy": -10,
+                "opiniaMafia": -10,
+                "opiniaSkarbowa": -10
+              },
+              "stanKonta": -5000,
+              "flagsAdd": ["hipnoza_nie_dziala", "skarbowka_po_hipnozie"]
+            }
+          }
+        ]
+      },
+      {
+        "id": "smiech",
+        "label": "Śmiejesz się rubasznie i nazywasz to głupotą",
+        "outcomes": [
+          {
+            "weight": 90,
+            "description": "Nic nie straciłeś. Pytanie tylko co może stracić osoba, która spędza kilka godzin przed telewizorem nad śmianiem się z hipnotyzera.",
+            "effects": {}
+          },
+          {
+            "weight": 7,
+            "description": "Od siedzenia na niewygodnym krześle dostałeś odcisków, a od śmiania się na cały głos - zajadów. Trafiasz do szpitala.",
+            "effects": {
+              "stanKonta": -500
+            }
+          },
+          {
+            "weight": 3,
+            "description": "Hipnotyzer słyszy twój rubaszny śmiech i kąśliwe uwagi. Nie wiesz jak, ale skąd do cholery masz wiedzieć co potrafi radziecki hipnotyzer? Ze złości postanawia rzucić w Ciebie kapciem.",
+            "effects": {
+              "stanKonta": -1000,
+              "addItem": "kapeć_hipnotyzera"
+            }
+          }
+        ]
+      }
+    ]
   }  
 ]

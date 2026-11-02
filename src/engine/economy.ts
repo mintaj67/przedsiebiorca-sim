@@ -76,6 +76,14 @@ export function tickEconomy(state: GameState): GameState {
     c.reputation.opiniaBranza = Math.max(0, c.reputation.opiniaBranza - BELOW_REQUIRED_WORKERS_PENALTY);
   }
 
+  // Efekty hipnozy
+  if (c.flags?.includes('hipnoza_dziala')) {
+    c.finances.stanKonta += 5000;
+  }
+  if (c.flags?.includes('hipnoza_nie_dziala')) {
+    c.finances.stanKonta -= 5000;
+  }
+
   state.company = c;
 
   if (f.stanKonta < 0) {
