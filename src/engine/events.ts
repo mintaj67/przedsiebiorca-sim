@@ -19,8 +19,8 @@ export function matchesConditions(state: GameState, c: EventConditions): boolean
   if (c.activities && !c.activities.includes(state.company.activity)) return false;
   if (c.flags && !c.flags.every(f => state.ceo.flags.includes(f))) return false;
   if (c.notFlags && c.notFlags.some(f => state.ceo.flags.includes(f))) return false;
-  if ((c as any).hasParty === true && !state.ceo.currentPartyId) return false;
-  if ((c as any).hasParty === false && state.ceo.currentPartyId) return false;
+  if (c.hasParty === true && !state.ceo.currentPartyId) return false;
+  if (c.hasParty === false && state.ceo.currentPartyId) return false;
 
   if (c.minReputation) {
     for (const [k, v] of Object.entries(c.minReputation)) {
@@ -43,7 +43,7 @@ export function rollEvents(state: GameState): GameEvent[] {
     return matchesConditions(state, e.conditions);
   });
   if (eligible.length === 0) return [];
-  
+
   const picked = rng.weighted(eligible);
   return [picked];
 }

@@ -28,5 +28,11 @@
   "name": "Kapeć hipnotyzera",
   "price": 99999,
   "description": "Pamiątka po spotkaniu z radziecką myślą technologiczną. Nie da się go kupić, można tylko dostać w twarz."
+  },
+  {
+    "id": "tygodnik_opinii",
+    "name": "Tygodnik Opinii",
+    "price": 15000,
+    "description": "Prenumerata prestiżowego pisma. Odblokowuje prognozy makroekonomiczne."
   }
   ]

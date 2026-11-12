@@ -44,7 +44,9 @@
   --bar-fill: #22c55e;
   --font-family: 'VT323', 'Courier New', monospace;
   --radius: 0;
-  [data-theme="teletext"] body {
+}
+
+[data-theme="teletext"] body {
   font-size: 1.15rem;
   letter-spacing: 0.03em;
   text-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
@@ -56,7 +58,6 @@
 [data-theme="teletext"] .font-bold {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
 }
 
 /* GAZETA WYBORCZA */

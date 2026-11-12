@@ -370,5 +370,189 @@
         ]
       }
     ]
-  }  
+  },
+  {
+  "id": "pani_krystyna_kontrola_nadnerczy",
+  "title": "Pani Krystyna z Komisji Kontroli Nadnerczy",
+  "description": "Dzwoni do ciebie ktoś, kto podaje się za \"panią Krystynę z Komisji Kontroli Nadnerczy\" (wyraźnie słyszysz, że jest to mężczyzna nieudolnie naśladujący kobietę). Ze słabo udawaną powagą informuje cię, że twoja firma musi zapłacić podatek od każdej nerki każdego pracownika.",
+  "weight": 15,
+  "once": false,
+  "conditions": {
+    "yearMin": 2011,
+    "yearMax": 2023
+  },
+  "choices": [
+    {
+      "id": "podziekuj",
+      "label": "Dziękujesz za informację i mówisz, że zajmiesz się tym w ciągu tygodnia",
+      "outcomes": [
+        {
+          "weight": 22,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Nie wie co odpowiedzieć, po czym rozłącza się bez słowa.",
+          "effects": { "reputation": { "opiniaPubliczna": 20, "opiniaMedia": -20 } }
+        },
+        {
+          "weight": 22,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Nie wie co odpowiedzieć, po czym rozłącza się bez słowa.",
+          "effects": { "reputation": { "opiniaPubliczna": 30, "opiniaMedia": -20 } }
+        },
+        {
+          "weight": 21,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Nie wie co odpowiedzieć, po czym rozłącza się bez słowa.",
+          "effects": { "reputation": { "opiniaPubliczna": 40, "opiniaMedia": -20 } }
+        },
+        {
+          "weight": 30,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Z jakichś przyczyn jednak brnie z tobą w dalszą dyskusję, w której oboje nie wypadacie za dobrze, delikatnie rzecz ujmując. Rozmowa jest emitowana na żywo w radiu w godzinie dobrej słuchalności.",
+          "effects": { "reputation": { "opiniaPubliczna": -10, "opiniaMedia": -10 } }
+        },
+        {
+          "weight": 2,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Z jakichś przyczyn jednak brnie z tobą w dalszą dyskusję. Z jakichś przyczyn podaje ci swój numer konta, a ty postanawiasz dokonać płatności. Informacja roznosi się po branży pocztą pantoflową. Wychodzisz na debila.",
+          "effects": { "stanKonta": -5000, "reputation": { "opiniaPubliczna": -10, "opiniaMedia": -10, "opiniaBranza": -10 } }
+        },
+        {
+          "weight": 2,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Z jakichś przyczyn jednak brnie z tobą w dalszą dyskusję. Z jakichś przyczyn podaje ci swój numer konta, a ty postanawiasz dokonać płatności. Informacja roznosi się po branży pocztą pantoflową. Wychodzisz na debila.",
+          "effects": { "stanKonta": -5000, "reputation": { "opiniaPubliczna": -17, "opiniaMedia": -17, "opiniaBranza": -17 } }
+        },
+        {
+          "weight": 1,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest zaskoczona twoją lakonicznością i bezpośredniością. Z jakichś przyczyn jednak brnie z tobą w dalszą dyskusję. Z jakichś przyczyn podaje ci swój numer konta, a ty postanawiasz dokonać płatności. Informacja roznosi się po branży pocztą pantoflową. Wychodzisz na debila.",
+          "effects": { "stanKonta": -5000, "reputation": { "opiniaPubliczna": -25, "opiniaMedia": -25, "opiniaBranza": -25 } }
+        }
+      ]
+    },
+    {
+      "id": "udawaj_przerazenie",
+      "label": "Udajesz przerażonego i pytasz, co masz robić",
+      "outcomes": [
+        {
+          "weight": 22,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować, więc szybko kończy rozmowę. Z racji tego, że rozmowa jest, niewiadomo jakim sposobem, emitowana na żywo w radiu, cały kraj ją słyszy i współczuje ci bycia ofiarą tak podłego żartu.",
+          "effects": { "reputation": { "opiniaPubliczna": 20, "opiniaBranza": 10, "opiniaMedia": -10 } }
+        },
+        {
+          "weight": 22,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować, więc szybko kończy rozmowę. Z racji tego, że rozmowa jest, niewiadomo jakim sposobem, emitowana na żywo w radiu, cały kraj ją słyszy i współczuje ci bycia ofiarą tak podłego żartu.",
+          "effects": { "reputation": { "opiniaPubliczna": 30, "opiniaBranza": 10, "opiniaMedia": -10 } }
+        },
+        {
+          "weight": 21,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować, więc szybko kończy rozmowę. Z racji tego, że rozmowa jest, niewiadomo jakim sposobem, emitowana na żywo w radiu, cały kraj ją słyszy i współczuje ci bycia ofiarą tak podłego żartu.",
+          "effects": { "reputation": { "opiniaPubliczna": 40, "opiniaBranza": 10, "opiniaMedia": -10 } }
+        },
+        {
+          "weight": 12,
+          "description": "Prezenter radi… tzn. Pani Krystyna poczuła krew. Ciągnie temat przez dłuższy moment, by na końcu wypalić, że prowadzi satyryczną audycję w pewnej komercyjnej radiostacji. Audycja jest nadawana na żywo w dobrej porze i nieźle się ośmieszasz.",
+          "effects": { "reputation": { "opiniaPubliczna": -10, "opiniaMedia": -12, "opiniaBranza": -10 } }
+        },
+        {
+          "weight": 12,
+          "description": "Prezenter radi… tzn. Pani Krystyna poczuła krew. Ciągnie temat przez dłuższy moment, by na końcu wypalić, że prowadzi satyryczną audycję w pewnej komercyjnej radiostacji. Audycja jest nadawana na żywo w dobrej porze i nieźle się ośmieszasz.",
+          "effects": { "reputation": { "opiniaPubliczna": -15, "opiniaMedia": -12, "opiniaBranza": -20 } }
+        },
+        {
+          "weight": 11,
+          "description": "Prezenter radi… tzn. Pani Krystyna poczuła krew. Ciągnie temat przez dłuższy moment, by na końcu wypalić, że prowadzi satyryczną audycję w pewnej komercyjnej radiostacji. Audycja jest nadawana na żywo w dobrej porze i nieźle się ośmieszasz.",
+          "effects": { "reputation": { "opiniaPubliczna": -20, "opiniaMedia": -12, "opiniaBranza": -30 } }
+        }
+      ]
+    },
+    {
+      "id": "rozplacz_sie",
+      "label": "Rozpłaczesz się i mówisz, że twoja matka nie żyje",
+      "outcomes": [
+        {
+          "weight": 17,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować, więc szybko kończy rozmowę. Z racji tego, że rozmowa jest emitowana na żywo w radiu, cały kraj ją słyszy i współczuje ci bycia ofiarą tak podłego żartu. W ramach rekompensaty za straty moralne, Fundacja Radia postanawia wypłacić ci odszkodowanie.",
+          "effects": { "stanKonta": 15000, "reputation": { "opiniaPubliczna": 15, "opiniaBranza": 10, "opiniaMedia": 10 } }
+        },
+        {
+          "weight": 17,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować, więc szybko kończy rozmowę. Z racji tego, że rozmowa jest emitowana na żywo w radiu, cały kraj ją słyszy i współczuje ci bycia ofiarą tak podłego żartu. W ramach rekompensaty za straty moralne, Fundacja Radia postanawia wypłacić ci odszkodowanie.",
+          "effects": { "stanKonta": 15000, "reputation": { "opiniaPubliczna": 20, "opiniaBranza": 10, "opiniaMedia": 10 } }
+        },
+        {
+          "weight": 16,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować, więc szybko kończy rozmowę. Z racji tego, że rozmowa jest emitowana na żywo w radiu, cały kraj ją słyszy i współczuje ci bycia ofiarą tak podłego żartu. W ramach rekompensaty za straty moralne, Fundacja Radia postanawia wypłacić ci odszkodowanie.",
+          "effects": { "stanKonta": 15000, "reputation": { "opiniaPubliczna": 25, "opiniaBranza": 10, "opiniaMedia": 10 } }
+        },
+        {
+          "weight": 10,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować. Wybawia ją telefon od słuchacza. Jest nim twoja matka, która zadzwoniła do radiostacji, by powiedzieć, że żyje i ma się dobrze. Wychodzisz na kłamczucha.",
+          "effects": { "reputation": { "opiniaPubliczna": -25, "opiniaMedia": -10, "opiniaBranza": -10 } }
+        },
+        {
+          "weight": 10,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować. Wybawia ją telefon od słuchacza. Jest nim twoja matka, która zadzwoniła do radiostacji, by powiedzieć, że żyje i ma się dobrze. Wychodzisz na kłamczucha.",
+          "effects": { "reputation": { "opiniaPubliczna": -32, "opiniaMedia": -20, "opiniaBranza": -20 } }
+        },
+        {
+          "weight": 10,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować. Wybawia ją telefon od słuchacza. Jest nim twoja matka, która zadzwoniła do radiostacji, by powiedzieć, że żyje i ma się dobrze. Wychodzisz na kłamczucha.",
+          "effects": { "reputation": { "opiniaPubliczna": -40, "opiniaMedia": -30, "opiniaBranza": -30 } }
+        },
+        {
+          "weight": 20,
+          "description": "Prezenter radi… tzn. Pani Krystyna panikuje i nie wie jak zareagować. Połączenie nagle zostaje przerwane.",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "saszetki_i_ryba",
+      "label": "Pytasz, czy musisz też płacić za saszetki na pas oraz rybę z rodziny łososiowatych",
+      "requires": { "hasItem": "wielka_ksiega_dowcipow_mintaja" },
+      "outcomes": [
+        {
+          "weight": 29,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest wyraźnie przytłoczona i zaskoczona twoją odpowiedzią. Z uśmiechem na ustach zaczynasz się pytać o to, czy wieś Nerki w województwie łódzkim też musi płacić ten podatek, czy tylko jej sołtys. Po drugiej stronie słyszysz tylko nerwowe przełykanie śliny. Znowu to zrobiłeś, ty bydlaku!",
+          "effects": { "reputation": { "opiniaPubliczna": 15, "opiniaBranza": 10, "opiniaMedia": 10 } }
+        },
+        {
+          "weight": 28,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest wyraźnie przytłoczona i zaskoczona twoją odpowiedzią. Z uśmiechem na ustach zaczynasz się pytać o to, czy wieś Nerki w województwie łódzkim też musi płacić ten podatek, czy tylko jej sołtys. Po drugiej stronie słyszysz tylko nerwowe przełykanie śliny. Znowu to zrobiłeś, ty bydlaku!",
+          "effects": { "reputation": { "opiniaPubliczna": 20, "opiniaBranza": 10, "opiniaMedia": 10 } }
+        },
+        {
+          "weight": 28,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest wyraźnie przytłoczona i zaskoczona twoją odpowiedzią. Z uśmiechem na ustach zaczynasz się pytać o to, czy wieś Nerki w województwie łódzkim też musi płacić ten podatek, czy tylko jej sołtys. Po drugiej stronie słyszysz tylko nerwowe przełykanie śliny. Znowu to zrobiłeś, ty bydlaku!",
+          "effects": { "reputation": { "opiniaPubliczna": 25, "opiniaBranza": 10, "opiniaMedia": 10 } }
+        },
+        {
+          "weight": 5,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest wyraźnie przytłoczona i zaskoczona twoją odpowiedzią. Okazało się, że jednak też kuma co jest pięć i odpowiada na twoje pytanie o to, czy wieś Nerki musi płacić ten podatek (wystarczy, że płaci go sam sołtys). Następnie powołuje się na fikcyjny casus prawny, który zastrzega możliwość nałożenia podatku na jezioro Nerka w województwie zachodniopomorskim. Prowadzicie długą i zaciętą walkę na żarty, ale ostatecznie wychodzi na wierzch twój brak medialnego obycia.",
+          "effects": { "reputation": { "opiniaPubliczna": -25, "opiniaMedia": -10, "opiniaBranza": -10 } }
+        },
+        {
+          "weight": 5,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest wyraźnie przytłoczona i zaskoczona twoją odpowiedzią. Okazało się, że jednak też kuma co jest pięć i odpowiada na twoje pytanie o to, czy wieś Nerki musi płacić ten podatek (wystarczy, że płaci go sam sołtys). Następnie powołuje się na fikcyjny casus prawny, który zastrzega możliwość nałożenia podatku na jezioro Nerka w województwie zachodniopomorskim. Prowadzicie długą i zaciętą walkę na żarty, ale ostatecznie wychodzi na wierzch twój brak medialnego obycia.",
+          "effects": { "reputation": { "opiniaPubliczna": -32, "opiniaMedia": -20, "opiniaBranza": -20 } }
+        },
+        {
+          "weight": 5,
+          "description": "Prezenter radi… tzn. Pani Krystyna jest wyraźnie przytłoczona i zaskoczona twoją odpowiedzią. Okazało się, że jednak też kuma co jest pięć i odpowiada na twoje pytanie o to, czy wieś Nerki musi płacić ten podatek (wystarczy, że płaci go sam sołtys). Następnie powołuje się na fikcyjny casus prawny, który zastrzega możliwość nałożenia podatku na jezioro Nerka w województwie zachodniopomorskim. Prowadzicie długą i zaciętą walkę na żarty, ale ostatecznie wychodzi na wierzch twój brak medialnego obycia.",
+          "effects": { "reputation": { "opiniaPubliczna": -40, "opiniaMedia": -30, "opiniaBranza": -30 } }
+        }
+      ]
+    },
+    {
+      "id": "rozlacz_sie",
+      "label": "Rozłączasz się",
+      "outcomes": [
+        {
+          "weight": 95,
+          "description": "Nawet nie chcesz wysłuchać tego pieprzenia do końca. Natychmiastowo się rozłączasz i zaczynasz zastanawiać nad kondycją polskiej komedii.",
+          "effects": {}
+        },
+        {
+          "weight": 5,
+          "description": "Nawet nie chcesz wysłuchać tego pieprzenia do końca. Natychmiastowo się rozłączasz i zaczynasz zastanawiać nad kondycją polskiej komedii. Siedząc na skale i dumając nad jej losem, łapiesz wilka i idziesz do lekarza.",
+          "effects": { "stanKonta": -100 }
+        }
+      ]
+    }
+  ]
+}
 ]

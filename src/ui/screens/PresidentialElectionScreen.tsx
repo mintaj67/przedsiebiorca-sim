@@ -2,12 +2,6 @@ import { useGameStore } from '../../store/gameStore';
 import partiesData from '../../data/parties.json';
 import type { Party } from '../../engine/types';
 
-function displayPartyLabel(partyId: string | null, partyLabel: string | undefined): string {
-  if (partyLabel) return partyLabel;
-  if (!partyId) return 'niezależny';
-  return partyId.replace(/_/g, ' ');
-}
-
 export function PresidentialElectionScreen({ onClose }: { onClose: () => void }) {
   const { state } = useGameStore();
   if (!state || !state.lastPresidentialResult) return null;
@@ -17,12 +11,13 @@ export function PresidentialElectionScreen({ onClose }: { onClose: () => void })
 
   const firstRoundSorted = [...r.candidates].sort((a, b) => b.votesPercent - a.votesPercent);
 
-  const partyNameFor = (partyId: string | null) => {
-  if (!partyId) return 'niezależny';
-  const p = allParties.find(x => x.id === partyId);
-  if (p) return p.name;
-  return partyId.replace(/_/g, ' ');
-};
+  const partyNameFor = (partyId: string | null, partyLabel?: string) => {
+    if (partyLabel) return partyLabel;
+    if (!partyId) return 'niezależny';
+    const p = allParties.find(x => x.id === partyId);
+    if (p) return p.name;
+    return partyId.replace(/_/g, ' ');
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -43,7 +38,7 @@ export function PresidentialElectionScreen({ onClose }: { onClose: () => void })
           </div>
           <div className="text-2xl font-bold">{r.winner.name}</div>
           <div className="text-sm text-stone-300">
-            {partyNameFor(r.winner.partyId)}
+            {partyNameFor(r.winner.partyId, r.winner.partyLabel)}
           </div>
         </div>
 
@@ -58,7 +53,7 @@ export function PresidentialElectionScreen({ onClose }: { onClose: () => void })
                   <span className={isWinner ? 'font-bold' : ''}>
                     {c.name}
                     <span className="ml-2 text-xs text-stone-500">
-                      {partyNameFor(c.partyId)}
+                      {partyNameFor(c.partyId, c.partyLabel)}
                     </span>
                     {inSecondRound && (
                       <span className="ml-2 text-xs text-amber-600">· II tura</span>
@@ -89,7 +84,7 @@ export function PresidentialElectionScreen({ onClose }: { onClose: () => void })
                   <span className={c.id === r.winner.id ? 'font-bold' : ''}>
                     {c.name} {c.id === r.winner.id && '(zwycięzca)'}
                   </span>
-                  <span className="font-mono">{partyNameFor(c.partyId)}</span>
+                  <span className="font-mono">{partyNameFor(c.partyId, c.partyLabel)}</span>
                 </div>
               ))}
             </div>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { GameState, Difficulty, CompanySize, AppScreen } from '../engine/types';
 import { createInitialState, getEligibleActivities } from '../engine/initialState';
+import { ensureCompetitors } from '../engine/competition';
 import { useSettingsStore } from './settingsStore';
 import { loadSlotsFromStorage, persistSlots } from './autosave';
 import type { SaveSlots } from './autosave';
@@ -16,13 +17,13 @@ import { createChaseSlice } from './slices/chaseSlice';
 export const MAX_SLOTS = 5;
 export const SLOT_IDS = ['slot_1', 'slot_2', 'slot_3', 'slot_4', 'slot_5'] as const;
 
-interface NewGameOpts { 
-  difficulty: Difficulty; 
-  inPZPR: boolean; 
-  activity: string; 
-  companyName: string; 
-  suffix: string; 
-  size: CompanySize; 
+interface NewGameOpts {
+  difficulty: Difficulty;
+  inPZPR: boolean;
+  activity: string;
+  companyName: string;
+  suffix: string;
+  size: CompanySize;
 }
 
 interface GameStore extends CombatSlice, NewsSlice, GameSlice, ChaseSlice {
@@ -36,7 +37,7 @@ interface GameStore extends CombatSlice, NewsSlice, GameSlice, ChaseSlice {
   setScreen: (s: AppScreen) => void;
   openSaves: (mode: 'new' | 'load') => void;
   setPendingSlotId: (id: string | null) => void;
-  
+
   newGame: (opts: NewGameOpts, slotId: string) => void;
   saveGame: () => void;
   loadGame: (slotId: string) => boolean;
@@ -67,17 +68,30 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     s.pace = useSettingsStore.getState().defaultPace;
     s.currentActivities = getEligibleActivities(s);
     const slots = loadSlotsFromStorage();
-    slots[slotId] = { id: slotId, name: (opts.companyName || 'Firma') + (opts.suffix ?? ''), createdAt: Date.now(), lastPlayed: Date.now(), state: s };
+    slots[slotId] = {
+      id: slotId,
+      name: (opts.companyName || 'Firma') + (opts.suffix ?? ''),
+      createdAt: Date.now(),
+      lastPlayed: Date.now(),
+      state: s,
+    };
     persistSlots(slots);
     set({ state: s, currentSlotId: slotId, screen: 'game', pendingSlotId: null, savesVersion: Date.now() });
   },
 
   saveGame: () => {
     const s = get().state;
-    if (!s || !get().currentSlotId) return;
+    const slotId = get().currentSlotId;
+    if (!s || !slotId) return;
     const slots = loadSlotsFromStorage();
-    const existing = slots[get().currentSlotId!];
-    slots[get().currentSlotId!] = { id: get().currentSlotId!, name: existing?.name ?? (s.company.name + s.company.suffix), createdAt: existing?.createdAt ?? Date.now(), lastPlayed: Date.now(), state: s };
+    const existing = slots[slotId];
+    slots[slotId] = {
+      id: slotId,
+      name: existing?.name ?? (s.company.name + s.company.suffix),
+      createdAt: existing?.createdAt ?? Date.now(),
+      lastPlayed: Date.now(),
+      state: s,
+    };
     persistSlots(slots);
     set({ savesVersion: Date.now() });
   },
@@ -86,9 +100,11 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     const slots = loadSlotsFromStorage();
     const slot = slots[slotId];
     if (!slot) return false;
+    const migratedState = ensureCompetitors(slot.state);
+    slot.state = migratedState;
     slot.lastPlayed = Date.now();
     persistSlots(slots);
-    set({ state: slot.state, currentSlotId: slotId, screen: 'game', savesVersion: Date.now() });
+    set({ state: migratedState, currentSlotId: slotId, screen: 'game', savesVersion: Date.now() });
     return true;
   },
 

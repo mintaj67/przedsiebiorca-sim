@@ -1,8 +1,9 @@
 import type { StateCreator } from 'zustand';
 import { applyEffects } from '../../engine/actions';
 import { recomputeReputation } from '../../engine/reputation';
+import { MAX_NEWS } from '../../engine/constants';
 import { autosave } from '../autosave';
-import type { NewsItem } from '../../engine/types';
+import type { NewsItem, NewsChoice } from '../../engine/types';
 
 export interface NewsSlice {
   markNewsRead: (id: string) => void;
@@ -14,9 +15,12 @@ export const createNewsSlice: StateCreator<any, [], [], NewsSlice> = (set, get) 
   markNewsRead: (id) => {
     const s = get().state;
     if (!s) return;
-    const next = { ...s, news: s.news.map((n: NewsItem) => n.id === id ? { ...n, read: true } : n) };
-    autosave(next, get().currentSlotId);
+    const next = {
+      ...s,
+      news: s.news.map((n: NewsItem) => (n.id === id ? { ...n, read: true } : n)),
+    };
     set({ state: next, savesVersion: Date.now() });
+    autosave(next, get().currentSlotId);
   },
   resolveNewsChoice: (newsId, choiceId) => {
     const s = get().state;
@@ -24,7 +28,7 @@ export const createNewsSlice: StateCreator<any, [], [], NewsSlice> = (set, get) 
     const next = structuredClone(s);
     const item = next.news.find((n: NewsItem) => n.id === newsId);
     if (!item || item.resolved || !item.choices) return;
-    const choice = item.choices.find((c: any) => c.id === choiceId);
+    const choice = item.choices.find((c: NewsChoice) => c.id === choiceId);
     if (!choice) return;
 
     if (choice.effects) applyEffects(next, choice.effects);
@@ -32,9 +36,9 @@ export const createNewsSlice: StateCreator<any, [], [], NewsSlice> = (set, get) 
     item.resolvedChoiceId = choiceId;
     item.read = true;
     next.company.reputation = recomputeReputation(next);
-    
-    autosave(next, get().currentSlotId);
+
     set({ state: next, savesVersion: Date.now() });
+    autosave(next, get().currentSlotId);
   },
   devAddTestNews: () => {
     const s = get().state;
@@ -57,7 +61,8 @@ export const createNewsSlice: StateCreator<any, [], [], NewsSlice> = (set, get) 
       ],
       onExpireEffects: { reputation: { opiniaPubliczna: -3 } },
     });
-    autosave(next, get().currentSlotId);
+    if (next.news.length > MAX_NEWS) next.news.pop();
     set({ state: next, savesVersion: Date.now() });
+    autosave(next, get().currentSlotId);
   },
 });

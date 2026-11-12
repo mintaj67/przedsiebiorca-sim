@@ -1,4 +1,4 @@
-import type { Ideology, Difficulty, PartySize } from './types';
+import type { Ideology, Difficulty, PartySize, CompanySize, ContractType } from './types';
 
 export const REPUTATION_WEIGHTS = {
   branza: 0.15,
@@ -11,11 +11,11 @@ export const REPUTATION_WEIGHTS = {
 } as const;
 
 export const COALITION_RULES: Record<Ideology, Ideology[]> = {
-  radical_left:  ['moderate_left', 'radical_right'],
-  moderate_left: ['center', 'radical_left'],
-  center:        ['moderate_left', 'moderate_right'],
-  moderate_right:['center', 'radical_right'],
-  radical_right: ['moderate_right', 'radical_left'],
+  radical_left:   ['moderate_left', 'radical_right'],
+  moderate_left:  ['center', 'radical_left'],
+  center:         ['moderate_left', 'moderate_right'],
+  moderate_right: ['center', 'radical_right'],
+  radical_right:  ['moderate_right', 'radical_left'],
 };
 
 export const PARTY_SIZE_WEIGHT: Record<PartySize, number> = {
@@ -24,18 +24,6 @@ export const PARTY_SIZE_WEIGHT: Record<PartySize, number> = {
   medium: 0.12,
   large: 0.22,
   very_large: 0.35,
-};
-
-export const ACTIVITY_REPUTATION: Record<string, number> = {
-  windykacja: 20,
-  handel: 50,
-  gastronomia: 55,
-  produkcja: 55,
-  uslugi: 60,
-  budowlanka: 45,
-  it: 75,
-  edukacja: 70,
-  transport: 50,
 };
 
 export const DIFFICULTY_CONFIG: Record<Difficulty, {
@@ -61,7 +49,7 @@ export const MAX_PARTY_SWITCHES_PER_PHASE = 3;
 export const ACTIVITY_CHANGE_COOLDOWN = 2;
 export const BANKRUPT_GRACE_TURNS = 2;
 export const BANKRUPT_EMERGENCY_LOAN = {
-  amount: 50000,
+  amount: 50_000,
   interestRate: 0.15,
   quartersLeft: 8,
 };
@@ -73,39 +61,43 @@ export const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, { title: string; descri
   },
   medium: {
     title: 'Średni',
-    description: 'Zostajesz zwolniony po latach w zakładzie i postanawiasz zainwestować odprawę we własną firmę. .',
+    description: 'Zostajesz zwolniony po latach w zakładzie i postanawiasz zainwestować odprawę we własną firmę.',
   },
   hard: {
     title: 'Trudny',
-    description: 'Pochodzisz z biednej robotniczej rodziny. Twoja matka oddaje ci ostatnie dolary wysłane przez ojca pracującego w USA, byś mógł zacząć nowe życie w wielkim mieście',
+    description: 'Pochodzisz z biednej robotniczej rodziny. Twoja matka oddaje ci ostatnie dolary wysłane przez ojca pracującego w USA, byś mógł zacząć nowe życie w wielkim mieście.',
   },
 };
 
-import type { CompanySize } from './types';
-
-export const COMPANY_SIZE_CONFIG: Record<CompanySize, { label: string, requiredWorkers: number, cashMultiplier: number, startingEmployees: { bezUmowy: number, zlecenie: number, uop: number } }> = {
-  micro: { label: 'Mikro', requiredWorkers: 0, cashMultiplier: 1.0, startingEmployees: { bezUmowy: 0, zlecenie: 0, uop: 0 } },
-  small: { label: 'Mała', requiredWorkers: 5, cashMultiplier: 1.5, startingEmployees: { bezUmowy: 0, zlecenie: 3, uop: 0 } },
-  medium: { label: 'Średnia', requiredWorkers: 15, cashMultiplier: 2.2, startingEmployees: { bezUmowy: 0, zlecenie: 7, uop: 3 } },
-  large: { label: 'Duża', requiredWorkers: 50, cashMultiplier: 4.0, startingEmployees: { bezUmowy: 0, zlecenie: 30, uop: 20 } },
-  very_large: { label: 'Bardzo duża', requiredWorkers: 150, cashMultiplier: 8.0, startingEmployees: { bezUmowy: 0, zlecenie: 100, uop: 50 } },
-  corporation: { label: 'Korporacja', requiredWorkers: 500, cashMultiplier: 15.0, startingEmployees: { bezUmowy: 0, zlecenie: 300, uop: 200 } },
+export const COMPANY_SIZE_CONFIG: Record<CompanySize, {
+  label: string;
+  requiredWorkers: number;
+  cashMultiplier: number;
+  warehouseCapacity: number;
+  startingEmployees: { bezUmowy: number; zlecenie: number; uop: number };
+}> = {
+  micro:       { label: 'Mikro',        requiredWorkers: 0,   cashMultiplier: 1.0,  warehouseCapacity: 50,     startingEmployees: { bezUmowy: 0, zlecenie: 0,   uop: 0 } },
+  small:       { label: 'Mała',         requiredWorkers: 5,   cashMultiplier: 1.5,  warehouseCapacity: 150,    startingEmployees: { bezUmowy: 0, zlecenie: 3,   uop: 0 } },
+  medium:      { label: 'Średnia',      requiredWorkers: 15,  cashMultiplier: 2.2,  warehouseCapacity: 500,    startingEmployees: { bezUmowy: 0, zlecenie: 7,   uop: 3 } },
+  large:       { label: 'Duża',         requiredWorkers: 50,  cashMultiplier: 4.0,  warehouseCapacity: 1500,   startingEmployees: { bezUmowy: 0, zlecenie: 30,  uop: 20 } },
+  very_large:  { label: 'Bardzo duża',  requiredWorkers: 150, cashMultiplier: 8.0,  warehouseCapacity: 5000,   startingEmployees: { bezUmowy: 0, zlecenie: 100, uop: 50 } },
+  corporation: { label: 'Korporacja',   requiredWorkers: 500, cashMultiplier: 15.0, warehouseCapacity: 20000,  startingEmployees: { bezUmowy: 0, zlecenie: 300, uop: 200 } },
 };
 
-export const COMPANY_EXPANSION_CONFIG: Record<CompanySize, { cost: number, repBonus: number, repPenalty: number }> = {
-  micro: { cost: 0, repBonus: 0, repPenalty: -10 },
-  small: { cost: 50000, repBonus: 5, repPenalty: -15 },
-  medium: { cost: 150000, repBonus: 10, repPenalty: -20 },
-  large: { cost: 500000, repBonus: 15, repPenalty: -25 },
-  very_large: { cost: 1500000, repBonus: 20, repPenalty: -30 },
-  corporation: { cost: 5000000, repBonus: 25, repPenalty: -35 },
+export const COMPANY_EXPANSION_CONFIG: Record<CompanySize, { cost: number; repBonus: number; repPenalty: number }> = {
+  micro:       { cost: 0,         repBonus: 0,  repPenalty: -10 },
+  small:       { cost: 50_000,    repBonus: 5,  repPenalty: -15 },
+  medium:      { cost: 150_000,   repBonus: 10, repPenalty: -20 },
+  large:       { cost: 500_000,   repBonus: 15, repPenalty: -25 },
+  very_large:  { cost: 1_500_000, repBonus: 20, repPenalty: -30 },
+  corporation: { cost: 5_000_000, repBonus: 25, repPenalty: -35 },
 };
 
-export const BRANCH_COST = 250000;
+export const BRANCH_COST = 250_000;
 export const PSL_AVAILABILITY_CHANCE = 0.67;
 export const BELOW_REQUIRED_WORKERS_PENALTY = 2;
 
-export const WORKER_CONFIG: Record<'bezUmowy' | 'zlecenie' | 'uop', {
+export const WORKER_CONFIG: Record<ContractType, {
   label: string;
   wage: number;
   revenue: number;
@@ -172,23 +164,11 @@ export const CANDIDATE_LAST_NAMES = [
   'Kozłowski', 'Jankowski', 'Mazur', 'Krawczyk', 'Piotrowski', 'Grabowski',
 ];
 
-export const ACTIVITY_MAFIA_BASELINE: Record<string, number> = {
-  windykacja: 55,
-  transport: 45,
-  gastronomia: 40,
-  budowlanka: 40,
-  handel: 30,
-  produkcja: 25,
-  uslugi: 25,
-  it: 20,
-  edukacja: 15,
-};
-
 export const MAFIA_INVITATION_THRESHOLD = 75;
-export const MAFIA_INVITATION_MIN_GAP_FIRST = 4;      // tury
-export const MAFIA_INVITATION_MIN_GAP_RETRY = 16;     // tury (4 lata)
+export const MAFIA_INVITATION_MIN_GAP_FIRST = 4;
+export const MAFIA_INVITATION_MIN_GAP_RETRY = 16;
 export const MAFIA_INVITATION_RETRY_CHANCE = 0.3;
-export const MAFIA_INVITATION_EXPIRES_IN = 3;         // tury na decyzję
+export const MAFIA_INVITATION_EXPIRES_IN = 3;
 export const SKARBOWKA_THRESHOLD = 30;
 export const SKARBOWKA_PREPARE_TURNS = 3;
 export const SKARBOWKA_DECAY_BEZ_UMOWY = -2;
@@ -201,4 +181,4 @@ export const COMBAT_SKARBOWKA_ENEMY_HP = 100;
 export const COMBAT_MAX_ROUNDS = 10;
 export const ACCOUNTANT_COST = 3000;
 export const ACCOUNTANT_BONUS = 3;
-export const ELECTION_YEARS = [1991, 1993, 1997, 2001, 2005, 2007, 2011, 2015, 2019, 2023, 2027];
+export const ELECTION_YEARS = [1989, 1991, 1993, 1997, 2001, 2005, 2007, 2011, 2015, 2019, 2023, 2027];

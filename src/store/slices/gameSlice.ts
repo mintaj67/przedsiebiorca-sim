@@ -1,5 +1,12 @@
 import type { StateCreator } from 'zustand';
-import type { ContractType, GameState, Pace } from '../../engine/types';
+import type {
+  ContractType,
+  GameState,
+  Pace,
+  InstallmentOption,
+  TradeSupplier,
+  TradeBuyer,
+} from '../../engine/types';
 import {
   nextTurn,
   consumeActivity as consumeActivityEngine,
@@ -14,28 +21,25 @@ import {
   applyLeaveParty,
   applyEmergencyLoan,
   applySetPace,
+  buyOfficeItem as buyOfficeItemEngine,
   toggleAccountant,
   changeCompanySize as changeCompanySizeEngine,
   buildBranch as buildBranchEngine,
-  buyResource as buyResourceEngine,
-  sellResource as sellResourceEngine,
   buyAd as buyAdEngine,
+  rentWarehouse as rentWarehouseEngine,
   buyGoods as buyGoodsEngine,
   sellGoods as sellGoodsEngine,
   resolveComplaint as resolveComplaintEngine,
-  rentWarehouse as rentWarehouseEngine,
 } from '../../engine/actions';
+import { interactWithCompetitor as interactWithCompetitorEngine } from '../../engine/competition';
 import { autosave } from '../autosave';
-
-// Typy argumentów handlu bierzemy prosto z silnika, zamiast `any`.
-type Supplier = Parameters<typeof buyGoodsEngine>[1];
-type Buyer = Parameters<typeof sellGoodsEngine>[1];
 
 export interface GameSlice {
   doTurn: () => void;
   consumeActivity: (activityId: string) => void;
   resolveEvent: (eventId: string, choiceId: string) => void;
   dismissConsequence: () => void;
+  dismissIntro: () => void;
   joinParty: (partyId: string) => void;
   leaveParty: () => void;
   changeActivity: (activity: string) => void;
@@ -43,18 +47,24 @@ export interface GameSlice {
   hireWorker: (contract: ContractType, delta: number) => void;
   takeLoan: (source: 'bank' | 'szara_strefa', amount: number) => void;
   setPace: (pace: Pace) => void;
+  buyOfficeItem: (itemId: string, price: number) => void;
   toggleAccountant: () => void;
   dismissElection: () => void;
   dismissPresidentialResult: () => void;
   changeCompanySize: (direction: 'up' | 'down') => void;
   buildBranch: () => void;
-  buyResource: (resId: string, amount: number, basePrice: number) => void;
-  sellResource: (resId: string, amount: number, basePrice: number) => void;
   buyAd: (type: 'radio' | 'tv' | 'internet') => void;
-  buyGoods: (supplier: Supplier, amount: number) => void;
-  sellGoods: (buyer: Buyer, resId: string, amount: number, baseValue: number) => void;
-  resolveComplaint: (id: string, accept: boolean) => void;
   rentWarehouse: () => void;
+  buyGoods: (supplier: TradeSupplier, amount: number, installments?: InstallmentOption) => void;
+  sellGoods: (
+    buyer: TradeBuyer,
+    resId: string,
+    amount: number,
+    unitPrice: number,
+    installments?: InstallmentOption
+  ) => void;
+  resolveComplaint: (id: string, accept: boolean) => void;
+  interactCompetitor: (compId: string, type: 'positive' | 'negative') => void;
 }
 
 interface CommitOptions {
@@ -75,7 +85,6 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     const next = fn(s);
     if (next === s) return; // nic się nie zmieniło — bez zbędnego zapisu
 
-    // Najpierw stan, potem zapis: błąd localStorage (np. pełny) nie może zgubić akcji gracza.
     set({ state: next, savesVersion: Date.now() });
     try {
       autosave(next, get().currentSlotId);
@@ -85,11 +94,12 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
   };
 
   return {
-    // --- Tura ---
+    // --- Tura i Okna ---
     doTurn: () => commit(nextTurn),
     consumeActivity: (id) => commit((s) => consumeActivityEngine(s, id)),
     resolveEvent: (eventId, choiceId) => commit((s) => resolveEventChoice(s, eventId, choiceId)),
     dismissConsequence: () => commit(dismissConsequence, { allowAfterGameOver: true }),
+    dismissIntro: () => commit((s) => ({ ...s, showIntro: false }), { allowAfterGameOver: true }),
 
     // --- Polityka ---
     joinParty: (partyId) => commit((s) => applyJoinParty(s, partyId)),
@@ -103,22 +113,24 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     changeActivity: (activity) => commit((s) => applyChangeActivity(s, activity)),
     hireWorker: (contract, delta) => commit((s) => applyHire(s, contract, delta)),
     setPace: (pace) => commit((s) => applySetPace(s, pace)),
+    buyOfficeItem: (itemId, price) => commit((s) => buyOfficeItemEngine(s, itemId, price)),
     toggleAccountant: () => commit(toggleAccountant),
     changeCompanySize: (direction) => commit((s) => changeCompanySizeEngine(s, direction)),
     buildBranch: () => commit(buildBranchEngine),
     buyAd: (type) => commit((s) => buyAdEngine(s, type)),
+    rentWarehouse: () => commit(rentWarehouseEngine),
 
     // --- Finanse ---
     takeEmergencyLoan: () => commit(applyEmergencyLoan),
     takeLoan: (source, amount) => commit((s) => applyLoan(s, source, amount)),
 
-    // --- Handel ---
-    buyResource: (resId, amount, price) => commit((s) => buyResourceEngine(s, resId, amount, price)),
-    sellResource: (resId, amount, price) => commit((s) => sellResourceEngine(s, resId, amount, price)),
-    buyGoods: (supplier, amount) => commit((s) => buyGoodsEngine(s, supplier, amount)),
-    sellGoods: (buyer, resId, amount, baseValue) =>
-      commit((s) => sellGoodsEngine(s, buyer, resId, amount, baseValue)),
+    // --- Handel i Konkurencja ---
+    buyGoods: (supplier, amount, installments = 1) =>
+      commit((s) => buyGoodsEngine(s, supplier, amount, installments)),
+    sellGoods: (buyer, resId, amount, unitPrice, installments = 1) =>
+      commit((s) => sellGoodsEngine(s, buyer, resId, amount, unitPrice, installments)),
     resolveComplaint: (id, accept) => commit((s) => resolveComplaintEngine(s, id, accept)),
-    rentWarehouse: () => commit(rentWarehouseEngine),
+    interactCompetitor: (compId, type) =>
+      commit((s) => interactWithCompetitorEngine(s, compId, type)),
   };
 };

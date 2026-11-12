@@ -5,7 +5,7 @@ import type {
   Ideology,
   PresidentialCandidate,
   PresidentialResult,
-  PartySize
+  PartySize,
 } from './types';
 import { COALITION_RULES, CANDIDATE_FIRST_NAMES, CANDIDATE_LAST_NAMES, PARTY_SIZE_WEIGHT, ELECTION_YEARS } from './constants';
 import { makeRng } from './rng';
@@ -39,7 +39,7 @@ export function tickPolitics(state: GameState): GameState {
     const nextElectionYear = ELECTION_YEARS.find(y => y > state.year);
     state.politics.nextParliamentaryElection = nextElectionYear ?? (state.year + 4);
   }
-  
+
   if (state.year >= state.politics.nextPresidentialElection) {
     const result = computePresidentialElection(state);
     state.lastPresidentialResult = result;
@@ -63,11 +63,13 @@ export function getPartySize(party: Party, year: number): PartySize {
   return sched ? sched.size : 'medium';
 }
 
-function activeParties(state: GameState): Party[] {
+export function getActiveParties(state: GameState): Party[] {
   return (partiesData as Party[]).filter(p => {
     if (p.isPSL && !state.politics.pslAvailable) return false;
     const sched = state.politics.partySchedule[p.id];
-    const isYearValid = sched ? (state.year >= sched.from && state.year <= sched.to) : (state.year >= p.activeFrom && state.year <= p.activeTo);
+    const isYearValid = sched
+      ? state.year >= sched.from && state.year <= sched.to
+      : state.year >= p.activeFrom && state.year <= p.activeTo;
     if (!isYearValid) return false;
 
     if (p.pzprAvailable !== 'both') {
@@ -140,12 +142,12 @@ function computeFromPredefined(state: GameState, pre: PredefinedElection): Presi
 
 function computeRandomElection(state: GameState): PresidentialResult {
   const rng = makeRng(state.seed, state.year * 100 + 2);
-  const parties = activeParties(state);
+  const parties = getActiveParties(state);
   const candidates: PresidentialCandidate[] = [];
 
   for (const p of parties) {
     const size = getPartySize(p, state.year);
-    const base = PARTY_SIZE_WEIGHT[size] || 0.1; // Pobiera wagę zależną od roku
+    const base = PARTY_SIZE_WEIGHT[size] || 0.1;
     const noise = (rng.next() - 0.5) * 0.08;
     const strength = Math.max(0.02, base + noise);
     candidates.push({
@@ -189,20 +191,20 @@ function computeRandomElection(state: GameState): PresidentialResult {
 
 function runParliamentaryElection(state: GameState) {
   const rng = makeRng(state.seed, state.year * 100 + 1);
-  const parties = activeParties(state);
+  const parties = getActiveParties(state);
   const seats: Record<string, number> = {};
   let remaining = SEATS_TOTAL;
 
   for (const p of parties) {
     const size = getPartySize(p, state.year);
-    const base = PARTY_SIZE_WEIGHT[size] || 0.1; // Pobiera wagę zależną od roku
+    const base = PARTY_SIZE_WEIGHT[size] || 0.1;
     const noise = (rng.next() - 0.5) * 0.08;
     const share = Math.max(0, base + noise);
     const s = Math.floor(share * SEATS_TOTAL);
     seats[p.id] = s;
     remaining -= s;
   }
-  
+
   if (parties.length > 0) {
     const largest = parties.reduce((a, b) => (seats[a.id] > seats[b.id] ? a : b));
     seats[largest.id] += remaining;
@@ -212,7 +214,7 @@ function runParliamentaryElection(state: GameState) {
   const premier = coalition[0] ?? null;
 
   const result: ElectionResult = { year: state.year, seats, coalition, premierId: premier };
-  
+
   return {
     ...state.politics,
     parties,

@@ -1,11 +1,12 @@
-import type { GameState, Difficulty, Activity, CompanySize } from './types';
+import type { GameState, Difficulty, Activity, CompanySize, Party } from './types';
 import { DIFFICULTY_CONFIG, COMPANY_SIZE_CONFIG, PSL_AVAILABILITY_CHANCE } from './constants';
 import { getActivityData } from './activityHelper';
 import { matchesConditions } from './events';
+import { recomputeReputation } from './reputation';
 import { makeRng } from './rng';
 import activitiesData from '../data/activities.json';
 import partiesData from '../data/parties.json';
-import type { Party } from './types';
+import { generateCompetitors, getCategoryId, INTERACTIONS_PER_TURN } from './competition';
 
 export function createInitialState(opts: {
   seed: string;
@@ -23,8 +24,9 @@ export function createInitialState(opts: {
   const cash = Math.round(startingCash * sizeCfg.cashMultiplier);
   const rng = makeRng(opts.seed, 999);
   const pslAvailable = rng.next() < PSL_AVAILABILITY_CHANCE;
+  const competitionCategory = getCategoryId(opts.activity) ?? '';
 
-  return {
+  const state: GameState = {
     schemaVersion: 1,
     seed: opts.seed,
     turn: 0,
@@ -51,7 +53,7 @@ export function createInitialState(opts: {
       activity: opts.activity,
       employees: { ...sizeCfg.startingEmployees },
       hasAccountant: false,
-      inventory: [], // <-- Inicjalizacja nowego pola inventory jako pustej tablicy
+      inventory: [],
       finances: {
         stanKonta: cash,
         wplywy: {
@@ -78,17 +80,16 @@ export function createInitialState(opts: {
         opiniaPubliczna: startingRep,
         opiniaPracownicy: startingRep,
         opiniaBranza: startingRep,
-        opiniaMafia: actData?.mafia ?? 25,        
+        opiniaMafia: actData?.mafia ?? 25,
         opiniaMedia: 50,
         opiniaPolitycy: opts.inPZPR ? 60 : 40,
         opiniaSkarbowa: 50,
-        ogolna: 0
+        ogolna: 50,
       },
       loans: [],
       lastActivityChangeTurn: -999,
       branches: 0,
       resources: {},
-      audience: 0,
       warehouseCapacity: 50,
     },
 
@@ -108,7 +109,6 @@ export function createInitialState(opts: {
       nextPresidentialElection: 1990,
       pslAvailable,
       partySchedule: generatePartySchedule(opts.seed),
-
     },
 
     pendingEvents: [],
@@ -121,15 +121,28 @@ export function createInitialState(opts: {
     lastPresidentialResult: null,
     skarbowkaVisitTurn: null,
     activeCombat: null,
-    activeChase: null,    
+    activeChase: null,
     news: [],
     showIntro: true,
     profitabilityScore: 50,
     profitabilityTrend: 'neutral',
     gameOver: null,
     pendingSales: [],
-    pendingComplaints: []  
+    pendingComplaints: [],
+    interactionPoints: INTERACTIONS_PER_TURN,
+
+    competitors: competitionCategory ? generateCompetitors(competitionCategory, 1989, opts.seed) : [],
+    competitionCategory,
+    playerPrev: null,
+
+    macroStats: {
+      unemployment: 10,
+      development: 40,
+    },
   };
+
+  state.company.reputation = recomputeReputation(state);
+  return state;
 }
 
 export function getEligibleActivities(state: GameState): string[] {

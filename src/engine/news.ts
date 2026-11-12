@@ -16,11 +16,11 @@ import {
   FLOWERS_BONUS,
 } from './constants';
 import { matchesConditions } from './events';
-import { applyEffects } from './actions'; // <- upewnij się, że to jest stąd!
+import { applyEffects } from './actions';
 import eventsData from '../data/events.json';
 import partiesData from '../data/parties.json';
 import customNewsData from '../data/custom_news.json';
-import { getPartySize } from './politics';
+import { getPartySize, getActiveParties } from './politics';
 
 interface CustomNews {
   id: string;
@@ -39,7 +39,7 @@ export function addNewsItem(state: GameState, item: Omit<NewsItem, 'read'>): voi
 export function generatePassiveNews(state: GameState): void {
   const rng = makeRng(state.seed, state.turn * 13 + 7);
 
-  // 1. Plotki o nadchodzących eventach (mogą być prawdziwe lub fałszywe)
+  // 1. Plotki o nadchodzących eventach
   const upcomingOnce = (eventsData as GameEvent[]).filter(e =>
     e.once &&
     !state.history.includes(e.id) &&
@@ -77,7 +77,7 @@ export function generatePassiveNews(state: GameState): void {
   // 2. Sondaże — co 4 tury w oknie 2 lat przed wyborami
   const electionIn = state.politics.nextParliamentaryElection - state.year;
   if (electionIn <= 2 && electionIn > 0 && state.turn % 4 === 0) {
-    const active = activePartiesFor(state);
+    const active = getActiveParties(state);
     if (active.length > 0) {
       const sorted = [...active].sort((a, b) => sizeRank(b, state.year) - sizeRank(a, state.year));
       const leader = sorted[0];
@@ -107,7 +107,7 @@ export function generatePassiveNews(state: GameState): void {
         year: state.year,
         quarter: state.quarter,
         headline: `Powstaje nowe ugrupowanie: ${p.name}`,
-        body: `Grupa działaczy ogłasza utworzenie partii.`,
+        body: 'Grupa działaczy ogłasza utworzenie partii.',
         category: 'party',
       });
     }
@@ -119,7 +119,7 @@ export function generatePassiveNews(state: GameState): void {
         year: state.year,
         quarter: state.quarter,
         headline: `${p.name} rozwiązuje się`,
-        body: `Partia nie zdołała utrzymać struktur.`,
+        body: 'Partia nie zdołała utrzymać struktur.',
         category: 'party',
       });
     }
@@ -141,15 +141,6 @@ export function generatePassiveNews(state: GameState): void {
       category: 'custom',
     });
   }
-}
-
-export function activePartiesFor(state: GameState): Party[] {
-  return (partiesData as Party[]).filter(p => {
-    if (p.isPSL && !state.politics.pslAvailable) return false;
-    const sched = state.politics.partySchedule[p.id];
-    if (!sched) return false;
-    return state.year >= sched.from && state.year <= sched.to;
-  });
 }
 
 function sizeRank(p: Party, year: number): number {
@@ -187,20 +178,17 @@ export function processExpiredActions(state: GameState): void {
 }
 
 export function checkMafiaInvitation(state: GameState): void {
-  // Warunki bazowe
   if (state.year < 1990) return;
   if (state.phase !== 'chaos') return;
   if (state.ceo.inMafia) return;
   if (state.ceo.flags.includes('zdradzil_mafie')) return;
   if (state.company.reputation.opiniaMafia < MAFIA_INVITATION_THRESHOLD) return;
 
-  // Sprawdź, czy w tej chwili nie ma już aktywnego zaproszenia w skrzynce
   const hasPending = state.news.some(
     n => n.id.startsWith('mafia_invitation_') && !n.resolved
   );
   if (hasPending) return;
 
-  // Odstęp czasowy od poprzedniego zaproszenia
   const refusedBefore =
     state.ceo.flags.includes('mafia_refused') ||
     state.ceo.flags.includes('mafia_ghosted');
@@ -210,12 +198,10 @@ export function checkMafiaInvitation(state: GameState): void {
   const minGap = refusedBefore ? MAFIA_INVITATION_MIN_GAP_RETRY : MAFIA_INVITATION_MIN_GAP_FIRST;
   if (gap < minGap) return;
 
-  // Losowanie (przy ponownym zaproszeniu tylko 30% szansy na turę)
   const rng = makeRng(state.seed, state.turn * 17 + 5);
   const chance = refusedBefore ? MAFIA_INVITATION_RETRY_CHANCE : 1.0;
   if (rng.next() > chance) return;
 
-  // Wyślij zaproszenie
   const isRetry = refusedBefore;
   addActionableNewsItem(state, {
     id: `mafia_invitation_${state.turn}`,
@@ -262,7 +248,6 @@ export function checkTaxOfficeNotice(state: GameState): void {
   if (state.skarbowkaVisitTurn !== null) return;
   if (state.company.reputation.opiniaSkarbowa >= SKARBOWKA_THRESHOLD) return;
 
-  // Zapowiedź
   addActionableNewsItem(state, {
     id: `skarbowka_notice_${state.turn}`,
     turn: state.turn,
@@ -300,18 +285,15 @@ export function checkTaxOfficeNotice(state: GameState): void {
 }
 
 export function checkEmployeeUnrest(state: GameState): void {
-  // Sprawdzamy, czy jest już jakaś wiadomość od pracowników w skrzynce
   const hasPending = state.news.some(n => n.id.startsWith('employee_demand_') && !n.resolved);
   if (hasPending) return;
 
-  // Warunki: mamy pracowników na śmieciówkach/bez umowy ORAZ niska opinia (lub losowy pech)
   const hasWorkers = state.company.employees.bezUmowy > 0 || state.company.employees.zlecenie > 0;
   if (!hasWorkers) return;
 
   const isUnhappy = state.company.reputation.opiniaPracownicy < 40;
   const rng = makeRng(state.seed, state.turn * 11 + 4);
 
-  // Szansa: 100% jeśli są bardzo nieszczęśliwi, 15% w normalnych warunkach
   const chance = isUnhappy ? 1.0 : 0.15;
   if (rng.next() > chance) return;
 
@@ -331,8 +313,8 @@ export function checkEmployeeUnrest(state: GameState): void {
         description: 'Zmieniasz formę zatrudnienia na UOP. Kosztuje to więcej, ale zyskujesz lojalność.',
         effects: {
           employeesDelta: { bezUmowy: -1, uop: 1 },
-          reputation: { opiniaPracownicy: 15 }
-        }
+          reputation: { opiniaPracownicy: 15 },
+        },
       },
       {
         id: 'refuse',
@@ -340,13 +322,13 @@ export function checkEmployeeUnrest(state: GameState): void {
         description: 'Wypadasz na chama. Pracownik odchodzi, a inni patrzą.',
         effects: {
           employeesDelta: { bezUmowy: -1 },
-          reputation: { opiniaPracownicy: -20, opiniaPubliczna: -5 }
-        }
-      }
+          reputation: { opiniaPracownicy: -20, opiniaPubliczna: -5 },
+        },
+      },
     ],
     onExpireEffects: {
       employeesDelta: { bezUmowy: -1 },
-      reputation: { opiniaPracownicy: -10 }
-    }
+      reputation: { opiniaPracownicy: -10 },
+    },
   });
 }

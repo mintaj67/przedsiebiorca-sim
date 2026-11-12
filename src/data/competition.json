@@ -1,0 +1,26 @@
+[
+  {
+    "id": "comp_1",
+    "name": "Firma Kogucik",
+    "baseReputation": 50,
+    "description": "To od głupiej fryzury właściciela."
+  },
+  {
+    "id": "comp_2",
+    "name": "Uchciok I Syn",
+    "baseReputation": 40,
+    "description": "Prowadzona przez Tomasza Uchcioka i Krzysztofa Syna."
+  },
+  {
+    "id": "comp_3",
+    "name": "Szara Strefa i Partners",
+    "baseReputation": 20,
+    "description": "Może średnio, ale za to drogo."
+  },
+  {
+    "id": "comp_4",
+    "name": "KGHM",
+    "baseReputation": 60,
+    "description": "Tak, to oni."
+  }
+]

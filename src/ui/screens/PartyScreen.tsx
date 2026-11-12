@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
-import { getPartySize } from '../../engine/politics';
+import { getPartySize, getActiveParties } from '../../engine/politics';
+import { MAX_PARTY_SWITCHES_PER_PHASE } from '../../engine/constants';
 import { makeRng } from '../../engine/rng';
 import partiesData from '../../data/parties.json';
 import type { Party } from '../../engine/types';
@@ -27,7 +28,8 @@ export function PartyScreen() {
   if (!state) return null;
 
   const is1989 = state.year <= 1989;
-  const switchesLeft = 3 - state.ceo.partySwitchesByPhase[state.phase];
+  const switchesUsed = state.ceo.partySwitchesByPhase[state.phase];
+  const switchesLeft = MAX_PARTY_SWITCHES_PER_PHASE - switchesUsed;
   const myParty = (partiesData as Party[]).find(p => p.id === state.ceo.currentPartyId) ?? null;
 
   // Ustalamy limit partii (bazowo 4, z komputerem 6)
@@ -35,29 +37,14 @@ export function PartyScreen() {
 
   // Logika losowania partii (zapewniająca różnorodność)
   const visibleParties = useMemo(() => {
-    if (is1989) return []; // W 1989 nie ma wyboru
+    if (is1989) return [];
 
-    // 1. Pobieramy wszystkie dostępne partie
-    const active = (partiesData as Party[]).filter(p => {
-      if (p.isPSL && !state.politics.pslAvailable) return false;
-      const sched = state.politics.partySchedule[p.id];
-      const isYearValid = sched ? (state.year >= sched.from && state.year <= sched.to) : (state.year >= p.activeFrom && state.year <= p.activeTo);
-      if (!isYearValid) return false;
+    const active = getActiveParties(state);
 
-      if (p.pzprAvailable !== 'both') {
-        const playerIsPzpr = state.ceo.party === 'PZPR';
-        if (playerIsPzpr && p.pzprAvailable === 'no') return false;
-        if (!playerIsPzpr && p.pzprAvailable === 'yes') return false;
-      }
-      return true;
-    });
-
-    // 2. Dzielimy na pule ideologiczne
     const left = active.filter(p => ['radical_left', 'moderate_left'].includes(p.ideology));
     const center = active.filter(p => p.ideology === 'center');
     const right = active.filter(p => ['radical_right', 'moderate_right'].includes(p.ideology));
 
-    // 3. Używamy seedowanego RNG, żeby lista nie zmieniała się przy każdym kliknięciu (tylko co turę)
     const rng = makeRng(state.seed, state.turn * 13 + 7);
     const selected: Party[] = [];
 
@@ -68,22 +55,19 @@ export function PartyScreen() {
       if (pick) selected.push(pick);
     };
 
-    // Gwarantujemy po jednej z każdej opcji (jeśli istnieją)
     addFromPool(left);
     addFromPool(center);
     addFromPool(right);
 
-    // Dobijamy resztę wolnymi miejscami (z puli pozostałych partii)
     const remaining = active.filter(p => !selected.some(s => s.id === p.id));
     const shuffledRemaining = [...remaining].sort(() => rng.next() - 0.5);
-    
+
     while (selected.length < maxChoices && shuffledRemaining.length > 0) {
       selected.push(shuffledRemaining.pop()!);
     }
 
-    // Mieszamy ostateczną listę, żeby kolejność na ekranie była losowa
     return selected.sort(() => rng.next() - 0.5);
-  }, [state.year, state.turn, state.ceo.party, state.politics.pslAvailable, maxChoices, is1989]);
+  }, [state.seed, state.year, state.turn, state.ceo.party, state.politics.pslAvailable, state.politics.partySchedule, maxChoices, is1989]);
 
   return (
     <div className="p-6">
@@ -92,7 +76,9 @@ export function PartyScreen() {
       {is1989 && (
         <div className="bg-amber-100 border border-amber-300 text-amber-900 p-4 rounded-lg mb-6">
           <p className="font-bold">Okres przejściowy</p>
-          <p className="text-sm">W 1989 roku trwa Sejm kontraktowy. Dołączanie do partii politycznych będzie możliwe po pierwszych wolnych wyborach w 1990 roku.</p>
+          <p className="text-sm">
+            W 1989 roku trwa Sejm kontraktowy. Dołączanie do partii politycznych będzie możliwe po pierwszych wolnych wyborach w 1990 roku.
+          </p>
         </div>
       )}
 
@@ -107,7 +93,7 @@ export function PartyScreen() {
             </div>
             <p className="text-sm text-stone-400 italic mb-4">"{myParty.descriptionAfterJoin}"</p>
             <p className="text-xs text-stone-500 border-t border-stone-700 pt-2">
-              W tej fazie zmieniłeś partię {state.ceo.partySwitchesByPhase[state.phase]} / 3 razy.
+              W tej fazie zmieniłeś partię {switchesUsed} / {MAX_PARTY_SWITCHES_PER_PHASE} razy.
             </p>
           </div>
         </section>
@@ -132,19 +118,24 @@ export function PartyScreen() {
               </span>
             )}
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {visibleParties.map(p => {
+            {visibleParties.map((p, idx) => {
               const isMine = p.id === state.ceo.currentPartyId;
               const isRuling = state.politics.rulingCoalition.includes(p.id);
               const currentSize = getPartySize(p, state.year);
-              const randomDesc = p.descriptions[Math.floor(Math.random() * p.descriptions.length)];
+              const descRng = makeRng(state.seed, state.turn * 19 + idx);
+              const randomDesc = p.descriptions.length > 0 ? descRng.pick(p.descriptions) : '';
 
               return (
                 <div
                   key={p.id}
                   className={`bg-white rounded-lg shadow-sm p-4 border-2 flex flex-col justify-between transition ${
-                    isMine ? 'border-stone-900 ring-2 ring-stone-900/20' : isRuling ? 'border-amber-500' : 'border-transparent hover:border-stone-300'
+                    isMine
+                      ? 'border-stone-900 ring-2 ring-stone-900/20'
+                      : isRuling
+                      ? 'border-amber-500'
+                      : 'border-transparent hover:border-stone-300'
                   }`}
                 >
                   <div>

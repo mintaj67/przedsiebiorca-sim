@@ -2,7 +2,7 @@ import { useGameStore } from '../../store/gameStore';
 import { getActivityFullInfo } from '../../engine/activityHelper';
 
 export function IntroScreen() {
-  const { state } = useGameStore();
+  const { state, dismissIntro } = useGameStore();
   if (!state) return null;
 
   const isPZPR = state.ceo.party === 'PZPR';
@@ -25,7 +25,7 @@ export function IntroScreen() {
   // 2. Tekst o trudności
   let diffText = '';
   if (diff === 'easy') {
-    diffText = isPZPR 
+    diffText = isPZPR
       ? 'O fundusze na start nie musisz się martwić. Twój ojciec był za komuny badylarzem, a jego Fiata Mirafiori kojarzył każdy w twoim Małym Mieście. Co prawda jako prywaciarz nie jest szczególnie zadowolony z tego, że zapisałeś się do partii, ale chętnie pomoże ci w rozkręceniu biznesu - zwłaszcza jeśli wiązałoby się to z pozbyciem się Ciebie z domu.'
       : 'O fundusze na start nie musisz się martwić. Twój ojciec był za komuny badylarzem, a jego Fiata Mirafiori kojarzył każdy w twoim Małym Mieście. Twój ojciec jest dumny z tego, że popierasz działalność opozycyjną. Może mniej dumny z efektów, ale docenia to, że przynajmniej próbujesz. Chętnie ci pomoże w rozkręceniu twojego pierwszego biznesu w Wolnej Polsce.';
   } else if (diff === 'medium') {
@@ -44,7 +44,7 @@ export function IntroScreen() {
         <h1 className="text-3xl font-bold text-center mb-8 uppercase tracking-widest text-stone-800">
           Etap 1: Chaos
         </h1>
-        
+
         <div className="space-y-4 text-stone-700 leading-relaxed text-sm md:text-base">
           <p>
             Jest rok 1989. Polska Rzeczpospolita Ludowa właśnie chyli się ku upadkowi. Bieda i syf walczą o ostatni kawałek chleba, robotnicy strajkują i generalnie psy nie szczekają dupami tylko dlatego, ponieważ zjedli je bezdomni. Nawet kadra Łazarka gra piach.
@@ -65,8 +65,8 @@ export function IntroScreen() {
           </p>
         </div>
 
-        <button 
-          onClick={() => useGameStore.setState(s => ({ state: { ...s.state!, showIntro: false } }))}
+        <button
+          onClick={dismissIntro}
           className="w-full mt-8 bg-stone-900 text-white py-4 rounded text-lg font-bold hover:bg-stone-800 transition"
         >
           Rozpocznij karierę →

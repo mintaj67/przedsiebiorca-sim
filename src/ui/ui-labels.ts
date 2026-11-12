@@ -15,9 +15,10 @@ export const REPUTATION_DESCRIPTIONS: Record<string, string> = {
   opiniaPubliczna: 'Jak postrzegają cię zwykli ludzie. Wpływa na decyzje klientów i kontrahentów.',
   opiniaPracownicy: 'Nastawienie załogi. Zbyt niska może oznaczać strajki i rotację.',
   opiniaBranza: 'Jak widzą cię konkurenci i partnerzy biznesowi.',
-  opiniaMafia: 'Twoja pozycja w półświatku. Powyżej progu zaczyna szkodzić opinii publicznej.',
+  opiniaMafia: 'Twoja pozycja w półświatku. Powyżej progu zaczyna szkodzić opinii publicznej, a zbyt niska grozi wizytą smutnych panów.',
   opiniaMedia: 'Jak piszą o tobie gazety i telewizja. Statystyka ukryta.',
   opiniaPolitycy: 'Twoje wpływy w świecie polityki. Statystyka ukryta. Waga zależy od wyników wyborów.',
+  opiniaSkarbowa: 'Zaufanie fiskusa. Zbyt niska wartość sprowadzi na firmę kontrolę skarbową.',
 };
 
 export const WPLYWY_LABELS: Record<string, string> = {

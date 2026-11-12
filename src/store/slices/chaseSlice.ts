@@ -13,15 +13,15 @@ export const createChaseSlice: StateCreator<any, [], [], ChaseSlice> = (set, get
     if (!s || !s.activeChase) return;
     const next = structuredClone(s);
     movePlayer(next, dx, dy);
-    autosave(next, get().currentSlotId);
     set({ state: next, savesVersion: Date.now() });
+    autosave(next, get().currentSlotId);
   },
   dismissChase: () => {
     const s = get().state;
     if (!s) return;
     const next = structuredClone(s);
     dismissChaseEngine(next);
-    autosave(next, get().currentSlotId);
     set({ state: next, savesVersion: Date.now() });
+    autosave(next, get().currentSlotId);
   },
 });

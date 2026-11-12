@@ -55,7 +55,7 @@ export interface Employees {
 
 export interface Loan {
   id: string;
-  source: 'bank' | 'szara_strefa';
+  source: 'bank' | 'szara_strefa' | 'zakup_raty';
   principal: number;
   remaining: number;
   interestRate: number;
@@ -63,7 +63,6 @@ export interface Loan {
 }
 
 export interface Company {
-  flags: any;
   name: string;
   suffix: string;
   size: CompanySize;
@@ -78,8 +77,7 @@ export interface Company {
   inventory: string[];
   branches: number;
   resources: Record<string, number>;
-  audience: number;
-  warehouseCapacity: number; 
+  warehouseCapacity: number;
 }
 
 export interface PartySizeSchedule {
@@ -91,7 +89,7 @@ export interface PartySizeSchedule {
 export interface Party {
   id: string;
   name: string;
-  descriptions: string[]; // Tablica na Opis 1, Opis 2 itd.
+  descriptions: string[];
   descriptionAfterJoin: string;
   ideology: Ideology;
   sizeSchedule: PartySizeSchedule[];
@@ -135,7 +133,6 @@ export interface PresidentialResult {
   secondRoundCandidates?: PresidentialCandidate[];
 }
 
-
 export interface PoliticsState {
   parties: Party[];
   president: President | null;
@@ -157,7 +154,6 @@ export interface CEO {
   lastMafiaInvitationTurn: number | null;
 }
 
-// --- Eventy i Akcje ---
 export interface EventConditions {
   yearMin?: number;
   yearMax?: number;
@@ -176,7 +172,7 @@ export interface EventConditions {
   flags?: string[];
   notFlags?: string[];
   hasParty?: boolean;
-  hasItem?: string; // <-- Nowe pole na przyszłe przedmioty
+  hasItem?: string;
 }
 
 export interface EventEffects {
@@ -192,7 +188,7 @@ export interface EventEffects {
   setCurrentPartyId?: string;
   divideFinances?: boolean;
   employeesDelta?: { bezUmowy?: number; zlecenie?: number; uop?: number };
-  addItem?: string; // <-- Nowe pole na przyszłe przedmioty
+  addItem?: string;
 }
 
 export interface Gamble {
@@ -251,7 +247,6 @@ export interface ActivityCategory {
   activities: ActivityItem[];
 }
 
-// --- System Wiadomości ---
 export type NewsCategory = 'rumor' | 'poll' | 'party' | 'economy' | 'custom';
 
 export interface NewsChoice {
@@ -278,7 +273,6 @@ export interface NewsItem {
   onExpireEffects?: EventEffects;
 }
 
-// --- Stany (Walka, Wyniki) ---
 export interface ChoiceResult {
   eventId: string;
   eventTitle: string;
@@ -315,18 +309,45 @@ export interface ChaseState {
   player: Point;
   enemies: Point[];
   gridSize: number;
-  grid: number[][]; // 0 = puste, 1 = zamalowane
+  grid: number[][];
   turn: number;
   maxTurns: number;
   finished: boolean;
   result: 'escaped' | 'caught' | null;
 }
 
+// --- Handel ---
+export type InstallmentOption = 1 | 2 | 6 | 12 | 24;
+
+export interface TradeSupplier {
+  id: string;
+  name: string;
+  desc: string;
+  quality: number;
+  price: number;
+  req?: {
+    minRepBranza?: number;
+    minRepMafia?: number;
+  };
+}
+
+export interface TradeBuyer {
+  id: string;
+  name: string;
+  desc: string;
+  multiplier: number;
+  complaints: boolean;
+  req?: {
+    minRepPubliczna?: number;
+    minQuality?: number;
+  };
+}
+
 export interface Complaint {
   id: string;
   itemName: string;
   buyerName: string;
-  penalty: number; // Ile tracimy reputacji, jeśli zignorujemy
+  penalty: number;
 }
 
 export interface PendingSale {
@@ -337,8 +358,39 @@ export interface PendingSale {
   estimatedRevenue: number;
   quality: number;
   hasComplaints: boolean;
+  installments?: InstallmentOption;
 }
 
+// --- Konkurencja i rankingi ---
+export type Trend = -1 | 0 | 1;
+
+export interface CompetitorTrend {
+  value: Trend;
+  reputation: Trend;
+  condition: Trend;
+}
+
+export interface Competitor {
+  id: string;
+  name: string;
+  description: string;
+  size: CompanySize;
+  reputation: number;
+  value: number;
+  condition: number;
+  opinionOfPlayer: number;
+  baseReputation: number;
+  baseCondition: number;
+  baseOpinion: number;
+  trend: CompetitorTrend;
+}
+
+export interface PlayerSnapshot {
+  value: number;
+  reputation: number;
+  condition: number;
+  rank: number;
+}
 
 export interface GameState {
   schemaVersion: number;
@@ -359,7 +411,7 @@ export interface GameState {
   lastChoiceResult: ChoiceResult | null;
   chosenActivityThisTurn: string | null;
   lastElectionResult: ElectionResult | null;
-  lastPresidentialResult: any | null;
+  lastPresidentialResult: PresidentialResult | null;
   activeCombat: CombatState | null;
   skarbowkaVisitTurn: number | null;
   news: NewsItem[];
@@ -367,7 +419,20 @@ export interface GameState {
   showIntro: boolean;
   profitabilityScore: number;
   profitabilityTrend: 'up2' | 'up1' | 'neutral' | 'down1' | 'down2';
-  pendingComplaints: Complaint[]; // <-- DODAJ
+  pendingComplaints: Complaint[];
   pendingSales: PendingSale[];
+
+  // Ostatnia transakcja do paska na ekranie głównym
+  lastTradeNotice?: string | null;
+
+  interactionPoints: number;
+  competitors: Competitor[];
+  competitionCategory: string;
+  playerPrev: PlayerSnapshot | null;
+
+  macroStats: {
+    unemployment: number;
+    development: number;
+  };
   gameOver: null | { reason: string };
 }
