@@ -8,6 +8,7 @@ export type Ideology = 'radical_right' | 'moderate_right' | 'center' | 'moderate
 export type PartySize = 'very_small' | 'small' | 'medium' | 'large' | 'very_large';
 export type LegalForm = 'cywilna' | 'zoo' | 'sa' | 'holding';
 export type ContractType = 'bezUmowy' | 'zlecenie' | 'uop';
+export type MainCategoryId = 'handel' | 'produkcja' | 'uslugi';
 
 export interface Reputation {
   branza: number;
@@ -18,6 +19,8 @@ export interface Reputation {
   opiniaMedia: number;
   opiniaPolitycy: number;
   opiniaSkarbowa: number;
+  dokladnoscPrzewidywan: number;
+  bazowaDokladnosc?: number;
   ogolna: number;
 }
 
@@ -67,7 +70,10 @@ export interface Company {
   suffix: string;
   size: CompanySize;
   legalForm: LegalForm;
+  /** Główna (pierwsza) wybrana podkategoria — dla kompatybilności wstecznej */
   activity: string;
+  /** Wszystkie wybrane podkategorie działalności */
+  activities?: string[];
   employees: Employees;
   finances: Finances;
   reputation: Reputation;
@@ -239,10 +245,12 @@ export interface ActivityItem {
   name: string;
   rep: number;
   mafia: number;
+  synergyGroups?: string[];
+  locked?: boolean;
 }
 
 export interface ActivityCategory {
-  id: string;
+  id: MainCategoryId | string;
   name: string;
   activities: ActivityItem[];
 }
@@ -316,7 +324,7 @@ export interface ChaseState {
   result: 'escaped' | 'caught' | null;
 }
 
-// --- Handel ---
+// --- Handel i Produkcja ---
 export type InstallmentOption = 1 | 2 | 6 | 12 | 24;
 
 export interface TradeSupplier {
@@ -356,6 +364,8 @@ export interface PendingSale {
   resId: string;
   amount: number;
   estimatedRevenue: number;
+  minRevenue?: number;
+  maxRevenue?: number;
   quality: number;
   hasComplaints: boolean;
   installments?: InstallmentOption;
@@ -392,6 +402,41 @@ export interface PlayerSnapshot {
   rank: number;
 }
 
+// --- Usługi (Stała oferta usług) ---
+export interface ServiceRequirements {
+  minSize?: CompanySize;
+  minWorkers?: number;
+  minRepPubliczna?: number;
+  minRepBranza?: number;
+  minRepMafia?: number;
+}
+
+export interface ServiceDefinition {
+  id: string;
+  title: string;
+  desc: string;
+  basePayout: number;
+  workersRequired: number;
+  risk: number;
+  repGain: number;
+  req?: ServiceRequirements;
+  activities?: string[];
+}
+
+/** Alias zachowany dla kompatybilności wstecznej */
+export type ServiceOrder = ServiceDefinition;
+
+export interface ActiveServiceContract {
+  id: string;
+  orderId: string;
+  title: string;
+  client: string;
+  payout: number;
+  workersRequired: number;
+  risk: number;
+  repGain: number;
+}
+
 export interface GameState {
   schemaVersion: number;
   seed: string;
@@ -421,10 +466,13 @@ export interface GameState {
   profitabilityTrend: 'up2' | 'up1' | 'neutral' | 'down1' | 'down2';
   pendingComplaints: Complaint[];
   pendingSales: PendingSale[];
+  /** Lista ID usług uruchomionych na stałe przez gracza */
+  activeServiceIds?: string[];
+  /** @deprecated Zastąpione przez activeServiceIds */
+  activeServiceContracts?: ActiveServiceContract[];
 
-  // Ostatnia transakcja do paska na ekranie głównym
   lastTradeNotice?: string | null;
-
+  productionUsedThisTurn?: number;
   interactionPoints: number;
   competitors: Competitor[];
   competitionCategory: string;

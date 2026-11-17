@@ -6,6 +6,7 @@ import type {
   InstallmentOption,
   TradeSupplier,
   TradeBuyer,
+  ServiceOrder,
 } from '../../engine/types';
 import {
   nextTurn,
@@ -30,6 +31,10 @@ import {
   buyGoods as buyGoodsEngine,
   sellGoods as sellGoodsEngine,
   resolveComplaint as resolveComplaintEngine,
+  buyRawMaterials as buyRawMaterialsEngine,
+  produceGoods as produceGoodsEngine,
+  toggleService as toggleServiceEngine,
+  acceptServiceOrder as acceptServiceOrderEngine,
 } from '../../engine/actions';
 import { interactWithCompetitor as interactWithCompetitorEngine } from '../../engine/competition';
 import { autosave } from '../autosave';
@@ -65,6 +70,10 @@ export interface GameSlice {
   ) => void;
   resolveComplaint: (id: string, accept: boolean) => void;
   interactCompetitor: (compId: string, type: 'positive' | 'negative') => void;
+  buyRawMaterials: (supplier: TradeSupplier, amount: number, installments?: InstallmentOption) => void;
+  produceGoods: (rawResId: string, amount: number) => void;
+  toggleService: (serviceId: string) => void;
+  acceptServiceOrder: (order: ServiceOrder) => void;
 }
 
 interface CommitOptions {
@@ -73,17 +82,13 @@ interface CommitOptions {
 }
 
 export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) => {
-  /**
-   * Jedyne miejsce, które: pobiera stan, blokuje akcje po końcu gry,
-   * odpala funkcję silnika, zapisuje stan w store i robi autosave.
-   */
   const commit = (fn: (s: GameState) => GameState, opts: CommitOptions = {}) => {
     const s: GameState | null = get().state;
     if (!s) return;
     if (s.gameOver && !opts.allowAfterGameOver) return;
 
     const next = fn(s);
-    if (next === s) return; // nic się nie zmieniło — bez zbędnego zapisu
+    if (next === s) return;
 
     set({ state: next, savesVersion: Date.now() });
     try {
@@ -132,5 +137,15 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     resolveComplaint: (id, accept) => commit((s) => resolveComplaintEngine(s, id, accept)),
     interactCompetitor: (compId, type) =>
       commit((s) => interactWithCompetitorEngine(s, compId, type)),
+
+    // --- Produkcja ---
+    buyRawMaterials: (supplier, amount, installments = 1) =>
+      commit((s) => buyRawMaterialsEngine(s, supplier, amount, installments)),
+    produceGoods: (rawResId, amount) =>
+      commit((s) => produceGoodsEngine(s, rawResId, amount)),
+
+    // --- Usługi ---
+    toggleService: (serviceId) => commit((s) => toggleServiceEngine(s, serviceId)),
+    acceptServiceOrder: (order) => commit((s) => acceptServiceOrderEngine(s, order)),
   };
 };

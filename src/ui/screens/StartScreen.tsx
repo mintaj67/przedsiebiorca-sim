@@ -1,26 +1,72 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { DIFFICULTY_DESCRIPTIONS, COMPANY_SIZE_CONFIG } from '../../engine/constants';
+import {
+  computeStartingActivityStats,
+  getRequiredWorkers,
+} from '../../engine/activityHelper';
 import branchesData from '../../data/branches.json';
-import type { Difficulty, CompanySize } from '../../engine/types';
+import type { Difficulty, CompanySize, ActivityCategory } from '../../engine/types';
 
 const SUFFIXES = ['', '-EX', '-POL'];
 const SIZES: CompanySize[] = ['micro', 'small', 'medium'];
+const CATEGORIES = (branchesData as ActivityCategory[]).map(cat => ({
+  ...cat,
+  activities: cat.activities.filter(act => !act.locked),
+}));
 
 export function StartScreen() {
   const { newGame, setScreen, pendingSlotId } = useGameStore();
-  
+
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [companyName, setCompanyName] = useState('Moja Firma');
   const [suffix, setSuffix] = useState('');
   const [size, setSize] = useState<CompanySize>('micro');
   const [inPZPR, setInPZPR] = useState(false);
-  
-  // Domyślna kategoria i działalność
-  const [selectedCategory, setSelectedCategory] = useState(branchesData[0].id);
-  const [activity, setActivity] = useState(branchesData[0].activities[0].id);
 
-  const currentCategoryData = branchesData.find((c: any) => c.id === selectedCategory);
+  const [checkedCategories, setCheckedCategories] = useState<Record<string, boolean>>({
+    handel: true,
+    produkcja: false,
+    uslugi: false,
+  });
+
+  const [subByCategory, setSubByCategory] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const cat of CATEGORIES) {
+      if (cat.activities[0]) {
+        init[cat.id] = cat.activities[0].id;
+      }
+    }
+    return init;
+  });
+
+  const activeCategoryIds = CATEGORIES.map(c => c.id).filter(id => checkedCategories[id]);
+  const selectedActivities = activeCategoryIds
+    .map(catId => subByCategory[catId])
+    .filter(Boolean);
+
+  const toggleCategory = (catId: string) => {
+    setCheckedCategories(prev => {
+      const nextValue = !prev[catId];
+      const nextState = { ...prev, [catId]: nextValue };
+
+      // Można łączyć wyłącznie Handel z Usługami albo Produkcję + Handel z Usługami
+      if (nextValue && catId === 'handel') {
+        nextState.produkcja = false;
+      } else if (nextValue && catId === 'produkcja') {
+        nextState.handel = false;
+      }
+
+      const activeCount = Object.values(nextState).filter(Boolean).length;
+      if (activeCount === 0) {
+        return prev;
+      }
+      return nextState;
+    });
+  };
+
+  const { branza, mafia, related } = computeStartingActivityStats(selectedActivities);
+  const requiredWorkers = getRequiredWorkers(size, activeCategoryIds.length);
 
   return (
     <div className="min-h-screen bg-stone-100 p-6 flex items-center justify-center">
@@ -55,34 +101,91 @@ export function StartScreen() {
           </select>
         </div>
 
-        {/* Działalność (Kategoria + Podkategoria) */}
-        <h2 className="font-bold mb-2">Działalność</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
-          <select
-            value={selectedCategory}
-            onChange={e => {
-              setSelectedCategory(e.target.value);
-              const firstSub = branchesData.find((c: any) => c.id === e.target.value)?.activities[0];
-              if (firstSub) setActivity(firstSub.id);
-            }}
-            className="w-full border p-2 rounded bg-white font-semibold"
-          >
-            {branchesData.map((cat: any) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-          
-          <select
-            value={activity}
-            onChange={e => setActivity(e.target.value)}
-            className="w-full border p-2 rounded bg-white"
-          >
-            {currentCategoryData?.activities.map((act: any) => (
-              <option key={act.id} value={act.id}>
-                {act.name} (Reputacja: {act.rep})
-              </option>
-            ))}
-          </select>
+        {/* Działalność (Checkboxy + Podkategorie) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+          <h2 className="font-bold">Działalność (Handel lub Produkcja + Handel oraz opcjonalnie Usługi)</h2>
+          <span className="text-xs text-stone-500">
+            Możesz łączyć wybraną gałąź towarową z usługami
+          </span>
+        </div>
+
+        <div className="space-y-3 mb-3">
+          {CATEGORIES.map(cat => {
+            const isChecked = !!checkedCategories[cat.id];
+            const isLastActive = isChecked && activeCategoryIds.length <= 1;
+
+            return (
+              <div
+                key={cat.id}
+                className={`border rounded-lg p-3 transition ${
+                  isChecked ? 'border-stone-900 bg-stone-50' : 'border-stone-200 bg-white opacity-70'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <label className="flex items-center gap-2 font-semibold cursor-pointer min-w-[175px]">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      disabled={isLastActive}
+                      onChange={() => toggleCategory(cat.id)}
+                      className="w-4 h-4 accent-stone-900 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <span>{cat.name}</span>
+                  </label>
+
+                  {isChecked ? (
+                    <select
+                      value={subByCategory[cat.id] ?? ''}
+                      onChange={e =>
+                        setSubByCategory(prev => ({ ...prev, [cat.id]: e.target.value }))
+                      }
+                      className="flex-1 border p-2 rounded bg-white text-sm"
+                    >
+                      {cat.activities.map(act => (
+                        <option key={act.id} value={act.id}>
+                          {act.name} (Reputacja: {act.rep}, Mafia: {act.mafia})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs text-stone-400 italic">
+                      {cat.id === 'handel' || cat.id === 'produkcja'
+                        ? `Zaznacz, aby wybrać ${cat.name} (zastąpi drugi filar towarowy)`
+                        : 'Zaznacz, aby prowadzić działalność usługową'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Podsumowanie synergii i wymogów */}
+        <div
+          className={`p-3 rounded-lg border text-xs mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
+            related
+              ? 'bg-stone-100 border-stone-300 text-stone-800'
+              : 'bg-amber-50 border-amber-300 text-amber-900'
+          }`}
+        >
+          <div>
+            {selectedActivities.length === 1 ? (
+              <span>Wybrano <b>1 filar</b> działalności.</span>
+            ) : related ? (
+              <span>
+                ✓ <b>Spójny profil działalności:</b> wybrane branże są ze sobą powiązane (brak kary do reputacji).
+              </span>
+            ) : (
+              <span>
+                ⚠ <b>Niespójny profil („mydło i powidło”):</b> niepowiązane podkategorie dają <b>-20%</b> do reputacji branżowej i ustawiają startową opinię u mafii na <b>50%</b>.
+              </span>
+            )}
+          </div>
+          <div className="flex gap-4 font-semibold shrink-0">
+            <span>Reputacja branży: {branza}%</span>
+            <span>Mafia (start): {mafia}%</span>
+            <span>Wymagani pracownicy: {requiredWorkers}</span>
+          </div>
         </div>
 
         {/* Rozmiar firmy */}
@@ -144,11 +247,17 @@ export function StartScreen() {
               alert('Nie wybrano slotu. Wróć do menu i wybierz slot.');
               return;
             }
-            newGame({
-              difficulty, inPZPR, activity,
-              companyName: companyName.trim() || 'Moja Firma',
-              suffix, size,
-            }, pendingSlotId);
+            newGame(
+              {
+                difficulty,
+                inPZPR,
+                activity: selectedActivities.join(','),
+                companyName: companyName.trim() || 'Moja Firma',
+                suffix,
+                size,
+              },
+              pendingSlotId
+            );
           }}
           className="w-full bg-stone-900 text-white py-3 rounded text-lg font-bold hover:bg-stone-800 transition"
         >

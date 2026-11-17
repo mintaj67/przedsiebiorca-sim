@@ -1,0 +1,63 @@
+[
+  {
+    "id": "srv_basic_1",
+    "title": "Usługa podstawowa 1 (Lorem ipsum)",
+    "desc": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "basePayout": 8000,
+    "workersRequired": 1,
+    "risk": 0.10,
+    "repGain": 1,
+    "req": {
+      "minSize": "micro",
+      "minWorkers": 0
+    },
+    "activities": ["*"]
+  },
+  {
+    "id": "srv_basic_2",
+    "title": "Usługa standardowa 2 (Lorem ipsum)",
+    "desc": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "basePayout": 18000,
+    "workersRequired": 2,
+    "risk": 0.15,
+    "repGain": 2,
+    "req": {
+      "minSize": "small",
+      "minWorkers": 3,
+      "minRepPubliczna": 35
+    },
+    "activities": ["*"]
+  },
+  {
+    "id": "srv_adv_3",
+    "title": "Usługa zaawansowana 3 (Lorem ipsum)",
+    "desc": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+    "basePayout": 40000,
+    "workersRequired": 5,
+    "risk": 0.20,
+    "repGain": 4,
+    "req": {
+      "minSize": "medium",
+      "minWorkers": 10,
+      "minRepPubliczna": 50,
+      "minRepBranza": 45
+    },
+    "activities": ["*"]
+  },
+  {
+    "id": "srv_vip_4",
+    "title": "Usługa korporacyjna 4 (Lorem ipsum)",
+    "desc": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum.",
+    "basePayout": 95000,
+    "workersRequired": 12,
+    "risk": 0.25,
+    "repGain": 6,
+    "req": {
+      "minSize": "large",
+      "minWorkers": 30,
+      "minRepPubliczna": 65,
+      "minRepBranza": 60
+    },
+    "activities": ["*"]
+  }
+]

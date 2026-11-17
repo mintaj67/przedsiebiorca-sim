@@ -24,17 +24,39 @@ import { MafiaActivityScreen } from './screens/MafiaActivityScreen';
 import { OptionsModal } from './components/OptionsModal';
 import { partyLabel } from './ui-labels';
 import { COMPANY_SIZE_CONFIG } from '../engine/constants';
-import { getActivityFullInfo } from '../engine/activityHelper';
+import { ProductionScreen } from './screens/ProductionScreen';
+import { ServicesScreen } from './screens/ServicesScreen';
+import {
+  getActivityFullInfo,
+  getCompanyActivities,
+  getCategoryIdsForActivities,
+} from '../engine/activityHelper';
 
 type MainTab = 'main' | 'news' | 'management' | 'global';
-type ManagementTab = 'changeActivity' | 'buy' | 'sell' | 'party' | 'employees' | 'office' | 'activity' | 'statistics' | 'mafiaActivity' | 'competition';
+type ManagementTab =
+  | 'changeActivity'
+  | 'buy'
+  | 'sell'
+  | 'production'
+  | 'services'
+  | 'party'
+  | 'employees'
+  | 'office'
+  | 'activity'
+  | 'statistics'
+  | 'mafiaActivity'
+  | 'competition';
 type GlobalTab = 'rankings' | 'achievements' | 'stats';
 
 export function Dashboard() {
   const {
-    state, doTurn, takeEmergencyLoan, dismissElection, dismissPresidentialResult,
+    state,
+    doTurn,
+    takeEmergencyLoan,
+    dismissElection,
+    dismissPresidentialResult,
   } = useGameStore();
-  
+
   const [mainTab, setMainTab] = useState<MainTab>('main');
   const [mgmtTab, setMgmtTab] = useState<ManagementTab>('changeActivity');
   const [globalTab, setGlobalTab] = useState<GlobalTab>('rankings');
@@ -65,24 +87,49 @@ export function Dashboard() {
   const party = partyLabel(state.ceo.currentPartyId);
   const chosenActivityLabel = state.chosenActivityThisTurn ?? 'brak';
   const unreadCount = state.news.filter(n => !n.read).length;
-  const activityInfo = getActivityFullInfo(state.company.activity);
+
+  const companyActivities = getCompanyActivities(state.company);
+  const activeCategories = getCategoryIdsForActivities(companyActivities);
+  const hasTrade = activeCategories.includes('handel');
+  const hasProduction = activeCategories.includes('produkcja');
+  const hasGoodsTrade = hasTrade || hasProduction;
+  const hasServices = activeCategories.includes('uslugi');
+
+  const activityInfo = getActivityFullInfo(companyActivities);
   const sizeLabel = COMPANY_SIZE_CONFIG[state.company.size]?.label || state.company.size;
+
+  const isInsideActivitySubscreen =
+    mgmtTab === 'buy' || mgmtTab === 'sell' || mgmtTab === 'production';
 
   return (
     <div className="min-h-screen bg-stone-100 p-4 md:p-6">
       <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-3 mb-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold truncate max-w-[300px] sm:max-w-md md:max-w-xl" title={`${state.company.name}${state.company.suffix}`}>
+          <h1
+            className="text-xl md:text-2xl font-bold truncate max-w-[300px] sm:max-w-md md:max-w-xl"
+            title={`${state.company.name}${state.company.suffix}`}
+          >
             {state.company.name}{state.company.suffix}
           </h1>
-          <p className="text-sm text-stone-600">{state.year} Q{state.quarter} · {state.phase} {state.ceo.inMafia && ' · <mafia>'}</p>
+          <p className="text-sm text-stone-600">
+            {state.year} Q{state.quarter} · {state.phase} {state.ceo.inMafia && ' · <mafia>'}
+          </p>
         </div>
         <div className="flex items-center gap-3 md:gap-4">
           <div className="text-left md:text-right">
-            <p className="text-xl md:text-2xl font-mono">{state.company.finances.stanKonta.toLocaleString('pl-PL')} PLN</p>
-            <p className="text-xs md:text-sm text-stone-600">Reputacja: {Math.round(state.company.reputation.ogolna)}%</p>
+            <p className="text-xl md:text-2xl font-mono">
+              {state.company.finances.stanKonta.toLocaleString('pl-PL')} PLN
+            </p>
+            <p className="text-xs md:text-sm text-stone-600">
+              Reputacja: {Math.round(state.company.reputation.ogolna)}%
+            </p>
           </div>
-          <button onClick={() => setShowOptions(true)} className="bg-white border px-3 py-2 rounded text-sm hover:bg-stone-50 shrink-0">⚙</button>
+          <button
+            onClick={() => setShowOptions(true)}
+            className="bg-white border px-3 py-2 rounded text-sm hover:bg-stone-50 shrink-0"
+          >
+            ⚙
+          </button>
         </div>
       </header>
 
@@ -97,7 +144,10 @@ export function Dashboard() {
       )}
 
       {unreadCount > 0 && mainTab !== 'news' && (
-        <button onClick={() => setMainTab('news')} className="w-full bg-blue-100 border border-blue-300 text-blue-900 rounded-lg p-3 mb-4 text-left hover:bg-blue-200 transition flex items-center gap-3">
+        <button
+          onClick={() => setMainTab('news')}
+          className="w-full bg-blue-100 border border-blue-300 text-blue-900 rounded-lg p-3 mb-4 text-left hover:bg-blue-200 transition flex items-center gap-3"
+        >
           <span className="text-2xl">✉</span>
           <div>
             <div className="font-bold">Masz {unreadCount} nieprzeczytanych wiadomości</div>
@@ -113,21 +163,33 @@ export function Dashboard() {
         <NavButton active={mainTab === 'global'} onClick={() => setMainTab('global')}>Globalne</NavButton>
       </nav>
 
-      {/* ZARZĄDZANIE */}
+      {/* ZARZĄDZANIE (bez Kupuj, Sprzedawaj i Produkcja na górnym pasku) */}
       {mainTab === 'management' && (
         <div className="flex gap-2 mb-4 border-b border-stone-300 pb-2 overflow-x-auto">
-          <SubNavButton active={mgmtTab === 'changeActivity'} onClick={() => setMgmtTab('changeActivity')}>Działalność</SubNavButton>
-          <SubNavButton active={mgmtTab === 'buy'} onClick={() => setMgmtTab('buy')}>🛒 Kupuj</SubNavButton>
-          <SubNavButton active={mgmtTab === 'sell'} onClick={() => setMgmtTab('sell')}>💰 Sprzedawaj</SubNavButton>
+          <SubNavButton
+            active={mgmtTab === 'changeActivity' || isInsideActivitySubscreen}
+            onClick={() => setMgmtTab('changeActivity')}
+          >
+            Działalność
+          </SubNavButton>
+
+          {hasServices && (
+            <SubNavButton active={mgmtTab === 'services'} onClick={() => setMgmtTab('services')}>
+              🛎️ Usługi
+            </SubNavButton>
+          )}
+
           <SubNavButton active={mgmtTab === 'party'} onClick={() => setMgmtTab('party')}>Polityka</SubNavButton>
           <SubNavButton active={mgmtTab === 'competition'} onClick={() => setMgmtTab('competition')}>Konkurencja</SubNavButton>
           <SubNavButton active={mgmtTab === 'employees'} onClick={() => setMgmtTab('employees')}>Pracownicy</SubNavButton>
           <SubNavButton active={mgmtTab === 'office'} onClick={() => setMgmtTab('office')}>Biuro</SubNavButton>
           <SubNavButton active={mgmtTab === 'activity'} onClick={() => setMgmtTab('activity')}>Aktywności</SubNavButton>
           <SubNavButton active={mgmtTab === 'statistics'} onClick={() => setMgmtTab('statistics')}>Statystyki</SubNavButton>
-          
+
           {state.ceo.inMafia && (
-            <SubNavButton active={mgmtTab === 'mafiaActivity'} onClick={() => setMgmtTab('mafiaActivity')}>Aktywność mafijna</SubNavButton>
+            <SubNavButton active={mgmtTab === 'mafiaActivity'} onClick={() => setMgmtTab('mafiaActivity')}>
+              Aktywność mafijna
+            </SubNavButton>
           )}
         </div>
       )}
@@ -160,21 +222,32 @@ export function Dashboard() {
       {state.bankruptWarningTurns > 0 && state.company.finances.stanKonta < 0 && (
         <div className="bg-red-100 border border-red-500 p-3 rounded mb-4 mt-4">
           <p className="font-bold">⚠ Bankructwo za {2 - state.bankruptWarningTurns} tur!</p>
-          <button onClick={takeEmergencyLoan} className="mt-2 bg-red-600 text-white px-3 py-1 rounded">Weź kredyt ratunkowy (50 000 PLN, 15%)</button>
+          <button onClick={takeEmergencyLoan} className="mt-2 bg-red-600 text-white px-3 py-1 rounded">
+            Weź kredyt ratunkowy (50 000 PLN, 15%)
+          </button>
         </div>
       )}
 
       <div className="mt-4">
         {mainTab === 'main' && (
           <div>
-            <OfficeView companyName={`${state.company.name}${state.company.suffix}`} year={state.year} quarter={state.quarter} inMafia={state.ceo.inMafia} inventory={state.company.inventory} />
+            <OfficeView
+              companyName={`${state.company.name}${state.company.suffix}`}
+              year={state.year}
+              quarter={state.quarter}
+              inMafia={state.ceo.inMafia}
+              inventory={state.company.inventory}
+            />
             <div className="flex flex-col md:flex-row gap-3 items-stretch mt-2">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
                 <InfoCard label="Aktywność w tej turze" value={chosenActivityLabel} muted={!state.chosenActivityThisTurn} />
                 <InfoCard label="Partia" value={party} />
                 <InfoCard label="Mafia" value={state.ceo.inMafia ? 'Członek' : 'Brak'} muted={!state.ceo.inMafia} />
               </div>
-              <button onClick={() => doTurn()} className="bg-stone-900 text-white px-6 py-3 rounded hover:bg-stone-800 text-lg font-bold shadow-md whitespace-nowrap">
+              <button
+                onClick={() => doTurn()}
+                className="bg-stone-900 text-white px-6 py-3 rounded hover:bg-stone-800 text-lg font-bold shadow-md whitespace-nowrap"
+              >
                 Następna tura →
               </button>
             </div>
@@ -185,14 +258,31 @@ export function Dashboard() {
 
         {mainTab === 'management' && (
           <>
+            {isInsideActivitySubscreen && (
+              <div className="mb-2 px-4 md:px-6">
+                <button
+                  onClick={() => setMgmtTab('changeActivity')}
+                  className="text-xs sm:text-sm font-semibold text-stone-600 hover:text-stone-900 flex items-center gap-1 bg-white border border-stone-300 px-3 py-1.5 rounded shadow-sm"
+                >
+                  ← Powrót do zarządzania działalnością
+                </button>
+              </div>
+            )}
+
             {mgmtTab === 'changeActivity' && (
-              <ChangeActivityScreen 
-                onNavigateToBuy={() => setMgmtTab('buy')} 
-                onNavigateToSell={() => setMgmtTab('sell')} 
+              <ChangeActivityScreen
+                onNavigateToBuy={() => setMgmtTab('buy')}
+                onNavigateToSell={() => setMgmtTab('sell')}
+                onNavigateToProduction={() => setMgmtTab('production')}
+                onNavigateToServices={() => setMgmtTab('services')}
               />
             )}
-            {mgmtTab === 'buy' && <BuyScreen />}
-            {mgmtTab === 'sell' && <SellScreen />}
+            {mgmtTab === 'buy' && hasGoodsTrade && <BuyScreen />}
+            {mgmtTab === 'sell' && hasGoodsTrade && <SellScreen />}
+            {mgmtTab === 'production' && hasProduction && (
+              <ProductionScreen onNavigateToSell={() => setMgmtTab('sell')} />
+            )}
+            {mgmtTab === 'services' && hasServices && <ServicesScreen />}
             {mgmtTab === 'party' && <PartyScreen />}
             {mgmtTab === 'competition' && <CompetitionScreen />}
             {mgmtTab === 'employees' && <EmployeesScreen />}
@@ -228,7 +318,12 @@ function InfoCard({ label, value, muted }: { label: string; value: string; muted
 
 function NavButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${active ? 'bg-stone-900 text-white' : 'bg-white border hover:bg-stone-50'}`}>
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded text-sm whitespace-nowrap ${
+        active ? 'bg-stone-900 text-white' : 'bg-white border hover:bg-stone-50'
+      }`}
+    >
       {children}
     </button>
   );
@@ -236,7 +331,12 @@ function NavButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 function SubNavButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`px-3 py-1 text-sm whitespace-nowrap rounded-md transition ${active ? 'bg-stone-200 font-bold text-stone-900' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'}`}>
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 text-sm whitespace-nowrap rounded-md transition ${
+        active ? 'bg-stone-200 font-bold text-stone-900' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+      }`}
+    >
       {children}
     </button>
   );
@@ -256,8 +356,22 @@ function OfficeView({ companyName, year, quarter, inMafia, inventory }: any) {
     <div className={`relative bg-gradient-to-b ${seasonBg} rounded-lg shadow-sm overflow-hidden mb-4 h-40 md:h-64 border border-stone-200`}>
       <div className="absolute top-3 left-3 z-20">
         <div className="bg-white/80 backdrop-blur-sm rounded-lg p-1 flex text-[10px] md:text-xs font-semibold shadow-sm border border-stone-300">
-          <button onClick={() => setView('outside')} className={`px-2 md:px-3 py-1 rounded-md transition ${view === 'outside' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-200'}`}>Zewnątrz</button>
-          <button onClick={() => setView('inside')} className={`px-2 md:px-3 py-1 rounded-md transition ${view === 'inside' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-200'}`}>Wnętrze</button>
+          <button
+            onClick={() => setView('outside')}
+            className={`px-2 md:px-3 py-1 rounded-md transition ${
+              view === 'outside' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-200'
+            }`}
+          >
+            Zewnątrz
+          </button>
+          <button
+            onClick={() => setView('inside')}
+            className={`px-2 md:px-3 py-1 rounded-md transition ${
+              view === 'inside' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-200'
+            }`}
+          >
+            Wnętrze
+          </button>
         </div>
       </div>
 
@@ -272,7 +386,7 @@ function OfficeView({ companyName, year, quarter, inMafia, inventory }: any) {
           <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-amber-800/60" />
           <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-amber-900/40 to-transparent" />
           <div className="absolute bottom-10 md:bottom-16 left-1/2 -translate-x-1/2 w-48 md:w-64 h-2 bg-amber-900 rounded-sm shadow-md" />
-          
+
           <div className="absolute top-3 md:top-4 right-3 md:right-4 text-right z-10">
             <div className="text-[9px] md:text-[10px] uppercase tracking-widest text-stone-500 font-semibold">Siedziba firmy</div>
             <div className="text-xs md:text-sm font-bold text-stone-900 drop-shadow-sm">{companyName}</div>
@@ -292,7 +406,7 @@ function OfficeView({ companyName, year, quarter, inMafia, inventory }: any) {
           {inventory?.includes('sejf') && <div className="absolute bottom-2 md:bottom-4 right-4 md:right-8 text-4xl md:text-5xl">🔐</div>}
           {inventory?.includes('kapeć_hipnotyzera') && <div className="absolute top-12 left-4 md:left-8 text-3xl md:text-4xl transform -rotate-12">🥿</div>}
           {inventory?.includes('tygodnik_opinii') && <div className="absolute top-16 right-6 text-3xl">📰</div>}
-          
+
           <div className="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-10 border-4 border-amber-900 bg-sky-200 flex items-center justify-center text-xl">
             {windowEmoji}
           </div>

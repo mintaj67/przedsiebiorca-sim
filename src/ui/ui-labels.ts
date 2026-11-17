@@ -7,6 +7,7 @@ export const REPUTATION_LABELS: Record<string, string> = {
   opiniaMedia: 'Opinia w mediach',
   opiniaPolitycy: 'Opinia wśród polityków',
   opiniaSkarbowa: 'Urząd Skarbowy',
+  dokladnoscPrzewidywan: 'Dokładność przewidywań',
   ogolna: 'Reputacja ogólna',
 };
 
@@ -19,6 +20,7 @@ export const REPUTATION_DESCRIPTIONS: Record<string, string> = {
   opiniaMedia: 'Jak piszą o tobie gazety i telewizja. Statystyka ukryta.',
   opiniaPolitycy: 'Twoje wpływy w świecie polityki. Statystyka ukryta. Waga zależy od wyników wyborów.',
   opiniaSkarbowa: 'Zaufanie fiskusa. Zbyt niska wartość sprowadzi na firmę kontrolę skarbową.',
+  dokladnoscPrzewidywan: 'Określa jak wąskie i precyzyjne są orientacyjne widełki przychodów w handlu i usługach. Statystyka ukryta.',
 };
 
 export const WPLYWY_LABELS: Record<string, string> = {

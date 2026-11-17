@@ -1,6 +1,5 @@
 import type { GameState, Wplywy, Wydatki } from './types';
 import {
-  COMPANY_SIZE_CONFIG,
   BELOW_REQUIRED_WORKERS_PENALTY,
   WORKER_CONFIG,
   SKARBOWKA_DECAY_BEZ_UMOWY,
@@ -9,6 +8,11 @@ import {
   ACCOUNTANT_COST,
   ACCOUNTANT_BONUS,
 } from './constants';
+import {
+  getCompanyActivities,
+  getCategoryIdsForActivities,
+  getRequiredWorkers,
+} from './activityHelper';
 import { makeRng } from './rng';
 
 const BASE_REVENUE = 5000;
@@ -69,7 +73,9 @@ export function tickEconomy(state: GameState): GameState {
   f.stanKonta += inflow - outflow;
 
   const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
-  const requiredWorkers = COMPANY_SIZE_CONFIG[c.size].requiredWorkers;
+  const activeCategories = getCategoryIdsForActivities(getCompanyActivities(c));
+  const requiredWorkers = getRequiredWorkers(c.size, activeCategories.length);
+
   if (totalWorkers < requiredWorkers) {
     c.reputation.opiniaBranza = Math.max(0, c.reputation.opiniaBranza - BELOW_REQUIRED_WORKERS_PENALTY);
   }

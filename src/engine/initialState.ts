@@ -1,30 +1,40 @@
 import type { GameState, Difficulty, Activity, CompanySize, Party } from './types';
 import { DIFFICULTY_CONFIG, COMPANY_SIZE_CONFIG, PSL_AVAILABILITY_CHANCE } from './constants';
-import { getActivityData } from './activityHelper';
+import { computeStartingActivityStats } from './activityHelper';
 import { matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
 import { makeRng } from './rng';
 import activitiesData from '../data/activities.json';
 import partiesData from '../data/parties.json';
-import { generateCompetitors, getCategoryId, INTERACTIONS_PER_TURN } from './competition';
+import { generateCompetitors, getCategoryKey, INTERACTIONS_PER_TURN } from './competition';
 
 export function createInitialState(opts: {
   seed: string;
   difficulty: Difficulty;
   inPZPR: boolean;
   activity: string;
+  activities?: string[];
   companyName: string;
   suffix: string;
   size: CompanySize;
 }): GameState {
   const { startingCash, startingRep } = DIFFICULTY_CONFIG[opts.difficulty];
   const sizeCfg = COMPANY_SIZE_CONFIG[opts.size];
-  const actData = getActivityData(opts.activity);
-  const branza = actData?.rep ?? 50;
+
+  const parsedFromActivity = opts.activity.includes(',')
+    ? opts.activity.split(',').filter(Boolean)
+    : [opts.activity];
+
+  const selectedActivities =
+    opts.activities && opts.activities.length > 0 ? opts.activities : parsedFromActivity;
+
+  const primaryActivity = selectedActivities[0] ?? opts.activity;
+  const { branza, mafia } = computeStartingActivityStats(selectedActivities);
+
   const cash = Math.round(startingCash * sizeCfg.cashMultiplier);
   const rng = makeRng(opts.seed, 999);
   const pslAvailable = rng.next() < PSL_AVAILABILITY_CHANCE;
-  const competitionCategory = getCategoryId(opts.activity) ?? '';
+  const competitionCategory = getCategoryKey(selectedActivities);
 
   const state: GameState = {
     schemaVersion: 1,
@@ -50,7 +60,8 @@ export function createInitialState(opts: {
       suffix: opts.suffix,
       size: opts.size,
       legalForm: 'cywilna',
-      activity: opts.activity,
+      activity: primaryActivity,
+      activities: selectedActivities,
       employees: { ...sizeCfg.startingEmployees },
       hasAccountant: false,
       inventory: [],
@@ -80,10 +91,12 @@ export function createInitialState(opts: {
         opiniaPubliczna: startingRep,
         opiniaPracownicy: startingRep,
         opiniaBranza: startingRep,
-        opiniaMafia: actData?.mafia ?? 25,
+        opiniaMafia: mafia,
         opiniaMedia: 50,
         opiniaPolitycy: opts.inPZPR ? 60 : 40,
         opiniaSkarbowa: 50,
+        bazowaDokladnosc: 50,
+        dokladnoscPrzewidywan: 50,
         ogolna: 50,
       },
       loans: [],
@@ -129,9 +142,12 @@ export function createInitialState(opts: {
     gameOver: null,
     pendingSales: [],
     pendingComplaints: [],
+    activeServiceIds: [],
     interactionPoints: INTERACTIONS_PER_TURN,
 
-    competitors: competitionCategory ? generateCompetitors(competitionCategory, 1989, opts.seed) : [],
+    competitors: competitionCategory
+      ? generateCompetitors(competitionCategory, 1989, opts.seed)
+      : [],
     competitionCategory,
     playerPrev: null,
 

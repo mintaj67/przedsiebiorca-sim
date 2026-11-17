@@ -1,7 +1,16 @@
-import type { GameState, Reputation } from './types';
+import type { GameState, Reputation, CompanySize } from './types';
 import { REPUTATION_WEIGHTS, MAFIA_PUBLIC_THRESHOLD, PARTY_INFLUENCE_WEIGHTS } from './constants';
 
 const clamp = (x: number) => Math.max(0, Math.min(100, x));
+
+const SIZE_ACCURACY_BONUS: Record<CompanySize, number> = {
+  micro: 0,
+  small: 3,
+  medium: 6,
+  large: 10,
+  very_large: 14,
+  corporation: 18,
+};
 
 export function politicianWeight(state: GameState): number {
   const ourParty = state.ceo.currentPartyId;
@@ -28,6 +37,7 @@ export function recomputeReputation(state: GameState): Reputation {
   r.opiniaMedia = clamp(r.opiniaMedia);
   r.opiniaPolitycy = clamp(r.opiniaPolitycy);
   r.opiniaSkarbowa = clamp(r.opiniaSkarbowa);
+  r.bazowaDokladnosc = clamp(r.bazowaDokladnosc ?? 50);
 
   const mediaInf = (r.opiniaMedia - 50) * 0.1;
   const polWeight = politicianWeight(state);
@@ -41,6 +51,29 @@ export function recomputeReputation(state: GameState): Reputation {
     const overshoot = r.opiniaMafia - MAFIA_PUBLIC_THRESHOLD;
     r.opiniaPubliczna = clamp(r.opiniaPubliczna - overshoot * 0.3);
   }
+
+  // Dynamiczne wyliczanie Dokładności Przewidywań (baza z eventów + pracownicy + księgowa + rozmiar + branża)
+  const emp = state.company.employees;
+  const uopBonus = Math.min(15, emp.uop * 1.5);
+  const zlecenieBonus = Math.min(6, emp.zlecenie * 0.5);
+  const bezUmowyPenalty = Math.min(15, emp.bezUmowy * 1.5);
+  const accountantBonus = state.company.hasAccountant ? 15 : 0;
+  const sizeBonus = SIZE_ACCURACY_BONUS[state.company.size] ?? 0;
+  const branzaMod = (r.opiniaBranza - 50) * 0.25;
+  const inventoryBonus = Math.min(10, (state.company.inventory?.length ?? 0) * 2);
+
+  r.dokladnoscPrzewidywan = clamp(
+    Math.round(
+      r.bazowaDokladnosc +
+      uopBonus +
+      zlecenieBonus -
+      bezUmowyPenalty +
+      accountantBonus +
+      sizeBonus +
+      branzaMod +
+      inventoryBonus
+    )
+  );
 
   let sum = 0;
   for (const [key, weight] of Object.entries(REPUTATION_WEIGHTS)) {

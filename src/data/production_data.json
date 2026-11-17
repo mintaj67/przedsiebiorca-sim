@@ -1,0 +1,14 @@
+{
+  "default": {
+    "suppliers": [
+      { "id": "raw_sup_1", "name": "Dostawca surowców 1", "quality": 2, "price": 50, "desc": "Lorem ipsum dolor sit amet.", "req": {} },
+      { "id": "raw_sup_2", "name": "Dostawca surowców 2", "quality": 5, "price": 150, "desc": "Consectetur adipiscing elit.", "req": {} },
+      { "id": "raw_sup_3", "name": "Dostawca surowców 3", "quality": 8, "price": 400, "desc": "Sed do eiusmod tempor incididunt.", "req": { "minRepBranza": 45 } }
+    ],
+    "buyers": [
+      { "id": "prod_buy_1", "name": "Odbiorca wyrobów 1", "multiplier": 2.2, "desc": "Lorem ipsum dolor sit amet.", "req": {}, "complaints": false },
+      { "id": "prod_buy_2", "name": "Odbiorca wyrobów 2", "multiplier": 3.0, "desc": "Consectetur adipiscing elit.", "req": {}, "complaints": true },
+      { "id": "prod_buy_3", "name": "Odbiorca wyrobów 3", "multiplier": 4.2, "desc": "Sed do eiusmod tempor incididunt.", "req": { "minRepPubliczna": 40 }, "complaints": true }
+    ]
+  }
+}

@@ -13,7 +13,7 @@ import {
   checkTaxOfficeNotice,
   checkEmployeeUnrest,
 } from './news';
-import { applyEffects, resolvePendingSales } from './actions';
+import { applyEffects, resolvePendingSales, resolvePendingServices } from './actions';
 import { startTaxCombat } from './combat';
 import { startChase } from './chase';
 
@@ -102,7 +102,8 @@ export function nextTurn(state: GameState): GameState {
 
   // 2. EKONOMIA I ROZLICZENIA
   for (let i = 0; i < quarters; i++) {
-    resolvePendingSales(s);
+    resolvePendingSales(s)
+    resolvePendingServices(s)
     s = tickEconomy(s);
   }
 
@@ -122,6 +123,7 @@ export function nextTurn(state: GameState): GameState {
   // 4. AKTYWNOŚCI I POWIADOMIENIA
   s.currentActivities = rollActivities(s, rng);
   s.chosenActivityThisTurn = null;
+  s.productionUsedThisTurn = 0;
   s.lastChoiceResult = null;
 
   generatePassiveNews(s);

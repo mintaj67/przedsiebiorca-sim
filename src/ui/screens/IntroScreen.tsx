@@ -8,7 +8,7 @@ export function IntroScreen() {
   const isPZPR = state.ceo.party === 'PZPR';
   const size = state.company.size;
   const diff = state.difficulty;
-  const { category, subcategory } = getActivityFullInfo(state.company.activity);
+  const { category, subcategory } = getActivityFullInfo(state.company.activities ?? state.company.activity);
 
   // 1. Tekst o wielkości firmy
   let sizeText = '';

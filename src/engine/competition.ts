@@ -8,6 +8,7 @@ import type {
 } from './types';
 import { makeRng } from './rng';
 import { recomputeReputation } from './reputation';
+import { getCompanyActivities } from './activityHelper';
 import competitionData from '../data/competition.json';
 import branchesData from '../data/branches.json';
 
@@ -123,7 +124,7 @@ interface BranchCategory {
   activities: { id: string }[];
 }
 
-/** Zwraca id kategorii (np. "handel") dla id działalności (np. "handel_odziez"). */
+/** Zwraca id kategorii (np. "handel") dla pojedynczego id działalności (np. "handel_odziez"). */
 export function getCategoryId(activityId: string): string | null {
   const cat = (branchesData as BranchCategory[]).find((c) =>
     c.activities.some((a) => a.id === activityId),
@@ -131,11 +132,35 @@ export function getCategoryId(activityId: string): string | null {
   return cat?.id ?? null;
 }
 
-function templatesFor(category: string, year: number): CompetitorTemplate[] {
+/**
+ * Zwraca posortowany klucz kategorii (np. "handel,produkcja") dla jednej lub wielu podkategorii.
+ */
+export function getCategoryKey(activityOrList: string | string[]): string {
+  const list = Array.isArray(activityOrList)
+    ? activityOrList
+    : activityOrList.includes(',')
+      ? activityOrList.split(',').filter(Boolean)
+      : [activityOrList];
+
+  const cats = Array.from(
+    new Set(list.map(id => getCategoryId(id) ?? id).filter(Boolean))
+  ).sort();
+
+  return cats.join(',');
+}
+
+function templatesFor(categoriesInput: string | string[], year: number): CompetitorTemplate[] {
+  const rawList = Array.isArray(categoriesInput)
+    ? categoriesInput
+    : categoriesInput.split(',').filter(Boolean);
+
+  const catSet = new Set(rawList.map(c => getCategoryId(c) ?? c));
+
   return TEMPLATES.filter((t) => {
     const cats = t.categories ?? TEMPLATE_DEFAULTS.categories;
     const start = t.startYear ?? TEMPLATE_DEFAULTS.startYear;
-    return (cats.includes('*') || cats.includes(category)) && start <= year;
+    const matchesCat = cats.includes('*') || cats.some(c => catSet.has(c));
+    return matchesCat && start <= year;
   });
 }
 
@@ -210,12 +235,16 @@ function createCompetitor(t: CompetitorTemplate, size: CompanySize, rng: Rng): C
 }
 
 /**
- * Konkurenci z szablonów pasujących do kategorii i roku, ze statystykami losowanymi
+ * Konkurenci z szablonów pasujących do wybranych kategorii i roku, ze statystykami losowanymi
  * (deterministycznie dla seeda): rozmiary wg COMPETITOR_SIZE_MIX, reszta małe.
  */
-export function generateCompetitors(category: string, year: number, seed: string): Competitor[] {
+export function generateCompetitors(
+  categoryOrList: string | string[],
+  year: number,
+  seed: string,
+): Competitor[] {
   const rng = makeRng(`${seed}:competition-init`, year);
-  const pool = templatesFor(category, year);
+  const pool = templatesFor(categoryOrList, year);
 
   const sizeById = new Map<string, CompanySize>();
   shuffle(pool, rng).forEach((t, i) => {
@@ -228,7 +257,8 @@ export function generateCompetitors(category: string, year: number, seed: string
 /** Migracja starych zapisów (bez pola `competitors`). Nie mutuje wejścia. */
 export function ensureCompetitors(s: GameState): GameState {
   if (Array.isArray(s.competitors) && typeof s.competitionCategory === 'string') return s;
-  const category = getCategoryId(s.company.activity) ?? '';
+  const activities = getCompanyActivities(s.company);
+  const category = getCategoryKey(activities);
   return {
     ...s,
     competitors: category ? generateCompetitors(category, s.year, s.seed) : [],
@@ -279,7 +309,8 @@ function evolveCompetitor(c: Competitor, rng: Rng) {
  * (tak jak applyEffects) — wołaj na klonie, np. wewnątrz nextTurn.
  */
 export function tickCompetitors(s: GameState, step = 0): GameState {
-  const category = getCategoryId(s.company.activity) ?? '';
+  const activities = getCompanyActivities(s.company);
+  const category = getCategoryKey(activities);
 
   // Pierwsza tura po migracji albo zmiana branży przez gracza: konkurencja z nowej kategorii.
   if (!Array.isArray(s.competitors) || s.competitionCategory !== category) {
