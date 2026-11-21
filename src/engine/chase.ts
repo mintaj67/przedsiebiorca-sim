@@ -1,10 +1,13 @@
 import type { GameState } from './types';
 import { applyEffects } from './actions';
 import { recomputeReputation } from './reputation';
+import { makeRng } from './rng';
 
 export function startChase(state: GameState): void {
   const size = 8;
-  const grid = Array(size).fill(null).map(() => Array(size).fill(0));
+  const grid = Array(size)
+    .fill(null)
+    .map(() => Array(size).fill(0));
   grid[0][0] = 1;
 
   state.activeChase = {
@@ -40,40 +43,55 @@ export function movePlayer(state: GameState, dx: number, dy: number): void {
       if (c.grid[y][x] === 1) paintedCount++;
     }
   }
+
   const totalTiles = c.gridSize * c.gridSize;
   if (paintedCount / totalTiles >= 0.4) {
     endChase(state, 'escaped');
     return;
   }
 
-  c.enemies = c.enemies.map(enemy => {
+  // Jeśli gracz wszedł na pole zajęte już przez przeciwnika, od razu łapią go na miejscu
+  const caughtOnEntry = c.enemies.some(e => e.x === c.player.x && e.y === c.player.y);
+  if (caughtOnEntry) {
+    endChase(state, 'caught');
+    return;
+  }
+
+  const rng = makeRng(`${state.seed}:chase`, state.turn * 31 + paintedCount);
+
+  c.enemies = c.enemies.map((enemy, idx) => {
     const ex = enemy.x;
     const ey = enemy.y;
 
-    const possibleMoves = [
+    const candidates = [
       { x: ex + 1, y: ey },
       { x: ex - 1, y: ey },
       { x: ex, y: ey + 1 },
       { x: ex, y: ey - 1 },
-    ].filter(p =>
-      p.x >= 0 && p.x < c.gridSize &&
-      p.y >= 0 && p.y < c.gridSize &&
-      c.grid[p.y][p.x] === 0
-    );
+    ].filter(p => p.x >= 0 && p.x < c.gridSize && p.y >= 0 && p.y < c.gridSize);
 
-    if (possibleMoves.length > 0) {
-      possibleMoves.sort((a, b) => {
-        const distA = Math.abs(a.x - c.player.x) + Math.abs(a.y - c.player.y);
-        const distB = Math.abs(b.x - c.player.x) + Math.abs(b.y - c.player.y);
-        return distA - distB;
-      });
-      return possibleMoves[0];
-    }
-    return enemy;
+    if (candidates.length === 0) return enemy;
+
+    // Preferujemy niepokrywanie dwóch przeciwników na tym samym polu, chyba że to ruch na pole gracza
+    const nonStacked = candidates.filter(
+      (p, cIdx) =>
+        (p.x === c.player.x && p.y === c.player.y) ||
+        !c.enemies.some((other, oIdx) => oIdx !== idx && other.x === p.x && other.y === p.y && cIdx >= 0)
+    );
+    const pool = nonStacked.length > 0 ? nonStacked : candidates;
+
+    pool.sort((a, b) => {
+      const distA = Math.abs(a.x - c.player.x) + Math.abs(a.y - c.player.y);
+      const distB = Math.abs(b.x - c.player.x) + Math.abs(b.y - c.player.y);
+      if (distA !== distB) return distA - distB;
+      return rng.next() - 0.5;
+    });
+
+    return pool[0];
   });
 
-  const caught = c.enemies.some(e => e.x === c.player.x && e.y === c.player.y);
-  if (caught) {
+  const caughtAfterMove = c.enemies.some(e => e.x === c.player.x && e.y === c.player.y);
+  if (caughtAfterMove) {
     endChase(state, 'caught');
     return;
   }

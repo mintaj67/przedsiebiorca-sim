@@ -12,6 +12,8 @@ import {
   computeStartingActivityStats,
   getRequiredWorkers,
 } from '../../engine/activityHelper';
+import { scaleByInflation } from '../../engine/economy';
+import { formatMoney } from '../../engine/currency';
 import branchesData from '../../data/branches.json';
 import type { ActivityCategory, CompanySize, Complaint } from '../../engine/types';
 
@@ -125,6 +127,18 @@ export function ChangeActivityScreen({
   const currentSizeIndex = sizes.indexOf(state.company.size);
   const nextSize = sizes[currentSizeIndex + 1];
   const nextConfig = nextSize ? COMPANY_EXPANSION_CONFIG[nextSize] : null;
+  const nextExpansionCost = nextConfig ? scaleByInflation(nextConfig.cost, state) : 0;
+  const nextRequiredWorkers = nextSize
+    ? getRequiredWorkers(nextSize, activeCategories.length)
+    : 0;
+  const canAffordNextSize = nextConfig ? state.company.finances.stanKonta >= nextExpansionCost : false;
+  const hasWorkersForNextSize = totalWorkers >= nextRequiredWorkers;
+
+  const branchCost = scaleByInflation(BRANCH_COST, state);
+  const complaintCost = scaleByInflation(5000, state);
+  const radioAdCost = scaleByInflation(5000, state);
+  const internetAdCost = scaleByInflation(15000, state);
+  const tvAdCost = scaleByInflation(50000, state);
 
   const turnsSinceChange = state.turn - state.company.lastActivityChangeTurn;
   const canChange = turnsSinceChange >= ACTIVITY_CHANGE_COOLDOWN;
@@ -170,13 +184,13 @@ export function ChangeActivityScreen({
                 Zmniejsz
               </button>
             )}
-            {nextConfig && (
+            {nextConfig && nextSize && (
               <button
                 onClick={() => changeCompanySize('up')}
-                disabled={state.company.finances.stanKonta < nextConfig.cost}
-                className="px-4 py-2 bg-stone-900 text-white rounded hover:bg-stone-800 transition text-sm font-semibold disabled:opacity-50"
+                disabled={!canAffordNextSize || !hasWorkersForNextSize}
+                className="px-4 py-2 bg-stone-900 text-white rounded hover:bg-stone-800 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Zwiększ na {COMPANY_SIZE_CONFIG[nextSize]?.label} ({nextConfig.cost.toLocaleString()} PLN)
+                Zwiększ na {COMPANY_SIZE_CONFIG[nextSize]?.label} ({formatMoney(nextExpansionCost, state)}, min. {nextRequiredWorkers} prac.)
               </button>
             )}
           </div>
@@ -188,10 +202,10 @@ export function ChangeActivityScreen({
             </div>
             <button
               onClick={buildBranch}
-              disabled={state.company.finances.stanKonta < BRANCH_COST}
+              disabled={state.company.finances.stanKonta < branchCost}
               className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800 text-xs font-semibold disabled:opacity-50"
             >
-              Zbuduj filię ({BRANCH_COST.toLocaleString()} PLN)
+              Zbuduj filię ({formatMoney(branchCost, state)})
             </button>
           </div>
         )}
@@ -218,7 +232,7 @@ export function ChangeActivityScreen({
                     onClick={() => resolveComplaint(comp.id, true)}
                     className="bg-green-700 hover:bg-green-800 text-white px-3 py-1.5 rounded text-xs font-semibold"
                   >
-                    Uznaj (-5k PLN)
+                    Uznaj (-{formatMoney(complaintCost, state)})
                   </button>
                   <button
                     onClick={() => resolveComplaint(comp.id, false)}
@@ -307,27 +321,27 @@ export function ChangeActivityScreen({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <button
             onClick={() => buyAd('radio')}
-            disabled={state.company.finances.stanKonta < 5000}
+            disabled={state.company.finances.stanKonta < radioAdCost}
             className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"
           >
             <span className="text-lg">📻 Radio</span>
-            <span className="text-xs text-stone-500">5 000 PLN</span>
+            <span className="text-xs text-stone-500">{formatMoney(radioAdCost, state)}</span>
           </button>
           <button
             onClick={() => buyAd('internet')}
-            disabled={state.company.finances.stanKonta < 15000}
+            disabled={state.company.finances.stanKonta < internetAdCost}
             className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"
           >
             <span className="text-lg">🌐 Internet</span>
-            <span className="text-xs text-stone-500">15 000 PLN</span>
+            <span className="text-xs text-stone-500">{formatMoney(internetAdCost, state)}</span>
           </button>
           <button
             onClick={() => buyAd('tv')}
-            disabled={state.company.finances.stanKonta < 50000}
+            disabled={state.company.finances.stanKonta < tvAdCost}
             className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"
           >
             <span className="text-lg">📺 Telewizja</span>
-            <span className="text-xs text-stone-500">50 000 PLN</span>
+            <span className="text-xs text-stone-500">{formatMoney(tvAdCost, state)}</span>
           </button>
         </div>
       </div>

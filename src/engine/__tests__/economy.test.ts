@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../initialState';
-import { tickEconomy } from '../economy';
+import { tickEconomy, scaleByInflation } from '../economy';
 import { WORKER_CONFIG, COMPANY_SIZE_CONFIG, BELOW_REQUIRED_WORKERS_PENALTY } from '../constants';
 import type { GameState } from '../types';
 
@@ -30,18 +30,20 @@ describe('tickEconomy', () => {
     expect(result.company.finances.wydatki.czynsz).toBeGreaterThan(0);
   });
 
-  it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
+it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
     const state = makeState();
     state.company.employees.bezUmowy = 2;
     state.company.employees.zlecenie = 3;
     state.company.employees.uop = 1;
 
-    const result = tickEconomy(state);
-
-    const expected =
+    const expected = scaleByInflation(
       2 * WORKER_CONFIG.bezUmowy.wage +
       3 * WORKER_CONFIG.zlecenie.wage +
-      1 * WORKER_CONFIG.uop.wage;
+      1 * WORKER_CONFIG.uop.wage,
+      state
+    );
+
+    const result = tickEconomy(state);
 
     expect(result.company.finances.wydatki.pracownicy).toBe(expected);
   });

@@ -2,7 +2,7 @@ export type Phase = 'chaos' | 'duopol' | 'invasion';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Pace = 'quarter' | 'year';
 export type CompanySize = 'micro' | 'small' | 'medium' | 'large' | 'very_large' | 'corporation';
-export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about' | 'saves';
+export type AppScreen = 'menu' | 'start' | 'game' | 'options' | 'about' | 'saves' | 'achievements';
 export type PoliticalSide = 'PZPR' | 'independent' | 'opposition' | 'none';
 export type Ideology = 'radical_right' | 'moderate_right' | 'center' | 'moderate_left' | 'radical_left';
 export type PartySize = 'very_small' | 'small' | 'medium' | 'large' | 'very_large';
@@ -446,6 +446,8 @@ export interface GameState {
   phase: Phase;
   difficulty: Difficulty;
   pace: Pace;
+  /** Czy przeszła denominacja złotego (przed: wyświetlanie ×10 000 w starych zł) */
+  denominated: boolean;
   ceo: CEO;
   company: Company;
   politics: PoliticsState;
@@ -481,6 +483,10 @@ export interface GameState {
   macroStats: {
     unemployment: number;
     development: number;
+    /** Roczna stopa inflacji w % (np. 36.0) */
+    inflationRate: number;
+    /** Skumulowany mnożnik cen (1989: 0.25, ~1995: 1.0) */
+    priceIndex: number;
   };
   gameOver: null | { reason: string };
 }

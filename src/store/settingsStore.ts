@@ -1,23 +1,22 @@
 import { create } from 'zustand';
-import type { Pace } from '../engine/types';
 
 const SETTINGS_KEY = 'pp-settings-v1';
+const DEBUG_PASSWORD = 'BALCEROWICZ';
 
 export type ThemeId = 'default' | 'teletext' | 'newspaper' | 'gg' | 'brat';
 
 export interface Settings {
   autosave: boolean;
-  defaultPace: Pace;
+  debugMode: boolean;
+  /** Synchronizowane z debugMode dla kompatybilności z ekranem statystyk. */
   showHiddenStats: boolean;
-  language: 'pl' | 'en';
   theme: ThemeId;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   autosave: true,
-  defaultPace: 'quarter',
+  debugMode: false,
   showHiddenStats: false,
-  language: 'pl',
   theme: 'default',
 };
 
@@ -25,7 +24,14 @@ function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    const debugMode = Boolean(parsed.debugMode);
+    return {
+      autosave: typeof parsed.autosave === 'boolean' ? parsed.autosave : DEFAULT_SETTINGS.autosave,
+      debugMode,
+      showHiddenStats: debugMode,
+      theme: parsed.theme ?? DEFAULT_SETTINGS.theme,
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -33,7 +39,13 @@ function loadSettings(): Settings {
 
 function persist(s: Settings) {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    const toSave: Settings = {
+      autosave: s.autosave,
+      debugMode: s.debugMode,
+      showHiddenStats: s.debugMode,
+      theme: s.theme,
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(toSave));
   } catch {
     /* ignore */
   }
@@ -41,15 +53,53 @@ function persist(s: Settings) {
 
 interface SettingsStore extends Settings {
   set: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
+  unlockDebug: (password: string) => boolean;
+  disableDebug: () => void;
   reset: () => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   ...loadSettings(),
   set: (key, value) => {
-    const next = { ...get(), [key]: value } as Settings;
+    const current = get();
+    const next: Settings = {
+      autosave: current.autosave,
+      debugMode: current.debugMode,
+      showHiddenStats: current.debugMode,
+      theme: current.theme,
+      [key]: value,
+    };
+    if (key === 'debugMode') {
+      next.showHiddenStats = Boolean(value);
+    }
     persist(next);
-    set({ [key]: value } as any);
+    set(next);
+  },
+  unlockDebug: (password: string) => {
+    if (password.trim().toUpperCase() !== DEBUG_PASSWORD) {
+      return false;
+    }
+    const current = get();
+    const next: Settings = {
+      autosave: current.autosave,
+      debugMode: true,
+      showHiddenStats: true,
+      theme: current.theme,
+    };
+    persist(next);
+    set(next);
+    return true;
+  },
+  disableDebug: () => {
+    const current = get();
+    const next: Settings = {
+      autosave: current.autosave,
+      debugMode: false,
+      showHiddenStats: false,
+      theme: current.theme,
+    };
+    persist(next);
+    set(next);
   },
   reset: () => {
     persist(DEFAULT_SETTINGS);

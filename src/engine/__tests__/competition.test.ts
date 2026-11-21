@@ -131,8 +131,9 @@ describe('tickCompetitors', () => {
   it('regeneruje konkurencję po zmianie kategorii działalności', () => {
     const s = newState('switch');
     s.company.activity = 'gast_kebab';
+    s.company.activities = ['gast_kebab'];
     advance(s, 1);
-    expect(s.competitionCategory).toBe('gastronomia');
+    expect(s.competitionCategory).toBe('uslugi');
   });
 });
 

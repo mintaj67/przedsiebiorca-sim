@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { GameState, Difficulty, CompanySize, AppScreen } from '../engine/types';
 import { createInitialState, getEligibleActivities } from '../engine/initialState';
 import { ensureCompetitors } from '../engine/competition';
-import { useSettingsStore } from './settingsStore';
 import { loadSlotsFromStorage, persistSlots } from './autosave';
 import type { SaveSlots } from './autosave';
 import type { CombatSlice } from './slices/combatSlice';
@@ -65,7 +64,7 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
 
   newGame: (opts, slotId) => {
     const s = createInitialState({ seed: String(Date.now()), ...opts });
-    s.pace = useSettingsStore.getState().defaultPace;
+    s.pace = 'quarter';
     s.currentActivities = getEligibleActivities(s);
     const slots = loadSlotsFromStorage();
     slots[slotId] = {
@@ -101,6 +100,7 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     const slot = slots[slotId];
     if (!slot) return false;
     const migratedState = ensureCompetitors(slot.state);
+    migratedState.pace = 'quarter';
     slot.state = migratedState;
     slot.lastPlayed = Date.now();
     persistSlots(slots);

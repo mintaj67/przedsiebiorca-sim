@@ -7,7 +7,9 @@ import type {
   TradeSupplier,
   TradeBuyer,
   ServiceOrder,
+  NewsItem,
 } from '../../engine/types';
+import { MAX_NEWS } from '../../engine/constants';
 import {
   nextTurn,
   consumeActivity as consumeActivityEngine,
@@ -37,6 +39,8 @@ import {
   acceptServiceOrder as acceptServiceOrderEngine,
 } from '../../engine/actions';
 import { interactWithCompetitor as interactWithCompetitorEngine } from '../../engine/competition';
+import { startTaxCombat } from '../../engine/combat';
+import { startChase } from '../../engine/chase';
 import { autosave } from '../autosave';
 
 export interface GameSlice {
@@ -74,6 +78,9 @@ export interface GameSlice {
   produceGoods: (rawResId: string, amount: number) => void;
   toggleService: (serviceId: string) => void;
   acceptServiceOrder: (order: ServiceOrder) => void;
+  debugSendTestMessage: () => void;
+  debugStartTaxCombat: () => void;
+  debugStartChase: () => void;
 }
 
 interface CommitOptions {
@@ -117,7 +124,7 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     // --- Firma ---
     changeActivity: (activity) => commit((s) => applyChangeActivity(s, activity)),
     hireWorker: (contract, delta) => commit((s) => applyHire(s, contract, delta)),
-    setPace: (pace) => commit((s) => applySetPace(s, pace)),
+    setPace: () => commit((s) => applySetPace(s, 'quarter')),
     buyOfficeItem: (itemId, price) => commit((s) => buyOfficeItemEngine(s, itemId, price)),
     toggleAccountant: () => commit(toggleAccountant),
     changeCompanySize: (direction) => commit((s) => changeCompanySizeEngine(s, direction)),
@@ -147,5 +154,38 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     // --- Usługi ---
     toggleService: (serviceId) => commit((s) => toggleServiceEngine(s, serviceId)),
     acceptServiceOrder: (order) => commit((s) => acceptServiceOrderEngine(s, order)),
+
+    // --- Tryb debugowania ---
+    debugSendTestMessage: () =>
+      commit((s) => {
+        const next = structuredClone(s);
+        const msg: NewsItem = {
+          id: `debug_msg_${next.turn}_${Date.now()}`,
+          turn: next.turn,
+          year: next.year,
+          quarter: next.quarter,
+          headline: '[DEBUG] Testowa wiadomość',
+          body: `To jest testowa wiadomość wygenerowana w trybie debugowania (${next.year} Q${next.quarter}, tura ${next.turn}).`,
+          category: 'economy',
+          read: false,
+        };
+        next.news.unshift(msg);
+        if (next.news.length > MAX_NEWS) next.news.pop();
+        return next;
+      }),
+
+    debugStartTaxCombat: () =>
+      commit((s) => {
+        const next = structuredClone(s);
+        startTaxCombat(next);
+        return next;
+      }),
+
+    debugStartChase: () =>
+      commit((s) => {
+        const next = structuredClone(s);
+        startChase(next);
+        return next;
+      }),
   };
 };

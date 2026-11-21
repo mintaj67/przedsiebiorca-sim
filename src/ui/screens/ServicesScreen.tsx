@@ -5,6 +5,7 @@ import {
   getTotalServiceWorkerSlots,
   getBusyServiceWorkers,
 } from '../../engine/servicesHelper';
+import { formatMoney, formatMoneyRange } from '../../engine/currency';
 
 export function ServicesScreen() {
   const { state, toggleService } = useGameStore();
@@ -24,6 +25,7 @@ export function ServicesScreen() {
       state.company.activity,
       state.company.activities,
       state.macroStats?.development,
+      state.macroStats?.priceIndex,
       state.activeServiceIds,
     ]
   );
@@ -67,8 +69,8 @@ export function ServicesScreen() {
           </div>
           <div className="font-mono font-bold text-base text-green-700">
             {activeServices.length > 0
-              ? `${totalMinPayout.toLocaleString('pl-PL')} – ${totalMaxPayout.toLocaleString('pl-PL')} PLN`
-              : '0 PLN'}
+              ? formatMoneyRange(totalMinPayout, totalMaxPayout, state)
+              : formatMoney(0, state)}
           </div>
         </div>
       </div>
@@ -115,7 +117,7 @@ export function ServicesScreen() {
                   <div className="flex justify-between">
                     <span className="text-stone-500">Orientacyjny dochód / kw.:</span>
                     <span className="font-mono font-bold text-green-700">
-                      {srv.minPayout.toLocaleString('pl-PL')} – {srv.maxPayout.toLocaleString('pl-PL')} PLN
+                      {formatMoneyRange(srv.minPayout, srv.maxPayout, state)}
                     </span>
                   </div>
                   <div className="flex justify-between">

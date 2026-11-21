@@ -3,6 +3,8 @@ import { useGameStore } from '../../store/gameStore';
 import { COMPANY_SIZE_CONFIG } from '../../engine/constants';
 import { generateTradeSuppliers } from '../../engine/tradeHelper';
 import { calculateInstallmentPrice } from '../../engine/actions';
+import { formatMoney } from '../../engine/currency';
+import { scaleByInflation } from '../../engine/economy';
 import type { InstallmentOption } from '../../engine/types';
 
 const INSTALLMENT_OPTIONS: InstallmentOption[] = [1, 2, 6, 12, 24];
@@ -19,6 +21,7 @@ export function BuyScreen() {
     COMPANY_SIZE_CONFIG[state.company.size]?.warehouseCapacity ||
     50;
   const isFull = currentStock >= capacity;
+  const warehouseCost = scaleByInflation(10000, state);
 
   const suppliers = useMemo(() => {
     return generateTradeSuppliers(state);
@@ -29,6 +32,7 @@ export function BuyScreen() {
     state.company.activity,
     state.company.activities,
     state.macroStats?.development,
+    state.macroStats?.priceIndex,
     state.competitors,
   ]);
 
@@ -55,10 +59,10 @@ export function BuyScreen() {
           </div>
           <button
             onClick={rentWarehouse}
-            disabled={state.company.finances.stanKonta < 10000}
+            disabled={state.company.finances.stanKonta < warehouseCost}
             className="bg-stone-900 hover:bg-stone-800 text-white px-3.5 py-2.5 rounded-lg text-xs font-semibold transition disabled:opacity-40"
           >
-            +50 miejsc (10k PLN)
+            +50 miejsc ({formatMoney(warehouseCost, state)})
           </button>
         </div>
       </div>
@@ -97,7 +101,7 @@ export function BuyScreen() {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-stone-500">Cena bazowa:</span>
-                    <span className="font-mono font-bold text-stone-900">{sup.price.toLocaleString('pl-PL')} PLN</span>
+                    <span className="font-mono font-bold text-stone-900">{formatMoney(sup.price, state)}</span>
                   </div>
                 </div>
               </div>
@@ -132,7 +136,7 @@ export function BuyScreen() {
                   className="w-full flex justify-between items-center bg-stone-100 hover:bg-stone-200 border border-stone-300 px-3 py-2 rounded text-xs transition disabled:opacity-40"
                 >
                   <span className="font-bold">1 szt. towaru</span>
-                  <span className="font-mono font-semibold">{cost1.toLocaleString('pl-PL')} PLN</span>
+                  <span className="font-mono font-semibold">{formatMoney(cost1, state)}</span>
                 </button>
 
                 <button
@@ -144,7 +148,7 @@ export function BuyScreen() {
                     <span className="font-bold">10 szt. towaru</span>
                     <span className="text-[10px] text-blue-700 font-semibold ml-1.5 bg-blue-100 px-1 py-0.5 rounded">-10%</span>
                   </div>
-                  <span className="font-mono font-bold">{cost10.toLocaleString('pl-PL')} PLN</span>
+                  <span className="font-mono font-bold">{formatMoney(cost10, state)}</span>
                 </button>
 
                 <button
@@ -156,7 +160,7 @@ export function BuyScreen() {
                     <span>50 szt. towaru</span>
                     <span className="text-[10px] text-blue-200 font-semibold ml-1.5 bg-blue-800/80 px-1 py-0.5 rounded">-25%</span>
                   </div>
-                  <span className="font-mono font-bold">{cost50.toLocaleString('pl-PL')} PLN</span>
+                  <span className="font-mono font-bold">{formatMoney(cost50, state)}</span>
                 </button>
               </div>
             </div>

@@ -26,38 +26,26 @@
   --radius: 0.5rem;
 }
 
-/* TELEGAZETA TVP */
+/* ===========================
+   TELEGAZETA TVP (P100)
+   =========================== */
 [data-theme="teletext"] {
   --bg: #000000;
-  --surface: #0a0a0a;
-  --surface-hover: #1a1a1a;
-  --text: #fbbf24;
-  --text-secondary: #f59e0b;
-  --text-muted: #a16207;
-  --text-light: #78350f;
-  --primary: #22c55e;
-  --primary-hover: #16a34a;
+  --surface: #000000;
+  --surface-hover: #000022;
+  --text: #ffffff;
+  --text-secondary: #00ffff;
+  --text-muted: #00ffff;
+  --text-light: #ffff00;
+  --primary: #ffff00;
+  --primary-hover: #ffffff;
   --primary-text: #000000;
-  --border: #404040;
-  --divider: #262626;
-  --bar-bg: #262626;
-  --bar-fill: #22c55e;
+  --border: #00ffff;
+  --divider: #0000aa;
+  --bar-bg: #000066;
+  --bar-fill: #ffff00;
   --font-family: 'VT323', 'Courier New', monospace;
   --radius: 0;
-}
-
-[data-theme="teletext"] body {
-  font-size: 1.15rem;
-  letter-spacing: 0.03em;
-  text-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
-}
-
-[data-theme="teletext"] h1,
-[data-theme="teletext"] h2,
-[data-theme="teletext"] h3,
-[data-theme="teletext"] .font-bold {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 /* GAZETA WYBORCZA */
@@ -100,21 +88,21 @@
   --radius: 0;
 }
 
-/* BRAT */
+/* BRAT (odświeżony neobrutalizm - czytelne białe karty na tle neonowej limonki z mocnym czarnym obrysem) */
 [data-theme="brat"] {
   --bg: #8ace00;
-  --surface: #8ace00;
-  --surface-hover: #9adc15;
+  --surface: #ffffff;
+  --surface-hover: #f4f4f4;
   --text: #000000;
   --text-secondary: #1a1a1a;
-  --text-muted: #1a1a1a;
-  --text-light: #333333;
+  --text-muted: #333333;
+  --text-light: #555555;
   --primary: #000000;
-  --primary-hover: #1a1a1a;
+  --primary-hover: #222222;
   --primary-text: #8ace00;
   --border: #000000;
-  --divider: #6b9e00;
-  --bar-bg: #6b9e00;
+  --divider: #000000;
+  --bar-bg: #8ace00;
   --bar-fill: #000000;
   --font-family: Arial, Helvetica, sans-serif;
   --radius: 0;
@@ -152,4 +140,154 @@ body {
 .border-stone-300 { border-color: var(--text-light) !important; }
 
 /* Zaokrąglenia */
-.rounded, .rounded-lg, .rounded-md { border-radius: var(--radius) !important; }
+.rounded, .rounded-lg, .rounded-md, .rounded-sm, .rounded-xl, .rounded-2xl { border-radius: var(--radius) !important; }
+
+/* ========================================================
+   GŁĘBOKIE REGUŁY DLA MOTYWU TELEGAZETA (CRT TELETEXT TVP)
+   ======================================================== */
+[data-theme="teletext"] {
+  letter-spacing: 0.05em;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  text-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="teletext"] * {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Pasek nagłówka Telegazety TVP */
+[data-theme="teletext"] header::before {
+  content: "P100  TVP1  TELEGAZETA  100/01  1993";
+  display: block;
+  width: 100%;
+  background-color: #0000cc;
+  color: #ffffff;
+  padding: 4px 8px;
+  margin-bottom: 12px;
+  font-family: 'VT323', monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.15em;
+  border-bottom: 2px solid #00ffff;
+}
+
+/* Nagłówki i akcenty */
+[data-theme="teletext"] h1,
+[data-theme="teletext"] h2,
+[data-theme="teletext"] h3,
+[data-theme="teletext"] h4,
+[data-theme="teletext"] .font-bold {
+  color: #ffff00 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: 'VT323', monospace !important;
+}
+
+/* Karty i panele (czarne tło + solidna ramka cyjan) */
+[data-theme="teletext"] .bg-white,
+[data-theme="teletext"] .bg-stone-50,
+[data-theme="teletext"] .bg-stone-100 {
+  background-color: #000000 !important;
+  border: 2px solid #00ffff !important;
+  color: #ffffff !important;
+}
+
+/* Teksty drugorzędne */
+[data-theme="teletext"] .text-stone-600,
+[data-theme="teletext"] .text-stone-500,
+[data-theme="teletext"] .text-stone-400 {
+  color: #00ffff !important;
+}
+
+/* Przyciski w stylu kolorowych klawiszy teletekstu */
+[data-theme="teletext"] button {
+  font-family: 'VT323', monospace !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 1.15rem !important;
+  border: 2px solid #ffffff !important;
+  transition: none !important;
+}
+
+/* Przycisk akcji / następna tura */
+[data-theme="teletext"] .bg-stone-900,
+[data-theme="teletext"] button.bg-stone-900 {
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+  font-weight: bold !important;
+  border: 2px solid #ffffff !important;
+}
+
+[data-theme="teletext"] .bg-stone-900:hover,
+[data-theme="teletext"] button.bg-stone-900:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Przyciski nawigacji */
+[data-theme="teletext"] nav button {
+  border: 2px solid #00ffff !important;
+  color: #00ffff !important;
+  background-color: #000000 !important;
+}
+
+[data-theme="teletext"] nav button.bg-stone-900 {
+  background-color: #0000cc !important;
+  color: #ffffff !important;
+  border: 2px solid #ffff00 !important;
+}
+
+/* Kolorowe przyciski biznesowe (Kup / Sprzedaj / Raty) */
+[data-theme="teletext"] .bg-blue-600,
+[data-theme="teletext"] .bg-blue-700,
+[data-theme="teletext"] .bg-blue-800 {
+  background-color: #0000cc !important;
+  color: #ffffff !important;
+  border: 2px solid #00ffff !important;
+}
+
+[data-theme="teletext"] .bg-green-600,
+[data-theme="teletext"] .bg-green-700,
+[data-theme="teletext"] .bg-green-800 {
+  background-color: #008800 !important;
+  color: #ffff00 !important;
+  border: 2px solid #00ff00 !important;
+}
+
+[data-theme="teletext"] .bg-red-600,
+[data-theme="teletext"] .bg-red-700 {
+  background-color: #cc0000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffff00 !important;
+}
+
+/* Komunikaty i powiadomienia */
+[data-theme="teletext"] .bg-amber-50,
+[data-theme="teletext"] .bg-amber-100 {
+  background-color: #000000 !important;
+  border: 2px solid #ffff00 !important;
+  color: #ffff00 !important;
+}
+
+[data-theme="teletext"] .bg-blue-100,
+[data-theme="teletext"] .bg-blue-200 {
+  background-color: #0000aa !important;
+  border: 2px solid #ffff00 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="teletext"] .bg-red-100 {
+  background-color: #cc0000 !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Biuro w teletekście */
+[data-theme="teletext"] .relative.bg-gradient-to-b {
+  background: #000000 !important;
+  border: 2px solid #00ffff !important;
+}

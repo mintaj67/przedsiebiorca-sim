@@ -19,6 +19,56 @@ const BASE_REVENUE = 5000;
 const CZYNSZ = 2500;
 const TAX_RATE = 0.15;
 
+export const INITIAL_INFLATION_RATE = 36;
+export const INITIAL_PRICE_INDEX = 0.25;
+
+export function getPriceIndex(state: GameState): number {
+  const idx = state.macroStats?.priceIndex;
+  return typeof idx === 'number' && Number.isFinite(idx) && idx > 0 ? idx : 1;
+}
+
+export function getInflationRate(state: GameState): number {
+  const rate = state.macroStats?.inflationRate;
+  return typeof rate === 'number' && Number.isFinite(rate) ? rate : 5;
+}
+
+export function scaleByInflation(amount: number, state: GameState): number {
+  return Math.round(amount * getPriceIndex(state));
+}
+
+/**
+ * Kwartalne oprocentowanie nowego kredytu zależne od bieżącej rocznej stopy inflacji.
+ * Bank: marża 1.5% + 85% inflacji kwartalnej (min. 2%, max. 15%).
+ * Szara strefa: +4.5 p.p. ponad bank.
+ */
+export function getLoanQuarterlyRate(
+  source: 'bank' | 'szara_strefa',
+  annualInflationRate: number
+): number {
+  const safeAnnual = Math.max(0, annualInflationRate);
+  const quarterlyInflation = Math.pow(1 + safeAnnual / 100, 0.25) - 1;
+  const bankRate = Math.min(0.15, Math.max(0.02, 0.015 + quarterlyInflation * 0.85));
+  const raw = source === 'bank' ? bankRate : bankRate + 0.045;
+  return Math.round(raw * 1000) / 1000;
+}
+
+function getTargetInflationForYear(year: number): number {
+  if (year <= 1989) return 36;
+  if (year === 1990) return 42;
+  if (year === 1991) return 30;
+  if (year === 1992) return 22;
+  if (year === 1993) return 18;
+  if (year === 1994) return 14;
+  if (year === 1995) return 11;
+  if (year === 1996) return 9;
+  if (year === 1997) return 7.5;
+  if (year === 1998) return 6;
+  if (year === 1999) return 5;
+  if (year === 2000) return 4.5;
+  if (year === 2001) return 3.5;
+  return 3.0;
+}
+
 function calculateWorkerRevenue(count: number, baseRevenue: number): number {
   let total = 0;
   for (let i = 0; i < count; i++) {
@@ -32,25 +82,28 @@ export function tickEconomy(state: GameState): GameState {
   const oldProfitability = state.profitabilityScore;
   const c = structuredClone(state.company);
   const f = c.finances;
+  const priceIndex = getPriceIndex(state);
 
-  const baseRevenue = estimateRevenue(c);
+  const baseRevenue = Math.round(estimateRevenue(c) * priceIndex);
   f.wplywy.przychodyZDzialalnosci = baseRevenue;
 
-  f.wydatki.pracownicy =
+  const rawWages =
     c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.wage +
     c.employees.zlecenie * WORKER_CONFIG.zlecenie.wage +
     c.employees.uop      * WORKER_CONFIG.uop.wage;
 
-  f.wydatki.czynsz = CZYNSZ;
-  f.wydatki.podatki = Math.max(0, baseRevenue * TAX_RATE);
+  f.wydatki.pracownicy = Math.round(rawWages * priceIndex);
+  f.wydatki.czynsz = Math.round(CZYNSZ * priceIndex);
+  f.wydatki.podatki = Math.max(0, Math.round(baseRevenue * TAX_RATE));
 
+  // Raty zaciągniętych kredytów pozostają nominalne (inflacja realnie zmniejsza stare długi)
   f.wydatki.splacaneKredyty = 0;
   for (const loan of c.loans) {
     if (loan.remaining <= 0) continue;
     const installment = loan.remaining / Math.max(1, loan.quartersLeft);
     const interest = loan.remaining * loan.interestRate;
-    f.wydatki.splacaneKredyty += installment + interest;
-    loan.remaining -= installment;
+    f.wydatki.splacaneKredyty += Math.round(installment + interest);
+    loan.remaining = Math.max(0, Math.round(loan.remaining - installment));
     loan.quartersLeft -= 1;
   }
 
@@ -61,7 +114,7 @@ export function tickEconomy(state: GameState): GameState {
 
   if (c.hasAccountant) {
     skarbowkaDelta += ACCOUNTANT_BONUS;
-    f.wydatki.inne = ACCOUNTANT_COST;
+    f.wydatki.inne = Math.round(ACCOUNTANT_COST * priceIndex);
   } else {
     f.wydatki.inne = 0;
   }
@@ -70,7 +123,7 @@ export function tickEconomy(state: GameState): GameState {
 
   const inflow = sum(f.wplywy) - f.wplywy.srodkiZKredytow - f.wplywy.dofinansowaniaSzaraStrefa;
   const outflow = sum(f.wydatki);
-  f.stanKonta += inflow - outflow;
+  f.stanKonta = Math.round(f.stanKonta + inflow - outflow);
 
   const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
   const activeCategories = getCategoryIdsForActivities(getCompanyActivities(c));
@@ -81,10 +134,10 @@ export function tickEconomy(state: GameState): GameState {
   }
 
   if (state.ceo.flags.includes('hipnoza_dziala')) {
-    c.finances.stanKonta += 5000;
+    c.finances.stanKonta += Math.round(5000 * priceIndex);
   }
   if (state.ceo.flags.includes('hipnoza_nie_dziala')) {
-    c.finances.stanKonta -= 5000;
+    c.finances.stanKonta -= Math.round(5000 * priceIndex);
   }
 
   state.company = c;
@@ -121,9 +174,38 @@ export function tickEconomy(state: GameState): GameState {
   else if (diff < 0) state.profitabilityTrend = 'down1';
   else state.profitabilityTrend = 'neutral';
 
+  // --- Makroekonomia (bezrobocie, rozwój, inflacja) ---
   const macroRng = makeRng(state.seed, state.turn + 555);
-  state.macroStats.unemployment = Math.max(0, Math.min(100, state.macroStats.unemployment + (macroRng.next() > 0.5 ? 1 : -1)));
-  state.macroStats.development = Math.max(0, Math.min(100, state.macroStats.development + (macroRng.next() > 0.6 ? 1 : 0)));
+  state.macroStats.unemployment = Math.max(
+    0,
+    Math.min(100, state.macroStats.unemployment + (macroRng.next() > 0.5 ? 1 : -1))
+  );
+  state.macroStats.development = Math.max(
+    0,
+    Math.min(100, state.macroStats.development + (macroRng.next() > 0.6 ? 1 : 0))
+  );
+
+  const currentInflation = getInflationRate(state);
+  const targetInflation = getTargetInflationForYear(state.year);
+  const pull = (targetInflation - currentInflation) * 0.35;
+  const noise = (macroRng.next() - 0.5) * 4;
+  const devNudge =
+    state.macroStats.development > 65 ? -0.3 : state.macroStats.development < 30 ? 0.4 : 0;
+
+  const nextInflation = Math.round(
+    Math.max(0.5, Math.min(55, currentInflation + pull + noise + devNudge)) * 10
+  ) / 10;
+
+  const quarterlyFactor = Math.pow(1 + nextInflation / 100, 0.25);
+  const nextPriceIndex = Math.round(priceIndex * quarterlyFactor * 10000) / 10000;
+
+  state.macroStats.inflationRate = nextInflation;
+  state.macroStats.priceIndex = nextPriceIndex;
+
+  // Bezpiecznik: gdyby event denominacji nie wylosował się w 1995 r., przełączamy automatycznie od 1996
+  if (state.year >= 1996 && !state.denominated) {
+    state.denominated = true;
+  }
 
   return state;
 }

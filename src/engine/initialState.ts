@@ -4,6 +4,7 @@ import { computeStartingActivityStats } from './activityHelper';
 import { matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
 import { makeRng } from './rng';
+import { INITIAL_INFLATION_RATE, INITIAL_PRICE_INDEX } from './economy';
 import activitiesData from '../data/activities.json';
 import partiesData from '../data/parties.json';
 import { generateCompetitors, getCategoryKey, INTERACTIONS_PER_TURN } from './competition';
@@ -31,7 +32,8 @@ export function createInitialState(opts: {
   const primaryActivity = selectedActivities[0] ?? opts.activity;
   const { branza, mafia } = computeStartingActivityStats(selectedActivities);
 
-  const cash = Math.round(startingCash * sizeCfg.cashMultiplier);
+  // Kapitał startowy w skali 1989 r. (Model 2: priceIndex = 0.25 -> UI mnoży ×10 000 przed 1995)
+  const cash = Math.round(startingCash * sizeCfg.cashMultiplier * INITIAL_PRICE_INDEX);
   const rng = makeRng(opts.seed, 999);
   const pslAvailable = rng.next() < PSL_AVAILABILITY_CHANCE;
   const competitionCategory = getCategoryKey(selectedActivities);
@@ -45,6 +47,7 @@ export function createInitialState(opts: {
     phase: 'chaos',
     difficulty: opts.difficulty,
     pace: 'quarter',
+    denominated: false,
 
     ceo: {
       party: opts.inPZPR ? 'PZPR' : 'none',
@@ -154,6 +157,8 @@ export function createInitialState(opts: {
     macroStats: {
       unemployment: 10,
       development: 40,
+      inflationRate: INITIAL_INFLATION_RATE,
+      priceIndex: INITIAL_PRICE_INDEX,
     },
   };
 

@@ -20,9 +20,16 @@ import {
   MAX_NEWS,
   COMPANY_SIZE_CONFIG,
 } from './constants';
-import { computeStartingActivityStats } from './activityHelper';
+import {
+  computeStartingActivityStats,
+  getCompanyActivities,
+  getCategoryIdsForActivities,
+  getRequiredWorkers,
+} from './activityHelper';
 import { recomputeReputation } from './reputation';
 import { makeRng } from './rng';
+import { getInflationRate, getLoanQuarterlyRate, scaleByInflation } from './economy';
+import { formatMoney, formatMoneyRange } from './currency';
 import { getProductionCapacity } from './productionHelper';
 import { getRevenueRange } from './tradeHelper';
 import {
@@ -54,7 +61,7 @@ export function applyHire(state: GameState, contract: ContractType, delta: numbe
 
   if (actualDelta < 0 && contract === 'uop') {
     const fired = Math.abs(actualDelta);
-    const severance = fired * WORKER_CONFIG.uop.severance;
+    const severance = scaleByInflation(fired * WORKER_CONFIG.uop.severance, s);
     if (s.company.finances.stanKonta < severance) return s;
     s.company.finances.stanKonta -= severance;
   }
@@ -82,7 +89,7 @@ export function applyHire(state: GameState, contract: ContractType, delta: numbe
 
 export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amount: number): GameState {
   const s = structuredClone(state);
-  const rate = source === 'bank' ? 0.03 : 0.07;
+  const rate = getLoanQuarterlyRate(source, getInflationRate(s));
   s.company.loans.push({
     id: `loan_${s.turn}_${s.company.loans.length}`,
     source,
@@ -149,15 +156,22 @@ export function applyLeaveParty(state: GameState): GameState {
 export function applyEmergencyLoan(state: GameState): GameState {
   const s = structuredClone(state);
   if (s.company.finances.stanKonta > 0) return s;
+
+  const amount = scaleByInflation(BANKRUPT_EMERGENCY_LOAN.amount, s);
+  const rate = Math.max(
+    BANKRUPT_EMERGENCY_LOAN.interestRate,
+    getLoanQuarterlyRate('szara_strefa', getInflationRate(s)) + 0.03
+  );
+
   s.company.loans.push({
     id: `emergency_${s.turn}`,
     source: 'bank',
-    principal: BANKRUPT_EMERGENCY_LOAN.amount,
-    remaining: BANKRUPT_EMERGENCY_LOAN.amount,
-    interestRate: BANKRUPT_EMERGENCY_LOAN.interestRate,
+    principal: amount,
+    remaining: amount,
+    interestRate: Math.round(rate * 1000) / 1000,
     quartersLeft: BANKRUPT_EMERGENCY_LOAN.quartersLeft,
   });
-  s.company.finances.stanKonta += BANKRUPT_EMERGENCY_LOAN.amount;
+  s.company.finances.stanKonta += amount;
   s.bankruptWarningTurns = 0;
   return s;
 }
@@ -190,15 +204,17 @@ export function applyEffects(state: GameState, e: EventEffects) {
       }
     }
   }
-  if (e.stanKonta) state.company.finances.stanKonta += e.stanKonta;
+  if (e.stanKonta) {
+    state.company.finances.stanKonta += scaleByInflation(e.stanKonta, state);
+  }
   if (e.wplywy) {
     for (const [k, v] of Object.entries(e.wplywy)) {
-      (state.company.finances.wplywy as any)[k] += v as number;
+      (state.company.finances.wplywy as any)[k] += scaleByInflation(v as number, state);
     }
   }
   if (e.wydatki) {
     for (const [k, v] of Object.entries(e.wydatki)) {
-      (state.company.finances.wydatki as any)[k] += v as number;
+      (state.company.finances.wydatki as any)[k] += scaleByInflation(v as number, state);
     }
   }
   if (e.flagsAdd) {
@@ -214,16 +230,8 @@ export function applyEffects(state: GameState, e: EventEffects) {
   if (e.setParty) state.ceo.party = e.setParty;
   if (e.setCurrentPartyId) state.ceo.currentPartyId = e.setCurrentPartyId;
   if (e.divideFinances) {
-    const div = (n: number) => Math.round((n / 10000) * 100) / 100;
-    state.company.finances.stanKonta = div(state.company.finances.stanKonta);
-    const wplywy = state.company.finances.wplywy as unknown as Record<string, number>;
-    for (const k in wplywy) wplywy[k] = div(wplywy[k]);
-    const wydatki = state.company.finances.wydatki as unknown as Record<string, number>;
-    for (const k in wydatki) wydatki[k] = div(wydatki[k]);
-    for (const loan of state.company.loans) {
-      loan.principal = div(loan.principal);
-      loan.remaining = div(loan.remaining);
-    }
+    // Model 2: bez dzielenia wartości bazowych w silniku — obcinamy 4 zera w wyświetlaniu UI
+    state.denominated = true;
   }
   if (e.employeesDelta) {
     if (e.employeesDelta.bezUmowy) {
@@ -263,8 +271,18 @@ export function changeCompanySize(state: GameState, direction: 'up' | 'down'): G
   const config = COMPANY_EXPANSION_CONFIG[newSize];
 
   if (direction === 'up') {
-    if (s.company.finances.stanKonta < config.cost) return s;
-    s.company.finances.stanKonta -= config.cost;
+    const totalWorkers =
+      s.company.employees.bezUmowy +
+      s.company.employees.zlecenie +
+      s.company.employees.uop;
+    const activeCats = getCategoryIdsForActivities(getCompanyActivities(s.company));
+    const reqWorkersForNextSize = getRequiredWorkers(newSize, activeCats.length);
+    const expansionCost = scaleByInflation(config.cost, s);
+
+    if (totalWorkers < reqWorkersForNextSize) return s;
+    if (s.company.finances.stanKonta < expansionCost) return s;
+
+    s.company.finances.stanKonta -= expansionCost;
     s.company.reputation.opiniaPubliczna += config.repBonus;
     s.company.reputation.opiniaPracownicy += config.repBonus;
     s.company.reputation.opiniaBranza += config.repBonus;
@@ -285,9 +303,10 @@ export function changeCompanySize(state: GameState, direction: 'up' | 'down'): G
 export function buildBranch(state: GameState): GameState {
   const s = structuredClone(state);
   if (!['large', 'very_large', 'corporation'].includes(s.company.size)) return s;
-  if (s.company.finances.stanKonta < BRANCH_COST) return s;
+  const cost = scaleByInflation(BRANCH_COST, s);
+  if (s.company.finances.stanKonta < cost) return s;
 
-  s.company.finances.stanKonta -= BRANCH_COST;
+  s.company.finances.stanKonta -= cost;
   s.company.branches += 1;
   s.company.reputation.opiniaBranza += 5;
   s.company.reputation = recomputeReputation(s);
@@ -296,14 +315,15 @@ export function buildBranch(state: GameState): GameState {
 
 export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): GameState {
   const s = structuredClone(state);
-  let cost = 0;
+  let baseCost = 0;
   let repGain = 0;
   let mediaGain = 0;
 
-  if (type === 'radio') { cost = 5000; repGain = 2; mediaGain = 2; }
-  if (type === 'tv') { cost = 50000; repGain = 8; mediaGain = 10; }
-  if (type === 'internet') { cost = 15000; repGain = 4; mediaGain = 5; }
+  if (type === 'radio') { baseCost = 5000; repGain = 2; mediaGain = 2; }
+  if (type === 'tv') { baseCost = 50000; repGain = 8; mediaGain = 10; }
+  if (type === 'internet') { baseCost = 15000; repGain = 4; mediaGain = 5; }
 
+  const cost = scaleByInflation(baseCost, s);
   if (s.company.finances.stanKonta < cost) return s;
 
   s.company.finances.stanKonta -= cost;
@@ -316,7 +336,7 @@ export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): Game
 
 export function rentWarehouse(state: GameState): GameState {
   const s = structuredClone(state);
-  const cost = 10000;
+  const cost = scaleByInflation(10000, s);
   if (s.company.finances.stanKonta < cost) return s;
 
   s.company.finances.stanKonta -= cost;
@@ -361,7 +381,7 @@ export function buyGoods(
 
   const resId = `${supplier.id}_${supplier.quality}`;
   s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
-  s.lastTradeNotice = `Kupiono: ${amount} szt. (${supplier.name}) za ${finalPrice.toLocaleString('pl-PL')} PLN${installments > 1 ? ` w ${installments} ratach` : ''}.`;
+  s.lastTradeNotice = `Kupiono: ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}${installments > 1 ? ` w ${installments} ratach` : ''}.`;
 
   return s;
 }
@@ -410,7 +430,7 @@ export function sellGoods(
     installments,
   });
 
-  s.lastTradeNotice = `Wysłano: ${amount} szt. do ${buyer.name} (orientacyjny przychód: ${min.toLocaleString('pl-PL')} – ${max.toLocaleString('pl-PL')} PLN${installments > 1 ? ` w ${installments} ratach` : ''}).`;
+  s.lastTradeNotice = `Wysłano: ${amount} szt. do ${buyer.name} (orientacyjny przychód: ${formatMoneyRange(min, max, s)}${installments > 1 ? ` w ${installments} ratach` : ''}).`;
 
   return s;
 }
@@ -437,7 +457,7 @@ export function resolvePendingSales(state: GameState): void {
       state.company.finances.stanKonta += finalRevenue;
       state.company.finances.wplywy.przychodyZDzialalnosci += finalRevenue;
       lines.push(
-        `• ${sale.buyerName}: ${sale.amount} szt. (jakość ${sale.quality}) → ostateczny utarg: ${finalRevenue.toLocaleString('pl-PL')} PLN (szacowano ${minRev.toLocaleString('pl-PL')}–${maxRev.toLocaleString('pl-PL')} PLN).`
+        `• ${sale.buyerName}: ${sale.amount} szt. (jakość ${sale.quality}) → ostateczny utarg: ${formatMoney(finalRevenue, state)} (szacowano ${formatMoneyRange(minRev, maxRev, state)}).`
       );
     } else {
       const quarterlyPayment = Math.round(finalRevenue / installments);
@@ -445,7 +465,7 @@ export function resolvePendingSales(state: GameState): void {
       state.company.finances.stanKonta += quarterlyPayment;
       state.company.finances.wplywy.przychodyZDzialalnosci += quarterlyPayment;
       lines.push(
-        `• ${sale.buyerName}: ${sale.amount} szt. (jakość ${sale.quality}) → rata 1/${installments}: +${quarterlyPayment.toLocaleString('pl-PL')} PLN (ostateczna wartość kontraktu: ${finalRevenue.toLocaleString('pl-PL')} PLN).`
+        `• ${sale.buyerName}: ${sale.amount} szt. (jakość ${sale.quality}) → rata 1/${installments}: +${formatMoney(quarterlyPayment, state)} (ostateczna wartość kontraktu: ${formatMoney(finalRevenue, state)}).`
       );
     }
 
@@ -469,7 +489,7 @@ export function resolvePendingSales(state: GameState): void {
       year: state.year,
       quarter: state.quarter,
       headline: 'Rozliczenie transakcji handlowych',
-      body: `Kontrahenci rozliczyli zamówienia z poprzedniego kwartału.\nŁączny wpływ do kasy: ${totalRevenueThisTurn.toLocaleString('pl-PL')} PLN.\n\nSzczegóły:\n${lines.join('\n')}`,
+      body: `Kontrahenci rozliczyli zamówienia z poprzedniego kwartału.\nŁączny wpływ do kasy: ${formatMoney(totalRevenueThisTurn, state)}.\n\nSzczegóły:\n${lines.join('\n')}`,
       category: 'economy',
       read: false,
     };
@@ -486,7 +506,7 @@ export function resolveComplaint(state: GameState, id: string, accept: boolean):
   if (!comp) return s;
 
   if (accept) {
-    s.company.finances.stanKonta -= 5000;
+    s.company.finances.stanKonta -= scaleByInflation(5000, s);
     s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna + 2);
   } else {
     s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna - comp.penalty);
@@ -535,7 +555,7 @@ export function buyRawMaterials(
 
   const resId = `raw_${supplier.id}_${supplier.quality}`;
   s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
-  s.lastTradeNotice = `Surowce: kupiono ${amount} szt. (${supplier.name}) za ${finalPrice.toLocaleString('pl-PL')} PLN.`;
+  s.lastTradeNotice = `Surowce: kupiono ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}.`;
 
   return s;
 }
@@ -592,7 +612,7 @@ export function toggleService(state: GameState, serviceId: string): GameState {
   if (busySlots + target.workersRequired > totalSlots) return s;
 
   s.activeServiceIds = [...activeIds, serviceId];
-  s.lastTradeNotice = `Uruchomiono stałą usługę: "${target.title}" (orientacyjny przychód: ${target.minPayout.toLocaleString('pl-PL')} – ${target.maxPayout.toLocaleString('pl-PL')} PLN / kw.).`;
+  s.lastTradeNotice = `Uruchomiono stałą usługę: "${target.title}" (orientacyjny przychód: ${formatMoneyRange(target.minPayout, target.maxPayout, s)} / kw.).`;
   return s;
 }
 
@@ -648,7 +668,7 @@ export function resolvePendingServices(state: GameState): void {
       state.company.finances.wplywy.przychodyZDzialalnosci += reducedPayout;
       state.company.reputation.opiniaPubliczna = clamp(state.company.reputation.opiniaPubliczna - 3);
       lines.push(
-        `• ⚠ ${srv.title}: reklamacje klientów! Przychód wyniósł tylko ${reducedPayout.toLocaleString('pl-PL')} PLN (-3 rep.).`
+        `• ⚠ ${srv.title}: reklamacje klientów! Przychód wyniósł tylko ${formatMoney(reducedPayout, state)} (-3 rep.).`
       );
     } else {
       totalPayout += rolledRevenue;
@@ -656,7 +676,7 @@ export function resolvePendingServices(state: GameState): void {
       state.company.finances.wplywy.przychodyZDzialalnosci += rolledRevenue;
       state.company.reputation.opiniaBranza = clamp(state.company.reputation.opiniaBranza + srv.repGain);
       lines.push(
-        `• ✓ ${srv.title}: +${rolledRevenue.toLocaleString('pl-PL')} PLN (szacowano ${srv.minPayout.toLocaleString('pl-PL')}–${srv.maxPayout.toLocaleString('pl-PL')} PLN, +${srv.repGain} rep. branży).`
+        `• ✓ ${srv.title}: +${formatMoney(rolledRevenue, state)} (szacowano ${formatMoneyRange(srv.minPayout, srv.maxPayout, state)}, +${srv.repGain} rep. branży).`
       );
     }
   }
@@ -671,7 +691,7 @@ export function resolvePendingServices(state: GameState): void {
       year: state.year,
       quarter: state.quarter,
       headline: 'Rozliczenie świadczonych usług',
-      body: `Podsumowanie przychodów z aktywnych usług za miniony kwartał.\nŁączny przychód: ${totalPayout.toLocaleString('pl-PL')} PLN.\n\nSzczegóły:\n${lines.join('\n')}`,
+      body: `Podsumowanie przychodów z aktywnych usług za miniony kwartał.\nŁączny przychód: ${formatMoney(totalPayout, state)}.\n\nSzczegóły:\n${lines.join('\n')}`,
       category: 'economy',
       read: false,
     };

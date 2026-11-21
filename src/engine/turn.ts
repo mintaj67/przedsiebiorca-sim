@@ -86,7 +86,8 @@ export function nextTurn(state: GameState): GameState {
 
   let s = structuredClone(state);
   const rng = makeRng(s.seed, s.turn);
-  const quarters = s.pace === 'year' ? 4 : 1;
+  const quarters = 1;
+  s.pace = 'quarter';
   const oldPhase = s.phase;
 
   // 1. AKTUALIZACJA CZASU (przed ekonomią i eventami!)
@@ -101,11 +102,9 @@ export function nextTurn(state: GameState): GameState {
   }
 
   // 2. EKONOMIA I ROZLICZENIA
-  for (let i = 0; i < quarters; i++) {
-    resolvePendingSales(s)
-    resolvePendingServices(s)
-    s = tickEconomy(s);
-  }
+  resolvePendingSales(s);
+  resolvePendingServices(s);
+  s = tickEconomy(s);
 
   // 3. POLITYKA I EVENTY
   s = tickPolitics(s);
@@ -142,7 +141,7 @@ export function nextTurn(state: GameState): GameState {
       startChase(s);
     }
   }
-  
+
   return s;
 }
 

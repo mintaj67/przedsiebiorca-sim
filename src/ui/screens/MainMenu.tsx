@@ -7,10 +7,11 @@ export function MainMenu() {
   return (
     <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
       <div className="bg-white rounded-lg shadow-lg p-10 max-w-md w-full text-center">
-        {/* Logo placeholder */}
-        <div className="w-48 h-28 mx-auto mb-4 bg-stone-100 border-2 border-dashed border-stone-300 rounded flex items-center justify-center">
-          <span className="text-stone-400 text-xs uppercase tracking-widest">Logo</span>
-        </div>
+        <img
+          src={`${import.meta.env.BASE_URL}logo1.png`}
+          alt="Logo PLPS — Polski Przedsiębiorca Simulator"
+          className="w-56 h-auto mx-auto mb-5 drop-shadow-sm select-none"
+        />
 
         <h1 className="text-3xl font-bold mb-6 uppercase tracking-wide text-stone-900">
           Polski<br />Przedsiębiorca<br />Simulator
@@ -57,10 +58,10 @@ export function MainMenu() {
         </div>
 
         <div className="text-xs text-stone-400 mt-8 space-y-0.5">
-          <p>wersja 0.69</p>
+          <p>wersja 0.67</p>
           <p>© by MENTOS GAMES 2026</p>
         </div>
       </div>
     </div>
   );
-} 
+}

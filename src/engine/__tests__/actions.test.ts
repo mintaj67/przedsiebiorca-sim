@@ -6,6 +6,7 @@ import {
 } from '../actions';
 import { WORKER_CONFIG, MAX_PARTY_SWITCHES_PER_PHASE } from '../constants';
 import type { GameState } from '../types';
+import { scaleByInflation } from '../economy';
 
 function makeState(): GameState {
   return createInitialState({
@@ -39,7 +40,7 @@ describe('applyHire', () => {
 
     const result = applyHire(state, 'uop', -2);
 
-    const expectedSeverance = 2 * WORKER_CONFIG.uop.severance;
+    const expectedSeverance = scaleByInflation(2 * WORKER_CONFIG.uop.severance, state);
     expect(result.company.finances.stanKonta).toBe(cashBefore - expectedSeverance);
   });
 
@@ -175,8 +176,8 @@ describe('applyEmergencyLoan', () => {
     state.company.finances.stanKonta = -10000; // <-- Ustawiamy ujemne saldo!
     const before = state.company.finances.stanKonta;
     const result = applyEmergencyLoan(state);
-    expect(result.company.finances.stanKonta).toBe(before + 50_000);
-  });
+expect(result.company.finances.stanKonta).toBe(before + scaleByInflation(50_000, state));
+    });
 
   it('resetuje bankruptWarningTurns', () => {
     const state = makeState();

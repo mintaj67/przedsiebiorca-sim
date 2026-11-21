@@ -1,4 +1,4 @@
-    import type { ThemeId } from '../store/settingsStore';
+import type { ThemeId } from '../store/settingsStore';
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -15,7 +15,7 @@ export const THEMES: ThemeMeta[] = [
   {
     id: 'teletext',
     label: 'Telegazeta',
-    description: 'Czarne tło, żółty monospace. Jak Telegazeta TVP z 1993.',
+    description: 'P100 TVP1: Czarny CRT, żółty i cyjan, brak zaokrągleń, styl roku 1993.',
   },
   {
     id: 'newspaper',
@@ -30,6 +30,6 @@ export const THEMES: ThemeMeta[] = [
   {
     id: 'brat',
     label: 'Brat',
-    description: 'Lime green, Arial Bold, niższe litery. Brat summer 2024.',
+    description: 'Neobrutalizm: kontrastowe białe karty na neonowej zieleni.',
   },
 ];

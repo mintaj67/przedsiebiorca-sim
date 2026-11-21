@@ -2,6 +2,7 @@ import type { GameState, TradeSupplier, TradeBuyer, Competitor } from './types';
 import { makeRng } from './rng';
 import { getCompanyActivities } from './activityHelper';
 import { generateTradeBuyers } from './tradeHelper';
+import { getPriceIndex } from './economy';
 import productionData from '../data/production_data.json';
 
 interface ProductionDataJson {
@@ -39,6 +40,7 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
   const rng = makeRng(state.seed, state.turn * 37 + 19);
   const result: TradeSupplier[] = [];
 
+  const priceIndex = getPriceIndex(state);
   const dev = state.macroStats?.development ?? 40;
   const devFactor = 1 - Math.min(0.15, Math.max(-0.15, (dev - 40) * 0.003));
   const repBranza = state.company.reputation.opiniaBranza;
@@ -52,13 +54,13 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
     });
 
     for (const sup of valid) {
-      const calculatedPrice = Math.round(sup.price * devFactor * (1 - repDiscount));
+      const calculatedPrice = Math.round(sup.price * priceIndex * devFactor * (1 - repDiscount));
       result.push({
         id: sup.id,
         name: sup.name,
         desc: sup.desc,
         quality: sup.quality,
-        price: Math.max(10, calculatedPrice),
+        price: Math.max(5, calculatedPrice),
         req: sup.req,
       });
     }
@@ -68,7 +70,7 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
     const comp: Competitor = rng.pick([...state.competitors]);
     if (comp) {
       const compQuality = Math.min(10, Math.max(2, Math.round((comp.reputation * 0.6 + comp.condition * 0.4) / 10)));
-      let baseCompPrice = compQuality * 110 + 70;
+      let baseCompPrice = Math.round((compQuality * 110 + 70) * priceIndex);
       if (comp.opinionOfPlayer < 40) {
         baseCompPrice = Math.round(baseCompPrice * (1 + (40 - comp.opinionOfPlayer) * 0.01));
       } else if (comp.opinionOfPlayer > 60) {
@@ -83,7 +85,7 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
         name: `${comp.name} (Surowce / Konkurent)`,
         desc: `Nadwyżki magazynowe półproduktów od konkurencji. Opinia o Tobie: ${comp.opinionOfPlayer}%.`,
         quality: compQuality,
-        price: Math.max(10, baseCompPrice),
+        price: Math.max(5, baseCompPrice),
       });
     }
   }

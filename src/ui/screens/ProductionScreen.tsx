@@ -6,6 +6,7 @@ import {
   getProductionCapacity,
 } from '../../engine/productionHelper';
 import { calculateInstallmentPrice } from '../../engine/actions';
+import { formatMoney } from '../../engine/currency';
 import type { InstallmentOption } from '../../engine/types';
 
 type ProdTab = 'raw' | 'line';
@@ -43,6 +44,7 @@ export function ProductionScreen({ onNavigateToSell }: ProductionScreenProps) {
       state.company.activity,
       state.company.activities,
       state.macroStats?.development,
+      state.macroStats?.priceIndex,
       state.competitors,
     ]
   );
@@ -159,7 +161,7 @@ export function ProductionScreen({ onNavigateToSell }: ProductionScreenProps) {
                     </div>
                     <div className="flex justify-between text-xs">
                       <span className="text-stone-500">Cena bazowa:</span>
-                      <span className="font-mono font-bold text-stone-900">{sup.price.toLocaleString('pl-PL')} PLN</span>
+                      <span className="font-mono font-bold text-stone-900">{formatMoney(sup.price, state)}</span>
                     </div>
                   </div>
                 </div>
@@ -194,7 +196,7 @@ export function ProductionScreen({ onNavigateToSell }: ProductionScreenProps) {
                     className="w-full flex justify-between items-center bg-stone-100 hover:bg-stone-200 border border-stone-300 px-3 py-2 rounded text-xs transition disabled:opacity-40"
                   >
                     <span className="font-bold">1 szt. surowca</span>
-                    <span className="font-mono font-semibold">{cost1.toLocaleString('pl-PL')} PLN</span>
+                    <span className="font-mono font-semibold">{formatMoney(cost1, state)}</span>
                   </button>
 
                   <button
@@ -206,7 +208,7 @@ export function ProductionScreen({ onNavigateToSell }: ProductionScreenProps) {
                       <span className="font-bold">10 szt. surowca</span>
                       <span className="text-[10px] text-amber-700 font-semibold ml-1.5 bg-amber-100 px-1 py-0.5 rounded">-10%</span>
                     </div>
-                    <span className="font-mono font-bold">{cost10.toLocaleString('pl-PL')} PLN</span>
+                    <span className="font-mono font-bold">{formatMoney(cost10, state)}</span>
                   </button>
 
                   <button
@@ -218,7 +220,7 @@ export function ProductionScreen({ onNavigateToSell }: ProductionScreenProps) {
                       <span>50 szt. surowca</span>
                       <span className="text-[10px] text-amber-200 font-semibold ml-1.5 bg-amber-800/80 px-1 py-0.5 rounded">-25%</span>
                     </div>
-                    <span className="font-mono font-bold">{cost50.toLocaleString('pl-PL')} PLN</span>
+                    <span className="font-mono font-bold">{formatMoney(cost50, state)}</span>
                   </button>
                 </div>
               </div>

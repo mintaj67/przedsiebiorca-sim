@@ -2,6 +2,7 @@ import type { GameState, TradeSupplier, TradeBuyer, Competitor } from './types';
 import { makeRng } from './rng';
 import { getCategoryId } from './competition';
 import { getCompanyActivities } from './activityHelper';
+import { getPriceIndex } from './economy';
 import tradeData from '../data/trade_data.json';
 import productionData from '../data/production_data.json';
 
@@ -58,6 +59,7 @@ export function generateTradeSuppliers(state: GameState): TradeSupplier[] {
   const rng = makeRng(state.seed, state.turn * 31 + 44);
   const result: TradeSupplier[] = [];
 
+  const priceIndex = getPriceIndex(state);
   const dev = state.macroStats?.development ?? 40;
   const devFactor = 1 - Math.min(0.15, Math.max(-0.15, (dev - 40) * 0.003));
   const repBranza = state.company.reputation.opiniaBranza;
@@ -71,13 +73,13 @@ export function generateTradeSuppliers(state: GameState): TradeSupplier[] {
     });
 
     for (const sup of valid) {
-      const calculatedPrice = Math.round(sup.price * devFactor * (1 - repDiscount));
+      const calculatedPrice = Math.round(sup.price * priceIndex * devFactor * (1 - repDiscount));
       result.push({
         id: sup.id,
         name: sup.name,
         desc: sup.desc,
         quality: sup.quality,
-        price: Math.max(10, calculatedPrice),
+        price: Math.max(5, calculatedPrice),
         req: sup.req,
       });
     }
@@ -89,7 +91,7 @@ export function generateTradeSuppliers(state: GameState): TradeSupplier[] {
 
     if (comp) {
       const compQuality = Math.min(10, Math.max(2, Math.round((comp.reputation * 0.6 + comp.condition * 0.4) / 10)));
-      let baseCompPrice = compQuality * 150 + 100;
+      let baseCompPrice = Math.round((compQuality * 150 + 100) * priceIndex);
 
       if (comp.opinionOfPlayer < 40) {
         const spiteNarzut = 1 + (40 - comp.opinionOfPlayer) * 0.01;
@@ -109,7 +111,7 @@ export function generateTradeSuppliers(state: GameState): TradeSupplier[] {
           ? `Wyprzedaż zapasów po kosztach z powodu kłopotów finansowych. Opinia o Tobie: ${comp.opinionOfPlayer}%.`
           : `Oferta hurtowa od konkurencyjnej spółki. Opinia o Tobie: ${comp.opinionOfPlayer}%.`,
         quality: compQuality,
-        price: Math.max(10, baseCompPrice),
+        price: Math.max(5, baseCompPrice),
       });
     }
   }

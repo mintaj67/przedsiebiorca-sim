@@ -1,6 +1,7 @@
 import type { GameState, ServiceDefinition, CompanySize } from './types';
 import { getCompanyActivities } from './activityHelper';
 import { getRevenueRange } from './tradeHelper';
+import { getPriceIndex } from './economy';
 import servicesData from '../data/services_data.json';
 
 const BASE_CEO_SLOTS = 1;
@@ -99,6 +100,7 @@ export function getAvailableServices(state: GameState): EvaluatedService[] {
   const serviceActs = companyActs.filter(id => id.startsWith('usl_') || id.startsWith('gast_'));
   const targetActs = serviceActs.length > 0 ? serviceActs : companyActs;
 
+  const priceIndex = getPriceIndex(state);
   const dev = state.macroStats?.development ?? 40;
   const devMultiplier = 1 + Math.max(-0.15, (dev - 40) * 0.004);
   const repMultiplier = 1 + Math.max(-0.1, (state.company.reputation.opiniaBranza - 50) * 0.003);
@@ -112,7 +114,7 @@ export function getAvailableServices(state: GameState): EvaluatedService[] {
     })
     .map(srv => {
       const base = srv.basePayout ?? (srv as any).payout ?? 10000;
-      const calculatedPayout = Math.round(base * devMultiplier * repMultiplier);
+      const calculatedPayout = Math.round(base * priceIndex * devMultiplier * repMultiplier);
       const range = getRevenueRange(calculatedPayout, accuracy);
       const { meets, reasons } = checkServiceRequirements(state, srv);
 

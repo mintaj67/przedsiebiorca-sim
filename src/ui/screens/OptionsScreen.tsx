@@ -5,8 +5,23 @@ import { THEMES } from '../themes';
 
 export function OptionsScreen() {
   const { setScreen } = useGameStore();
-  const { autosave, defaultPace, showHiddenStats, language, theme, set, reset } = useSettingsStore();
+  const { autosave, debugMode, theme, set, unlockDebug, disableDebug, reset } = useSettingsStore();
   const [msg, setMsg] = useState('');
+  const [showDebugInput, setShowDebugInput] = useState(false);
+  const [password, setPassword] = useState('');
+  const [debugMsg, setDebugMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const handleUnlockDebug = (e: React.FormEvent) => {
+   e.preventDefault();
+   if (unlockDebug(password)) {
+     setPassword('');
+     setShowDebugInput(false);
+     setDebugMsg({ text: 'Tryb debugowania włączony.', ok: true });
+   } else {
+     setDebugMsg({ text: 'Nieprawidłowe hasło.', ok: false });
+   }
+  };
+
 
   return (
     <div className="min-h-screen bg-stone-100 p-6 flex items-center justify-center overflow-y-auto">
@@ -27,41 +42,6 @@ export function OptionsScreen() {
             description="Automatycznie zapisuje stan gry po każdej akcji."
           >
             <Toggle value={autosave} onChange={v => set('autosave', v)} />
-          </OptionRow>
-
-          <OptionRow
-            label="Domyślne tempo"
-            description="Czy nowa gra ma być rozgrywana w turach kwartalnych, czy rocznych."
-          >
-            <div className="flex gap-1">
-              <SmallButton active={defaultPace === 'quarter'} onClick={() => set('defaultPace', 'quarter')}>
-                Kwartał
-              </SmallButton>
-              <SmallButton active={defaultPace === 'year'} onClick={() => set('defaultPace', 'year')}>
-                Rok
-              </SmallButton>
-            </div>
-          </OptionRow>
-
-          <OptionRow
-            label="Pokazuj ukryte statystyki"
-            description="Opinia w mediach i polityków staną się widoczne. Tryb debugowania."
-          >
-            <Toggle value={showHiddenStats} onChange={v => set('showHiddenStats', v)} />
-          </OptionRow>
-
-          <OptionRow
-            label="Język"
-            description="Angielska wersja jest w przygotowaniu."
-          >
-            <div className="flex gap-1">
-              <SmallButton active={language === 'pl'} onClick={() => set('language', 'pl')}>
-                Polski
-              </SmallButton>
-              <SmallButton active={language === 'en'} onClick={() => set('language', 'en')}>
-                English
-              </SmallButton>
-            </div>
           </OptionRow>
 
           <hr className="border-stone-200" />
@@ -86,10 +66,68 @@ export function OptionsScreen() {
 
           <hr className="border-stone-200" />
 
+          <div>
+            <OptionRow
+              label="Tryb debugowania"
+              description="Odsłania ukryte statystyki oraz włącza pasek debugowania (testowe wiadomości i minigry)."
+            >
+              {debugMode ? (
+                <button
+                  onClick={() => {
+                    disableDebug();
+                    setDebugMsg({ text: 'Tryb debugowania wyłączony.', ok: true });
+                  }}
+                  className="px-3 py-1 rounded text-sm border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 font-semibold"
+                >
+                  Wyłącz
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShowDebugInput(v => !v);
+                    setDebugMsg(null);
+                  }}
+                  className="px-3 py-1 rounded text-sm border hover:bg-stone-50"
+                >
+                  {showDebugInput ? 'Anuluj' : 'Odblokuj'}
+                </button>
+              )}
+            </OptionRow>
+
+            {!debugMode && showDebugInput && (
+              <form onSubmit={handleUnlockDebug} className="flex gap-2 mt-3">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Wpisz hasło..."
+                  autoFocus
+                  className="flex-1 border border-stone-300 rounded px-3 py-1.5 text-sm bg-white text-stone-900"
+                />
+                <button
+                  type="submit"
+                  className="bg-stone-900 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-stone-800"
+                >
+                  OK
+                </button>
+              </form>
+            )}
+
+            {debugMsg && (
+              <p className={`text-xs mt-2 ${debugMsg.ok ? 'text-green-700' : 'text-red-600'}`}>
+                {debugMsg.text}
+              </p>
+            )}
+          </div>
+
+          <hr className="border-stone-200" />
+
           <div className="flex flex-col gap-2">
             <button
               onClick={() => {
                 reset();
+                setDebugMsg(null);
+                setShowDebugInput(false);
                 setMsg('Ustawienia przywrócone do domyślnych.');
               }}
               className="border py-2 rounded hover:bg-stone-50"
@@ -108,7 +146,7 @@ export function OptionsScreen() {
 function OptionRow({
   label,
   description,
-  children,
+  children, 
 }: {
   label: string;
   description: string;
@@ -138,27 +176,6 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
           value ? 'left-6' : 'left-0.5'
         }`}
       />
-    </button>
-  );
-}
-
-function SmallButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1 rounded text-sm border ${
-        active ? 'bg-stone-900 text-white border-stone-900' : 'bg-white hover:bg-stone-50'
-      }`}
-    >
-      {children}
     </button>
   );
 }

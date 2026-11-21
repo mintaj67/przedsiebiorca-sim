@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { generateTradeBuyers, getRevenueRange } from '../../engine/tradeHelper';
 import { calculateInstallmentPrice } from '../../engine/actions';
+import { formatMoneyRange } from '../../engine/currency';
+import { scaleByInflation } from '../../engine/economy';
 import type { InstallmentOption, PendingSale } from '../../engine/types';
 
 const INSTALLMENT_OPTIONS: InstallmentOption[] = [1, 2, 6, 12, 24];
@@ -70,7 +72,7 @@ export function SellScreen() {
                     )}
                   </span>
                   <span className="font-mono font-bold text-amber-800">
-                    Orientacyjnie: {minRev.toLocaleString('pl-PL')} – {maxRev.toLocaleString('pl-PL')} PLN
+                    Orientacyjnie: {formatMoneyRange(minRev, maxRev, state)}
                   </span>
                 </div>
               );
@@ -138,7 +140,8 @@ export function SellScreen() {
                       const isProduced = resId.startsWith('prod_');
                       const parts = resId.split('_');
                       const quality = parseInt(parts[parts.length - 1], 10) || 1;
-                      const baseVal = isProduced ? quality * 150 + 100 : quality * 120 + 80;
+                      const rawBaseVal = isProduced ? quality * 150 + 100 : quality * 120 + 80;
+                      const baseVal = Math.max(5, scaleByInflation(rawBaseVal, state));
 
                       const paymentKey = `${buy.id}_${resId}`;
                       const itemInstallments = getInst(paymentKey);
@@ -177,7 +180,7 @@ export function SellScreen() {
                               <div className="text-[11px] text-stone-600 mb-2">
                                 Orientacyjnie za 1 szt.:{' '}
                                 <span className="font-mono font-bold text-green-800">
-                                  {unitRange.min.toLocaleString('pl-PL')} – {unitRange.max.toLocaleString('pl-PL')} PLN
+                                  {formatMoneyRange(unitRange.min, unitRange.max, state)}
                                 </span>
                               </div>
 

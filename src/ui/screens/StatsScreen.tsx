@@ -1,5 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import { makeRng } from '../../engine/rng';
+import { getInflationRate, getPriceIndex, INITIAL_PRICE_INDEX } from '../../engine/economy';
+import { isDenominated } from '../../engine/currency';
 import branchesData from '../../data/branches.json';
 import partiesData from '../../data/parties.json';
 import { partyLabel } from '../ui-labels';
@@ -15,13 +17,21 @@ export function StatsScreen() {
 
   const hasTygodnik = state.company.inventory.includes('tygodnik_opinii');
   const rng = makeRng(state.seed, state.year * 13 + 7);
-  const macro = state.macroStats || { unemployment: 10, development: 40 }; // Zabezpieczenie
+  const macro = state.macroStats || { unemployment: 10, development: 40 };
+
+  const inflationRate = getInflationRate(state);
+  const priceIndex = getPriceIndex(state);
+  const cumulativePrices = (priceIndex / INITIAL_PRICE_INDEX).toFixed(2);
+  const inflationBarWidth = Math.min(100, (inflationRate / 55) * 100);
+  const inflationBarColor =
+    inflationRate >= 25 ? 'bg-red-600' : inflationRate >= 10 ? 'bg-amber-500' : 'bg-emerald-500';
+  const denominated = isDenominated(state);
 
   const presId = state.politics.president?.partyId;
   const premId = state.politics.premierId;
   let cohesion = 0;
   let cohesionText = 'Brak rządu';
-  
+
   if (presId && premId) {
     if (presId === premId) { cohesion = 100; cohesionText = 'Pełna (ta sama partia)'; }
     else {
@@ -55,7 +65,7 @@ export function StatsScreen() {
             <div className="text-sm text-stone-500 mb-1">Prezydent: <b className="text-stone-900">{state.politics.president?.name || 'Brak'}</b></div>
             <div className="text-sm text-stone-500 mb-3">Premier: <b className="text-stone-900">{partyLabel(premId)}</b></div>
           </div>
-          
+
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-1">
               <span>Zgodność rządu</span>
@@ -88,6 +98,7 @@ export function StatsScreen() {
               </div>
               <div className="h-2 bg-stone-200 rounded"><div className="h-full bg-blue-500 rounded" style={{ width: `${macro.development}%` }} /></div>
             </div>
+
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>Bezrobocie</span>
@@ -96,6 +107,27 @@ export function StatsScreen() {
               <div className="h-2 bg-stone-200 rounded"><div className="h-full bg-red-500 rounded" style={{ width: `${macro.unemployment}%` }} /></div>
               <p className="text-xs text-stone-500 mt-1">
                 {macro.unemployment > 15 ? 'Wysokie bezrobocie: łatwiej o tanich pracowników.' : 'Niskie bezrobocie: pracownicy będą żądać lepszych umów.'}
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>Inflacja (r/r)</span>
+                <span className="font-mono font-semibold">{inflationRate.toFixed(1)}%</span>
+              </div>
+              <div className="h-2 bg-stone-200 rounded">
+                <div className={`h-full rounded ${inflationBarColor}`} style={{ width: `${inflationBarWidth}%` }} />
+              </div>
+              <div className="flex justify-between text-xs text-stone-500 mt-1">
+                <span>Poziom cen od 1989 r.: <b>x{cumulativePrices}</b></span>
+                <span>Waluta: <b>{denominated ? 'PLN (po denominacji)' : 'stare zł (PLZ)'}</b></span>
+              </div>
+              <p className="text-xs text-stone-500 mt-1">
+                {inflationRate >= 25
+                  ? 'Wysoka inflacja: drogie nowe kredyty, a gotówka na koncie szybko traci na wartości.'
+                  : inflationRate >= 10
+                    ? 'Umiarkowana inflacja: płace, czynsz i ceny u dostawców systematycznie rosną.'
+                    : 'Stabilne ceny: niższe koszty nowych kredytów i przewidywalny rynek.'}
               </p>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { StatisticsScreen } from './screens/StatisticsScreen';
 import { PartyScreen } from './screens/PartyScreen';
 import { ActivityScreen } from './screens/ActivityScreen';
@@ -23,7 +24,9 @@ import { CompetitionScreen } from './screens/CompetitionScreen';
 import { MafiaActivityScreen } from './screens/MafiaActivityScreen';
 import { OptionsModal } from './components/OptionsModal';
 import { partyLabel } from './ui-labels';
-import { COMPANY_SIZE_CONFIG } from '../engine/constants';
+import { COMPANY_SIZE_CONFIG, BANKRUPT_EMERGENCY_LOAN } from '../engine/constants';
+import { formatMoney } from '../engine/currency';
+import { getInflationRate, getLoanQuarterlyRate, scaleByInflation } from '../engine/economy';
 import { ProductionScreen } from './screens/ProductionScreen';
 import { ServicesScreen } from './screens/ServicesScreen';
 import {
@@ -55,12 +58,18 @@ export function Dashboard() {
     takeEmergencyLoan,
     dismissElection,
     dismissPresidentialResult,
+    debugSendTestMessage,
+    debugStartTaxCombat,
+    debugStartChase,
   } = useGameStore();
+
+  const debugMode = useSettingsStore(s => s.debugMode);
 
   const [mainTab, setMainTab] = useState<MainTab>('main');
   const [mgmtTab, setMgmtTab] = useState<ManagementTab>('changeActivity');
   const [globalTab, setGlobalTab] = useState<GlobalTab>('rankings');
   const [showOptions, setShowOptions] = useState(false);
+  const [showDebugMinigames, setShowDebugMinigames] = useState(false);
 
   if (!state) return <div className="p-8">Ładowanie...</div>;
 
@@ -101,6 +110,14 @@ export function Dashboard() {
   const isInsideActivitySubscreen =
     mgmtTab === 'buy' || mgmtTab === 'sell' || mgmtTab === 'production';
 
+  const emergencyLoanAmount = scaleByInflation(BANKRUPT_EMERGENCY_LOAN.amount, state);
+  const emergencyLoanRatePct = (
+    Math.max(
+      BANKRUPT_EMERGENCY_LOAN.interestRate,
+      getLoanQuarterlyRate('szara_strefa', getInflationRate(state)) + 0.03
+    ) * 100
+  ).toFixed(1);
+
   return (
     <div className="min-h-screen bg-stone-100 p-4 md:p-6">
       <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-3 mb-4">
@@ -118,7 +135,7 @@ export function Dashboard() {
         <div className="flex items-center gap-3 md:gap-4">
           <div className="text-left md:text-right">
             <p className="text-xl md:text-2xl font-mono">
-              {state.company.finances.stanKonta.toLocaleString('pl-PL')} PLN
+              {formatMoney(state.company.finances.stanKonta, state)}
             </p>
             <p className="text-xs md:text-sm text-stone-600">
               Reputacja: {Math.round(state.company.reputation.ogolna)}%
@@ -132,6 +149,54 @@ export function Dashboard() {
           </button>
         </div>
       </header>
+
+      {/* Pasek trybu debugowania */}
+      {debugMode && (
+        <div className="w-full bg-amber-50 border border-amber-300 text-amber-950 rounded-lg p-2.5 mb-3 flex flex-wrap items-center gap-2 shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-amber-200 rounded">
+            🛠 DEBUG
+          </span>
+
+          <button
+            onClick={() => debugSendTestMessage()}
+            className="text-xs bg-white border border-amber-300 px-2.5 py-1 rounded hover:bg-amber-100 font-medium"
+          >
+            ✉ Wyślij testową wiadomość
+          </button>
+
+          <button
+            onClick={() => setShowDebugMinigames(v => !v)}
+            className={`text-xs border border-amber-300 px-2.5 py-1 rounded font-medium ${
+              showDebugMinigames ? 'bg-amber-200' : 'bg-white hover:bg-amber-100'
+            }`}
+          >
+            🎮 Minigry {showDebugMinigames ? '▲' : '▼'}
+          </button>
+
+          {showDebugMinigames && (
+            <div className="flex flex-wrap items-center gap-1.5 pl-1 border-l border-amber-300">
+              <button
+                onClick={() => {
+                  setShowDebugMinigames(false);
+                  debugStartTaxCombat();
+                }}
+                className="text-xs bg-white border border-amber-300 px-2.5 py-1 rounded hover:bg-amber-100"
+              >
+                ⚔️ Walka ze skarbówką
+              </button>
+              <button
+                onClick={() => {
+                  setShowDebugMinigames(false);
+                  debugStartChase();
+                }}
+                className="text-xs bg-white border border-amber-300 px-2.5 py-1 rounded hover:bg-amber-100"
+              >
+                🚗 Pościg mafii
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pasek ostatniej transakcji handlowej */}
       {state.lastTradeNotice && (
@@ -223,7 +288,7 @@ export function Dashboard() {
         <div className="bg-red-100 border border-red-500 p-3 rounded mb-4 mt-4">
           <p className="font-bold">⚠ Bankructwo za {2 - state.bankruptWarningTurns} tur!</p>
           <button onClick={takeEmergencyLoan} className="mt-2 bg-red-600 text-white px-3 py-1 rounded">
-            Weź kredyt ratunkowy (50 000 PLN, 15%)
+            Weź kredyt ratunkowy ({formatMoney(emergencyLoanAmount, state)}, {emergencyLoanRatePct}% / kw.)
           </button>
         </div>
       )}
