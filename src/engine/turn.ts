@@ -13,9 +13,16 @@ import {
   checkTaxOfficeNotice,
   checkEmployeeUnrest,
 } from './news';
-import { applyEffects, resolvePendingSales, resolvePendingServices } from './actions';
+import {
+  applyEffects,
+  resolvePendingSales,
+  resolvePendingServices,
+  recordTurnAction,
+  captureUndoSnapshot,
+} from './actions';
 import { startTaxCombat } from './combat';
 import { startChase } from './chase';
+import { tickCompetitors, snapshotPlayer, INTERACTIONS_PER_TURN } from './competition';
 
 const INSTANT_BANKRUPTCY_LIMIT = -100_000;
 const ACTIVITIES_PER_TURN = 3;
@@ -90,6 +97,9 @@ export function nextTurn(state: GameState): GameState {
   s.pace = 'quarter';
   const oldPhase = s.phase;
 
+  // Zdjęcie statystyk gracza przed nową turą (do wyliczania trendów w rankingu)
+  s.playerPrev = snapshotPlayer(s);
+
   // 1. AKTUALIZACJA CZASU (przed ekonomią i eventami!)
   s.turn += 1;
   const totalQuarters = s.year * 4 + (s.quarter - 1) + quarters;
@@ -101,10 +111,37 @@ export function nextTurn(state: GameState): GameState {
     s.ceo.partySwitchesByPhase[s.phase] = 0;
   }
 
-  // 2. EKONOMIA I ROZLICZENIA
+  // 1b. WCIELENIE ZAKONTRAKTOWANYCH PRACOWNIKÓW Z POPRZEDNIEJ TURY
+  if (Array.isArray(s.pendingHires) && s.pendingHires.length > 0) {
+    const joinedByContract: Record<string, number> = {};
+    for (const hire of s.pendingHires) {
+      s.company.employees[hire.contract] = (s.company.employees[hire.contract] ?? 0) + hire.count;
+      joinedByContract[hire.contract] = (joinedByContract[hire.contract] ?? 0) + hire.count;
+    }
+    s.pendingHires = [];
+
+    const summaryParts = Object.entries(joinedByContract).map(
+      ([c, n]) => `+${n} (${CONTRACT_LABELS[c] ?? c})`
+    );
+    if (summaryParts.length > 0) {
+      s.news.unshift({
+        id: `hires_joined_${s.turn}_${s.news.length}`,
+        turn: s.turn,
+        year: s.year,
+        quarter: s.quarter,
+        headline: 'Nowi pracownicy rozpoczęli pracę',
+        body: `Do załogi dołączyli zakontraktowani wcześniej pracownicy: ${summaryParts.join(', ')}. Są już dostępni do pracy i produkcji.`,
+        category: 'economy',
+        read: false,
+      });
+    }
+  }
+
+  // 2. EKONOMIA, ROZLICZENIA I KONKURENCJA
   resolvePendingSales(s);
   resolvePendingServices(s);
   s = tickEconomy(s);
+  s = tickCompetitors(s, 0);
 
   // 3. POLITYKA I EVENTY
   s = tickPolitics(s);
@@ -119,11 +156,16 @@ export function nextTurn(state: GameState): GameState {
   }
   if (s.gameOver) return s;
 
-  // 4. AKTYWNOŚCI I POWIADOMIENIA
+  // 4. AKTYWNOŚCI, REJESTR RUNDY I POWIADOMIENIA
   s.currentActivities = rollActivities(s, rng);
   s.chosenActivityThisTurn = null;
+  s.productionWorkersUsedThisTurn = 0;
   s.productionUsedThisTurn = 0;
+  s.turnActions = [];
+  s.undoStack = [];
+  s.lastTradeNotice = null;
   s.lastChoiceResult = null;
+  s.interactionPoints = INTERACTIONS_PER_TURN;
 
   generatePassiveNews(s);
   checkMafiaInvitation(s);
@@ -167,10 +209,18 @@ export function consumeActivity(state: GameState, activityId: string): GameState
   const activity = (activitiesData as Activity[]).find((a) => a.id === activityId);
   if (!activity) return state;
 
-  const s = structuredClone(state);
+  const s = captureUndoSnapshot(state);
   applyEffects(s, activity.effects);
   s.chosenActivityThisTurn = activityId;
   s.company.reputation = recomputeReputation(s);
+
+  recordTurnAction(s, {
+    icon: '⚡',
+    category: 'Aktywność',
+    text: `Wykonano aktywność kwartalną: ${activity.label}.`,
+    target: 'activity',
+    canUndo: false,
+  });
 
   if (s.company.reputation.ogolna <= 0) {
     s.gameOver = { reason: 'Utrata reputacji' };

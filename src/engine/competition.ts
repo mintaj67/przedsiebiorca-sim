@@ -8,68 +8,54 @@ import type {
 } from './types';
 import { makeRng } from './rng';
 import { recomputeReputation } from './reputation';
-import { getCompanyActivities } from './activityHelper';
+import { formatCompanyName, getCompanyActivities } from './activityHelper';
 import competitionData from '../data/competition.json';
 import branchesData from '../data/branches.json';
 
-// ===========================================================================
-// KONFIGURACJA — wszystkie liczby do ustawienia po Twojej stronie.
-// Wartości poniżej to tylko techniczne placeholdery, żeby kod działał.
-// ===========================================================================
-
-/** Ile interakcji z konkurencją gracz ma na turę. */
 export const INTERACTIONS_PER_TURN = 2;
 
-/** Domyślne wartości dla pól filtrujących, których nie ma we wpisie w data/competition.json. */
 const TEMPLATE_DEFAULTS = {
-  categories: ['*'] as string[], // "*" = firma jest konkurentem w każdej branży
+  categories: ['*'] as string[],
   startYear: 1989,
 };
 
-/**
- * Losowy podział rozmiarów konkurencji: pierwsze sloty to wskazane rozmiary,
- * reszta firm dostaje DEFAULT_COMPETITOR_SIZE. Które firmy dostaną który rozmiar — losowo (seed).
- */
 export const COMPETITOR_SIZE_MIX: CompanySize[] = ['large', 'medium', 'medium'];
 export const DEFAULT_COMPETITOR_SIZE: CompanySize = 'small';
 
-/** Zakresy losowania statystyk startowych (włącznie). Wartość firmy wynika z jej rozmiaru. */
 const GENERATION = {
   reputation: { min: 20, max: 80 },
   condition: { min: 30, max: 70 },
   opinion: { min: 30, max: 70 },
 };
 
-/** Dynamika zmian na kwartał. */
 const TUNING = {
-  conditionPull: 0.15, // jak mocno kondycja wraca do bazowej (0-1)
-  conditionNoise: 6, // losowy szum kondycji: ±
+  conditionPull: 0.15,
+  conditionNoise: 6,
   reputationPull: 0.1,
   reputationNoise: 3,
   opinionPull: 0.1,
   opinionNoise: 1,
-  valueGrowthFromCondition: 0.04, // maks. wzrost wartości na kwartał z samej kondycji
-  valueNoise: 0.06, // całkowita rozpiętość losowego szumu wartości
-  trendMinDelta: 2, // min. zmiana reputacji/kondycji, by pokazać trend
-  trendMinRatio: 0.015, // min. zmiana wartości, by pokazać trend
+  valueGrowthFromCondition: 0.04,
+  valueNoise: 0.06,
+  trendMinDelta: 2,
+  trendMinRatio: 0.015,
 };
 
-/** Skutki interakcji gracza z konkurentem (wartości z Twojej oryginalnej wersji). */
 export const INTERACTION_EFFECTS = {
   positive: {
     competitorReputation: 5,
-    competitorOpinion: 0, // <-- do ustawienia
+    competitorOpinion: 0,
     playerOpiniaBranza: 2,
   },
   negativeSuccess: {
     chance: 0.5,
     competitorReputation: -10,
-    competitorOpinion: 0, // <-- do ustawienia
+    competitorOpinion: 0,
     playerOpiniaBranza: 3,
   },
   negativeFail: {
     competitorReputation: -5,
-    competitorOpinion: 0, // <-- do ustawienia
+    competitorOpinion: 0,
     playerOpiniaBranza: -5,
     playerOpiniaPubliczna: -5,
   },
@@ -84,7 +70,6 @@ export const SIZE_ORDER: CompanySize[] = [
   'corporation',
 ];
 
-/** Wartość (PLN), od której firma awansuje do danego rozmiaru. */
 export const SIZE_VALUE_FLOOR: Record<CompanySize, number> = {
   micro: 0,
   small: 300_000,
@@ -93,26 +78,16 @@ export const SIZE_VALUE_FLOOR: Record<CompanySize, number> = {
   very_large: 100_000_000,
   corporation: 600_000_000,
 };
-/** Spadek rozmiaru dopiero poniżej tego ułamka progu (histereza). */
+
 const SIZE_DOWNGRADE_RATIO = 0.7;
 
-/** Wagi w wyniku rankingowym (suma = 1). */
 export const RANKING_WEIGHTS = { value: 0.35, size: 0.25, reputation: 0.2, condition: 0.2 } as const;
 
-// ===========================================================================
-// Szablony (data/competition.json)
-// ===========================================================================
-
-/**
- * Wpis z data/competition.json. Wymagane: id, name, description.
- * Statystyki są losowane przy tworzeniu gry — `baseReputation` z JSON jest ignorowane.
- */
 export interface CompetitorTemplate {
   id: string;
   name: string;
   description: string;
-  baseReputation?: number; // przestarzałe, nieużywane
-  /** Id kategorii z branches.json albo "*". */
+  baseReputation?: number;
   categories?: string[];
   startYear?: number;
 }
@@ -124,7 +99,6 @@ interface BranchCategory {
   activities: { id: string }[];
 }
 
-/** Zwraca id kategorii (np. "handel") dla pojedynczego id działalności (np. "handel_odziez"). */
 export function getCategoryId(activityId: string): string | null {
   const cat = (branchesData as BranchCategory[]).find((c) =>
     c.activities.some((a) => a.id === activityId),
@@ -132,9 +106,6 @@ export function getCategoryId(activityId: string): string | null {
   return cat?.id ?? null;
 }
 
-/**
- * Zwraca posortowany klucz kategorii (np. "handel,produkcja") dla jednej lub wielu podkategorii.
- */
 export function getCategoryKey(activityOrList: string | string[]): string {
   const list = Array.isArray(activityOrList)
     ? activityOrList
@@ -164,10 +135,6 @@ function templatesFor(categoriesInput: string | string[], year: number): Competi
   });
 }
 
-// ===========================================================================
-// Pomocnicze
-// ===========================================================================
-
 type Rng = ReturnType<typeof makeRng>;
 
 const clamp = (v: number, min = 0, max = 100) => Math.min(max, Math.max(min, v));
@@ -183,17 +150,12 @@ function trendRatio(cur: number, prev: number, minRatio: number): Trend {
   return r >= minRatio ? 1 : r <= -minRatio ? -1 : 0;
 }
 
-/** Rozmiar z histerezą: awans po przekroczeniu progu, spadek dopiero poniżej ułamka progu. */
 function resolveSize(size: CompanySize, value: number): CompanySize {
   let idx = SIZE_ORDER.indexOf(size);
   while (idx < SIZE_ORDER.length - 1 && value >= SIZE_VALUE_FLOOR[SIZE_ORDER[idx + 1]]) idx++;
   while (idx > 0 && value < SIZE_VALUE_FLOOR[SIZE_ORDER[idx]] * SIZE_DOWNGRADE_RATIO) idx--;
   return SIZE_ORDER[idx];
 }
-
-// ===========================================================================
-// Generowanie i migracja
-// ===========================================================================
 
 function shuffle<T>(arr: T[], rng: Rng): T[] {
   const a = [...arr];
@@ -204,7 +166,6 @@ function shuffle<T>(arr: T[], rng: Rng): T[] {
   return a;
 }
 
-/** Wartość losowana logarytmicznie w przedziale [próg rozmiaru, próg następnego rozmiaru). */
 function rollValue(size: CompanySize, rng: Rng): number {
   const idx = SIZE_ORDER.indexOf(size);
   const low = Math.max(SIZE_VALUE_FLOOR[size], 1000);
@@ -226,7 +187,6 @@ function createCompetitor(t: CompetitorTemplate, size: CompanySize, rng: Rng): C
     value: rollValue(size, rng),
     condition,
     opinionOfPlayer: opinion,
-    // Statystyki dryfują wokół wylosowanych wartości startowych.
     baseReputation: reputation,
     baseCondition: condition,
     baseOpinion: opinion,
@@ -234,10 +194,6 @@ function createCompetitor(t: CompetitorTemplate, size: CompanySize, rng: Rng): C
   };
 }
 
-/**
- * Konkurenci z szablonów pasujących do wybranych kategorii i roku, ze statystykami losowanymi
- * (deterministycznie dla seeda): rozmiary wg COMPETITOR_SIZE_MIX, reszta małe.
- */
 export function generateCompetitors(
   categoryOrList: string | string[],
   year: number,
@@ -254,7 +210,6 @@ export function generateCompetitors(
   return pool.map((t) => createCompetitor(t, sizeById.get(t.id)!, rng));
 }
 
-/** Migracja starych zapisów (bez pola `competitors`). Nie mutuje wejścia. */
 export function ensureCompetitors(s: GameState): GameState {
   if (Array.isArray(s.competitors) && typeof s.competitionCategory === 'string') return s;
   const activities = getCompanyActivities(s.company);
@@ -267,10 +222,6 @@ export function ensureCompetitors(s: GameState): GameState {
     interactionPoints: s.interactionPoints ?? INTERACTIONS_PER_TURN,
   };
 }
-
-// ===========================================================================
-// Tura
-// ===========================================================================
 
 function evolveCompetitor(c: Competitor, rng: Rng) {
   const before = { value: c.value, reputation: c.reputation, condition: c.condition };
@@ -304,15 +255,10 @@ function evolveCompetitor(c: Competitor, rng: Rng) {
   c.trend = trend;
 }
 
-/**
- * Jeden krok symulacji konkurencji (kwartał). MUTUJE przekazany stan
- * (tak jak applyEffects) — wołaj na klonie, np. wewnątrz nextTurn.
- */
 export function tickCompetitors(s: GameState, step = 0): GameState {
   const activities = getCompanyActivities(s.company);
   const category = getCategoryKey(activities);
 
-  // Pierwsza tura po migracji albo zmiana branży przez gracza: konkurencja z nowej kategorii.
   if (!Array.isArray(s.competitors) || s.competitionCategory !== category) {
     s.competitors = category ? generateCompetitors(category, s.year, s.seed) : [];
     s.competitionCategory = category;
@@ -323,10 +269,6 @@ export function tickCompetitors(s: GameState, step = 0): GameState {
   for (const c of s.competitors) evolveCompetitor(c, rng);
   return s;
 }
-
-// ===========================================================================
-// Interakcje gracza z konkurentem
-// ===========================================================================
 
 export function interactWithCompetitor(
   state: GameState,
@@ -342,35 +284,58 @@ export function interactWithCompetitor(
   const rep = s.company.reputation;
   s.interactionPoints -= 1;
 
+  if (!Array.isArray(s.turnActions)) {
+    s.turnActions = [];
+  }
+
   if (actionType === 'positive') {
     const fx = INTERACTION_EFFECTS.positive;
     c.reputation = clamp(c.reputation + fx.competitorReputation);
     c.opinionOfPlayer = clamp(c.opinionOfPlayer + fx.competitorOpinion);
     rep.opiniaBranza = clamp(rep.opiniaBranza + fx.playerOpiniaBranza);
+
+    s.turnActions.push({
+      id: `comp_pos_${s.turn}_${s.turnActions.length}`,
+      icon: '🤝',
+      category: 'Konkurencja',
+      text: `Pozytywna interakcja z konkurentem: ${c.name}`,
+      target: 'competition',
+    });
   } else {
-    // Sól zależy od tury, konkurenta i liczby pozostałych punktów — każdy rzut jest inny.
     const rng = makeRng(`${s.seed}:interact`, s.turn * 100 + idx * 7 + s.interactionPoints);
     if (rng.next() < INTERACTION_EFFECTS.negativeSuccess.chance) {
       const fx = INTERACTION_EFFECTS.negativeSuccess;
       c.reputation = clamp(c.reputation + fx.competitorReputation);
       c.opinionOfPlayer = clamp(c.opinionOfPlayer + fx.competitorOpinion);
       rep.opiniaBranza = clamp(rep.opiniaBranza + fx.playerOpiniaBranza);
+
+      s.turnActions.push({
+        id: `comp_neg_ok_${s.turn}_${s.turnActions.length}`,
+        icon: '🎯',
+        category: 'Konkurencja',
+        text: `Skuteczna akcja przeciwko konkurentowi: ${c.name}`,
+        target: 'competition',
+      });
     } else {
       const fx = INTERACTION_EFFECTS.negativeFail;
       c.reputation = clamp(c.reputation + fx.competitorReputation);
       c.opinionOfPlayer = clamp(c.opinionOfPlayer + fx.competitorOpinion);
       rep.opiniaBranza = clamp(rep.opiniaBranza + fx.playerOpiniaBranza);
       rep.opiniaPubliczna = clamp(rep.opiniaPubliczna + fx.playerOpiniaPubliczna);
+
+      s.turnActions.push({
+        id: `comp_neg_fail_${s.turn}_${s.turnActions.length}`,
+        icon: '💥',
+        category: 'Konkurencja',
+        text: `Nieudana akcja przeciwko konkurentowi: ${c.name}`,
+        target: 'competition',
+      });
     }
   }
 
   s.company.reputation = recomputeReputation(s);
   return s;
 }
-
-// ===========================================================================
-// Ranking
-// ===========================================================================
 
 export interface RankingRow {
   id: string;
@@ -382,7 +347,6 @@ export interface RankingRow {
   reputation: number;
   value: number;
   condition: number;
-  /** null dla gracza. */
   opinionOfPlayer: number | null;
   trend: CompetitorTrend;
 }
@@ -404,7 +368,6 @@ export function rankingScore(size: CompanySize, value: number, reputation: numbe
   return Math.round(score * 10) / 10;
 }
 
-/** Gracz i konkurenci, od najwyżej ocenionej firmy. */
 export function computeRanking(s: GameState): RankingRow[] {
   const prev = s.playerPrev ?? null;
 
@@ -421,7 +384,7 @@ export function computeRanking(s: GameState): RankingRow[] {
   const rows: RankingRow[] = [
     {
       id: 'player',
-      name: `${s.company.name}${s.company.suffix}`,
+      name: formatCompanyName(s.company),
       isPlayer: true,
       rank: 0,
       score: rankingScore(s.company.size, pValue, pRep, pCond),
@@ -461,7 +424,6 @@ export function computeRanking(s: GameState): RankingRow[] {
   return rows;
 }
 
-/** Statystyki gracza „tu i teraz” — zapisywane na początku tury do liczenia trendów. */
 export function snapshotPlayer(s: GameState): PlayerSnapshot {
   const me = computeRanking(s).find((r) => r.isPlayer)!;
   return { value: me.value, reputation: me.reputation, condition: me.condition, rank: me.rank };

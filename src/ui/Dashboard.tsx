@@ -8,7 +8,8 @@ import { EventScreen } from './screens/EventScreen';
 import { ConsequenceScreen } from './screens/ConsequenceScreen';
 import { ElectionScreen } from './screens/ElectionScreen';
 import { PresidentialElectionScreen } from './screens/PresidentialElectionScreen';
-import { NewsScreen } from './screens/NewsScreen';
+import { NewsScreen, isCompanyInboxItem } from './screens/NewsScreen';
+import { GlobalNewsScreen } from './screens/GlobalNewsScreen';
 import { ChangeActivityScreen } from './screens/ChangeActivityScreen';
 import { BuyScreen } from './screens/BuyScreen';
 import { SellScreen } from './screens/SellScreen';
@@ -33,7 +34,9 @@ import {
   getActivityFullInfo,
   getCompanyActivities,
   getCategoryIdsForActivities,
+  formatCompanyName,
 } from '../engine/activityHelper';
+import type { TurnActionTarget } from '../engine/types';
 
 type MainTab = 'main' | 'news' | 'management' | 'global';
 type ManagementTab =
@@ -49,12 +52,33 @@ type ManagementTab =
   | 'statistics'
   | 'mafiaActivity'
   | 'competition';
-type GlobalTab = 'rankings' | 'achievements' | 'stats';
+type GlobalTab = 'rankings' | 'globalNews' | 'achievements' | 'stats';
+
+const TARGET_LABELS: Record<TurnActionTarget, string> = {
+  main: 'Główny',
+  news: 'Wiadomości',
+  changeActivity: 'Działalność',
+  buy: 'Kupuj',
+  sell: 'Sprzedawaj',
+  production: 'Produkcja',
+  services: 'Usługi',
+  party: 'Polityka',
+  competition: 'Konkurencja',
+  employees: 'Pracownicy',
+  office: 'Biuro',
+  activity: 'Aktywności',
+  statistics: 'Statystyki',
+  mafiaActivity: 'Mafia',
+  rankings: 'Rankingi',
+  achievements: 'Osiągnięcia',
+  stats: 'Makro',
+};
 
 export function Dashboard() {
   const {
     state,
     doTurn,
+    undoLastAction,
     takeEmergencyLoan,
     dismissElection,
     dismissPresidentialResult,
@@ -70,6 +94,7 @@ export function Dashboard() {
   const [globalTab, setGlobalTab] = useState<GlobalTab>('rankings');
   const [showOptions, setShowOptions] = useState(false);
   const [showDebugMinigames, setShowDebugMinigames] = useState(false);
+  const [turnBarExpanded, setTurnBarExpanded] = useState(false);
 
   if (!state) return <div className="p-8">Ładowanie...</div>;
 
@@ -95,15 +120,22 @@ export function Dashboard() {
 
   const party = partyLabel(state.ceo.currentPartyId);
   const chosenActivityLabel = state.chosenActivityThisTurn ?? 'brak';
-  const unreadCount = state.news.filter(n => !n.read).length;
+
+  const inboxItems = state.news.filter(isCompanyInboxItem);
+  const unreadInboxCount = inboxItems.filter(
+    n => !n.read || (n.choices && !n.resolved)
+  ).length;
+  const unreadGlobalNewsCount = state.news.filter(
+    n => !isCompanyInboxItem(n) && !n.read
+  ).length;
 
   const companyActivities = getCompanyActivities(state.company);
   const activeCategories = getCategoryIdsForActivities(companyActivities);
   const hasTrade = activeCategories.includes('handel');
   const hasProduction = activeCategories.includes('produkcja');
-  const hasGoodsTrade = hasTrade || hasProduction;
   const hasServices = activeCategories.includes('uslugi');
 
+  const displayCompanyName = formatCompanyName(state.company);
   const activityInfo = getActivityFullInfo(companyActivities);
   const sizeLabel = COMPANY_SIZE_CONFIG[state.company.size]?.label || state.company.size;
 
@@ -118,15 +150,57 @@ export function Dashboard() {
     ) * 100
   ).toFixed(1);
 
+  const turnActions = state.turnActions ?? [];
+  const latestAction = turnActions.length > 0 ? turnActions[turnActions.length - 1] : null;
+  const undoCount = state.undoStack?.length ?? 0;
+
+  const navigateToTarget = (target: TurnActionTarget) => {
+    setTurnBarExpanded(false);
+
+    if (target === 'main') {
+      setMainTab('main');
+      return;
+    }
+    if (target === 'news') {
+      setMainTab('news');
+      return;
+    }
+    if (target === 'rankings' || target === 'achievements' || target === 'stats') {
+      setMainTab('global');
+      setGlobalTab(target);
+      return;
+    }
+
+    setMainTab('management');
+    if ((target === 'buy' || target === 'sell') && !hasTrade) {
+      setMgmtTab('changeActivity');
+      return;
+    }
+    if (target === 'production' && !hasProduction) {
+      setMgmtTab('changeActivity');
+      return;
+    }
+    if (target === 'services' && !hasServices) {
+      setMgmtTab('changeActivity');
+      return;
+    }
+    if (target === 'mafiaActivity' && !state.ceo.inMafia) {
+      setMainTab('main');
+      return;
+    }
+
+    setMgmtTab(target as ManagementTab);
+  };
+
   return (
     <div className="min-h-screen bg-stone-100 p-4 md:p-6">
       <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-3 mb-4">
         <div>
           <h1
             className="text-xl md:text-2xl font-bold truncate max-w-[300px] sm:max-w-md md:max-w-xl"
-            title={`${state.company.name}${state.company.suffix}`}
+            title={displayCompanyName}
           >
-            {state.company.name}{state.company.suffix}
+            {displayCompanyName}
           </h1>
           <p className="text-sm text-stone-600">
             {state.year} Q{state.quarter} · {state.phase} {state.ceo.inMafia && ' · <mafia>'}
@@ -198,37 +272,184 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Pasek ostatniej transakcji handlowej */}
-      {state.lastTradeNotice && (
-        <div className="w-full bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-lg p-2.5 mb-3 flex items-center justify-between shadow-sm">
-          <div className="text-xs sm:text-sm flex items-center gap-2">
-            <span>📦</span>
-            <span>{state.lastTradeNotice}</span>
+      {/* Rozwijany pasek aktywności w bieżącej rundzie + Cofnij ruch */}
+      <div className="w-full bg-emerald-50 border border-emerald-300 text-emerald-950 rounded-lg mb-3 shadow-sm overflow-hidden">
+        <div className="w-full px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setTurnBarExpanded(v => !v)}
+            className="flex-1 min-w-0 flex items-center gap-2 text-left hover:opacity-80 transition"
+          >
+            <span className="text-base shrink-0">📋</span>
+            <span className="text-xs sm:text-sm font-bold shrink-0">
+              Dziennik rundy
+            </span>
+            <span className="text-[11px] font-bold bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded-full shrink-0">
+              Aktywności: {turnActions.length}
+            </span>
+            <span
+              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                state.chosenActivityThisTurn
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-white border border-emerald-300 text-emerald-800'
+              }`}
+            >
+              Aktywność kwartalna: {state.chosenActivityThisTurn ? '1/1' : '0/1'}
+            </span>
+            {latestAction && !turnBarExpanded && (
+              <span className="hidden md:inline text-xs text-emerald-900/80 truncate ml-1">
+                · Ostatnio: {latestAction.icon} {latestAction.text}
+              </span>
+            )}
+          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {undoCount > 0 && (
+              <button
+                type="button"
+                onClick={() => undoLastAction()}
+                title="Cofnij ostatni ruch w tej rundzie"
+                className="text-[11px] bg-amber-100 hover:bg-amber-200 border border-amber-400 text-amber-950 px-2.5 py-1 rounded font-bold transition"
+              >
+                ↩ Cofnij ({undoCount})
+              </button>
+            )}
+            {latestAction && !turnBarExpanded && (
+              <button
+                type="button"
+                onClick={() => navigateToTarget(latestAction.target)}
+                className="text-[11px] bg-white border border-emerald-300 text-emerald-900 px-2.5 py-1 rounded hover:bg-emerald-100 font-semibold transition"
+              >
+                {TARGET_LABELS[latestAction.target]} →
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setTurnBarExpanded(v => !v)}
+              className="text-xs font-semibold text-emerald-900 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 px-2.5 py-1 rounded transition"
+            >
+              {turnBarExpanded ? 'Zwiń ▲' : 'Rozwiń ▼'}
+            </button>
           </div>
         </div>
-      )}
 
-      {unreadCount > 0 && mainTab !== 'news' && (
+        {turnBarExpanded && (
+          <div className="border-t border-emerald-200 bg-white/90 px-3 py-2.5">
+            {turnActions.length === 0 ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-600 py-1">
+                <span>W tej rundzie nie wykonano jeszcze żadnych działań.</span>
+                <button
+                  type="button"
+                  onClick={() => navigateToTarget('activity')}
+                  className="self-start sm:self-auto px-2.5 py-1 bg-stone-900 text-white rounded text-xs font-semibold hover:bg-stone-800"
+                >
+                  Przejdź do Aktywności →
+                </button>
+              </div>
+            ) : (
+              <ul className="divide-y divide-emerald-100 max-h-60 overflow-y-auto">
+                {[...turnActions].reverse().map((entry, idx) => (
+                  <li
+                    key={entry.id}
+                    className="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                  >
+                    <div className="flex items-start gap-2 min-w-0">
+                      <span className="text-stone-400 font-mono shrink-0">
+                        #{turnActions.length - idx}
+                      </span>
+                      <span className="shrink-0">{entry.icon}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded shrink-0">
+                        {entry.category}
+                      </span>
+                      <span className="text-stone-800 break-words">{entry.text}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                      {idx === 0 && undoCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => undoLastAction()}
+                          className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 border border-amber-400 text-amber-950 rounded font-bold transition"
+                        >
+                          ↩ Cofnij
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => navigateToTarget(entry.target)}
+                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 rounded font-semibold transition"
+                      >
+                        {TARGET_LABELS[entry.target]} →
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Szybkie skróty do głównych ekranów rundy */}
+            <div className="mt-2.5 pt-2 border-t border-emerald-100 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-stone-500 font-semibold mr-1">Szybki skok:</span>
+              {!state.chosenActivityThisTurn && (
+                <QuickJumpButton onClick={() => navigateToTarget('activity')}>
+                  ⚡ Aktywności (0/1)
+                </QuickJumpButton>
+              )}
+              {hasProduction && (
+                <QuickJumpButton onClick={() => navigateToTarget('production')}>
+                  🏭 Produkcja
+                </QuickJumpButton>
+              )}
+              {hasTrade && (
+                <>
+                  <QuickJumpButton onClick={() => navigateToTarget('buy')}>
+                    🛒 Kupuj
+                  </QuickJumpButton>
+                  <QuickJumpButton onClick={() => navigateToTarget('sell')}>
+                    💰 Sprzedawaj
+                  </QuickJumpButton>
+                </>
+              )}
+              {hasServices && (
+                <QuickJumpButton onClick={() => navigateToTarget('services')}>
+                  🛎️ Usługi
+                </QuickJumpButton>
+              )}
+              <QuickJumpButton onClick={() => navigateToTarget('employees')}>
+                👥 Pracownicy
+              </QuickJumpButton>
+              <QuickJumpButton onClick={() => navigateToTarget('competition')}>
+                🤝 Konkurencja ({state.interactionPoints})
+              </QuickJumpButton>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {unreadInboxCount > 0 && mainTab !== 'news' && (
         <button
           onClick={() => setMainTab('news')}
           className="w-full bg-blue-100 border border-blue-300 text-blue-900 rounded-lg p-3 mb-4 text-left hover:bg-blue-200 transition flex items-center gap-3"
         >
           <span className="text-2xl">✉</span>
           <div>
-            <div className="font-bold">Masz {unreadCount} nieprzeczytanych wiadomości</div>
-            <div className="text-xs">Kliknij, aby przejść do skrzynki →</div>
+            <div className="font-bold">Masz {unreadInboxCount} nieprzeczytanych wiadomości w skrzynce</div>
+            <div className="text-xs">Kliknij, aby przejść do skrzynki odbiorczej →</div>
           </div>
         </button>
       )}
 
       <nav className="flex gap-2 mb-3 overflow-x-auto pb-1">
         <NavButton active={mainTab === 'main'} onClick={() => setMainTab('main')}>Główny</NavButton>
-        <NavButton active={mainTab === 'news'} onClick={() => setMainTab('news')}>Wiadomości</NavButton>
+        <NavButton active={mainTab === 'news'} onClick={() => setMainTab('news')}>
+          Wiadomości{unreadInboxCount > 0 ? ` (${unreadInboxCount})` : ''}
+        </NavButton>
         <NavButton active={mainTab === 'management'} onClick={() => setMainTab('management')}>Zarządzanie</NavButton>
-        <NavButton active={mainTab === 'global'} onClick={() => setMainTab('global')}>Globalne</NavButton>
+        <NavButton active={mainTab === 'global'} onClick={() => setMainTab('global')}>
+          Globalne{unreadGlobalNewsCount > 0 ? ' •' : ''}
+        </NavButton>
       </nav>
 
-      {/* ZARZĄDZANIE (bez Kupuj, Sprzedawaj i Produkcja na górnym pasku) */}
+      {/* ZARZĄDZANIE */}
       {mainTab === 'management' && (
         <div className="flex gap-2 mb-4 border-b border-stone-300 pb-2 overflow-x-auto">
           <SubNavButton
@@ -263,6 +484,9 @@ export function Dashboard() {
       {mainTab === 'global' && (
         <div className="flex gap-2 mb-4 border-b border-stone-300 pb-2 overflow-x-auto">
           <SubNavButton active={globalTab === 'rankings'} onClick={() => setGlobalTab('rankings')}>Rankingi</SubNavButton>
+          <SubNavButton active={globalTab === 'globalNews'} onClick={() => setGlobalTab('globalNews')}>
+            📰 Newsy{unreadGlobalNewsCount > 0 ? ` (${unreadGlobalNewsCount})` : ''}
+          </SubNavButton>
           <SubNavButton active={globalTab === 'achievements'} onClick={() => setGlobalTab('achievements')}>Osiągnięcia</SubNavButton>
           <SubNavButton active={globalTab === 'stats'} onClick={() => setGlobalTab('stats')}>Makro</SubNavButton>
         </div>
@@ -297,7 +521,7 @@ export function Dashboard() {
         {mainTab === 'main' && (
           <div>
             <OfficeView
-              companyName={`${state.company.name}${state.company.suffix}`}
+              companyName={displayCompanyName}
               year={state.year}
               quarter={state.quarter}
               inMafia={state.ceo.inMafia}
@@ -310,7 +534,10 @@ export function Dashboard() {
                 <InfoCard label="Mafia" value={state.ceo.inMafia ? 'Członek' : 'Brak'} muted={!state.ceo.inMafia} />
               </div>
               <button
-                onClick={() => doTurn()}
+                onClick={() => {
+                  setTurnBarExpanded(false);
+                  doTurn();
+                }}
                 className="bg-stone-900 text-white px-6 py-3 rounded hover:bg-stone-800 text-lg font-bold shadow-md whitespace-nowrap"
               >
                 Następna tura →
@@ -342,10 +569,12 @@ export function Dashboard() {
                 onNavigateToServices={() => setMgmtTab('services')}
               />
             )}
-            {mgmtTab === 'buy' && hasGoodsTrade && <BuyScreen />}
-            {mgmtTab === 'sell' && hasGoodsTrade && <SellScreen />}
+            {mgmtTab === 'buy' && hasTrade && <BuyScreen />}
+            {mgmtTab === 'sell' && hasTrade && <SellScreen />}
             {mgmtTab === 'production' && hasProduction && (
-              <ProductionScreen onNavigateToSell={() => setMgmtTab('sell')} />
+              <ProductionScreen
+                onNavigateToSell={hasTrade ? () => setMgmtTab('sell') : undefined}
+              />
             )}
             {mgmtTab === 'services' && hasServices && <ServicesScreen />}
             {mgmtTab === 'party' && <PartyScreen />}
@@ -361,6 +590,7 @@ export function Dashboard() {
         {mainTab === 'global' && (
           <>
             {globalTab === 'rankings' && <RankingsScreen />}
+            {globalTab === 'globalNews' && <GlobalNewsScreen />}
             {globalTab === 'achievements' && <AchievementsScreen />}
             {globalTab === 'stats' && <StatsScreen />}
           </>
@@ -369,6 +599,18 @@ export function Dashboard() {
 
       {showOptions && <OptionsModal onClose={() => setShowOptions(false)} />}
     </div>
+  );
+}
+
+function QuickJumpButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-[11px] px-2 py-1 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-800 rounded font-medium transition"
+    >
+      {children}
+    </button>
   );
 }
 

@@ -11,6 +11,8 @@ import {
   getCategoryIdsForActivities,
   computeStartingActivityStats,
   getRequiredWorkers,
+  getCompanyPrefix,
+  canSelfSellProducedGoods,
 } from '../../engine/activityHelper';
 import { scaleByInflation } from '../../engine/economy';
 import { formatMoney } from '../../engine/currency';
@@ -48,8 +50,8 @@ export function ChangeActivityScreen({
 
   const hasTrade = activeCategories.includes('handel');
   const hasProduction = activeCategories.includes('produkcja');
-  const hasGoodsTrade = hasTrade || hasProduction;
   const hasServices = activeCategories.includes('uslugi');
+  const canSelfSellNow = canSelfSellProducedGoods(currentActivities);
 
   const totalWorkers =
     state.company.employees.bezUmowy +
@@ -108,12 +110,6 @@ export function ChangeActivityScreen({
       const nextVal = !prev[catId];
       const nextState = { ...prev, [catId]: nextVal };
 
-      if (nextVal && catId === 'handel') {
-        nextState.produkcja = false;
-      } else if (nextVal && catId === 'produkcja') {
-        nextState.handel = false;
-      }
-
       const activeCount = Object.values(nextState).filter(Boolean).length;
       if (activeCount === 0) return prev;
       return nextState;
@@ -122,6 +118,11 @@ export function ChangeActivityScreen({
 
   const draftStats = computeStartingActivityStats(draftActivities);
   const draftRequiredWorkers = getRequiredWorkers(state.company.size, draftCategoryIds.length);
+  const draftPrefix = getCompanyPrefix(draftActivities);
+  const draftHasBothProdAndTrade =
+    draftCategoryIds.includes('produkcja') && draftCategoryIds.includes('handel');
+  const draftCanSelfSell =
+    draftHasBothProdAndTrade && canSelfSellProducedGoods(draftActivities);
 
   const sizes: CompanySize[] = ['micro', 'small', 'medium', 'large', 'very_large', 'corporation'];
   const currentSizeIndex = sizes.indexOf(state.company.size);
@@ -166,7 +167,7 @@ export function ChangeActivityScreen({
         </div>
       </div>
 
-      {/* 1. ROZMIAR FIRMY I FILIE (NAJWYŻEJ) */}
+      {/* 1. ROZMIAR FIRMY I FILIE */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border-l-4 border-stone-900">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
           <div>
@@ -247,15 +248,16 @@ export function ChangeActivityScreen({
         </div>
       )}
 
-      {/* 2. AKTYWNE FILARY OPERACYJNE */}
+      {/* 2. AKTYWNE FILARY OPERACYJNE (ROZDZIELONY HANDEL I PRODUKCJA) */}
       <div className="space-y-4 mb-6">
-        {hasGoodsTrade && (
+        {hasTrade && (
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-600">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h2 className="text-lg font-bold">🛒 Dział Handlowy i Magazyn</h2>
                 <p className="text-sm text-stone-600">
-                  Stan magazynu: <strong>{currentStock} / {capacity} szt.</strong> (Tu sprzedajesz także gotowe wyroby z produkcji).
+                  Stan magazynu: <strong>{currentStock} / {capacity} szt.</strong>
+                  {canSelfSellNow && ' (Pasujący profil — sprzedasz tu także własne wyroby z produkcji).'}
                 </p>
               </div>
               <div className="flex gap-3 w-full md:w-auto">
@@ -282,7 +284,7 @@ export function ChangeActivityScreen({
               <div>
                 <h2 className="text-lg font-bold">🏭 Zakład Produkcyjny</h2>
                 <p className="text-sm text-stone-600">
-                  Zakup surowców i linia produkcyjna. Wytworzone wyroby trafiają do wspólnego magazynu.
+                  Dobór składników, narzędzi na stałe i załogi. Zbyt całości lub części produkcji albo składowanie w magazynie ({currentStock} / {capacity} szt.).
                 </p>
               </div>
               <button
@@ -352,7 +354,7 @@ export function ChangeActivityScreen({
           <div>
             <h2 className="text-xl font-bold">Profil działalności (Przebranżowienie)</h2>
             <p className="text-xs text-stone-500">
-              Możesz łączyć Handel z Usługami albo Produkcję + Handel z Usługami. Zmiana możliwa raz na {ACTIVITY_CHANGE_COOLDOWN} kwartały.
+              Możesz dowolnie łączyć Handel, Produkcję i Usługi. Zmiana możliwa raz na {ACTIVITY_CHANGE_COOLDOWN} kwartały.
             </p>
           </div>
           {!canChange && (
@@ -375,7 +377,7 @@ export function ChangeActivityScreen({
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <label className="flex items-center gap-2 font-semibold cursor-pointer min-w-[175px]">
+                  <label className="flex items-center gap-2 font-semibold cursor-pointer min-w-[140px]">
                     <input
                       type="checkbox"
                       checked={isChecked}
@@ -403,9 +405,7 @@ export function ChangeActivityScreen({
                     </select>
                   ) : (
                     <span className="text-xs text-stone-400 italic">
-                      {cat.id === 'handel' || cat.id === 'produkcja'
-                        ? `Zaznacz, aby przejść na ${cat.name} (zastąpi drugi filar towarowy)`
-                        : 'Zaznacz, aby rozszerzyć firmę o usługi'}
+                      Zaznacz, aby rozszerzyć firmę o: {cat.name}
                     </span>
                   )}
                 </div>
@@ -415,34 +415,50 @@ export function ChangeActivityScreen({
         </div>
 
         <div
-          className={`p-3 rounded-lg border text-xs mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
+          className={`p-3 rounded-lg border text-xs mb-4 space-y-1.5 ${
             draftStats.related
               ? 'bg-stone-100 border-stone-300 text-stone-800'
               : 'bg-amber-50 border-amber-300 text-amber-900'
           }`}
         >
-          <div>
-            {draftActivities.length === 1 ? (
-              <span>Wybrano <b>1 filar</b> działalności.</span>
-            ) : draftStats.related ? (
-              <span>
-                ✓ <b>Powiązane branże:</b> brak kary do reputacji branżowej.
-              </span>
-            ) : (
-              <span>
-                ⚠ <b>Niepowiązane branże:</b> <b>-20%</b> do reputacji branżowej i reset opinii u mafii na <b>50%</b>.
-              </span>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              {draftActivities.length === 1 ? (
+                <span>Wybrano <b>1 filar</b> działalności (skrót: <b>{draftPrefix}</b>).</span>
+              ) : draftStats.related ? (
+                <span>
+                  ✓ <b>Powiązane branże ({draftPrefix}):</b> brak kary do reputacji branżowej.
+                </span>
+              ) : (
+                <span>
+                  ⚠ <b>Niepowiązane branże ({draftPrefix}):</b> <b>-20%</b> do reputacji branżowej i reset opinii u mafii na <b>50%</b>.
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-4 font-semibold shrink-0">
+              <span>Nowa rep. branży: {draftStats.branza}%</span>
+              <span>Mafia: {draftStats.mafia}%</span>
+              <span>Wymagani pracownicy: {draftRequiredWorkers}</span>
+            </div>
           </div>
-          <div className="flex gap-4 font-semibold shrink-0">
-            <span>Nowa rep. branży: {draftStats.branza}%</span>
-            <span>Mafia: {draftStats.mafia}%</span>
-            <span>Wymagani pracownicy: {draftRequiredWorkers}</span>
-          </div>
+
+          {draftHasBothProdAndTrade && (
+            <div className={`pt-1 border-t ${draftStats.related ? 'border-stone-200' : 'border-amber-200'}`}>
+              {draftCanSelfSell ? (
+                <span className="text-emerald-800 font-semibold">
+                  ✓ Profil handlowy pasuje do produkcji — odblokowana samodzielna sprzedaż wyrobów w zakładce Sprzedawaj.
+                </span>
+              ) : (
+                <span>
+                  ℹ Profil handlowy nie pokrywa się z produkcją — własne wyroby zbędziesz hurtowo na ekranie Produkcja.
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <button
-          onClick={() => changeActivity(draftActivities.join(','))}
+          onClick={() => changeActivity(draftActivities)}
           disabled={!canChange || !hasChanges}
           className="px-5 py-2.5 bg-stone-900 text-white rounded font-semibold text-sm hover:bg-stone-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >

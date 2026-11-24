@@ -17,6 +17,7 @@ import {
   dismissConsequence,
 } from '../../engine/turn';
 import {
+  undoLastAction as undoLastActionEngine,
   applyHire,
   applyLoan,
   applyChangeActivity,
@@ -33,6 +34,9 @@ import {
   buyGoods as buyGoodsEngine,
   sellGoods as sellGoodsEngine,
   resolveComplaint as resolveComplaintEngine,
+  buyProductionTool as buyProductionToolEngine,
+  runProductionBatch as runProductionBatchEngine,
+  sellProducedStock as sellProducedStockEngine,
   buyRawMaterials as buyRawMaterialsEngine,
   produceGoods as produceGoodsEngine,
   toggleService as toggleServiceEngine,
@@ -45,13 +49,14 @@ import { autosave } from '../autosave';
 
 export interface GameSlice {
   doTurn: () => void;
+  undoLastAction: () => void;
   consumeActivity: (activityId: string) => void;
   resolveEvent: (eventId: string, choiceId: string) => void;
   dismissConsequence: () => void;
   dismissIntro: () => void;
   joinParty: (partyId: string) => void;
   leaveParty: () => void;
-  changeActivity: (activity: string) => void;
+  changeActivity: (activity: string | string[]) => void;
   takeEmergencyLoan: () => void;
   hireWorker: (contract: ContractType, delta: number) => void;
   takeLoan: (source: 'bank' | 'szara_strefa', amount: number) => void;
@@ -74,6 +79,14 @@ export interface GameSlice {
   ) => void;
   resolveComplaint: (id: string, accept: boolean) => void;
   interactCompetitor: (compId: string, type: 'positive' | 'negative') => void;
+  buyProductionTool: (toolId: string) => void;
+  runProductionBatch: (
+    ingredientId: string,
+    toolId: string,
+    workersCount: number,
+    sellNowAmount?: number
+  ) => void;
+  sellProducedStock: (resId: string, amount: number) => void;
   buyRawMaterials: (supplier: TradeSupplier, amount: number, installments?: InstallmentOption) => void;
   produceGoods: (rawResId: string, amount: number) => void;
   toggleService: (serviceId: string) => void;
@@ -84,7 +97,6 @@ export interface GameSlice {
 }
 
 interface CommitOptions {
-  /** Akcje „zamykające okienka” mają działać także po końcu gry. */
   allowAfterGameOver?: boolean;
 }
 
@@ -108,6 +120,7 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
   return {
     // --- Tura i Okna ---
     doTurn: () => commit(nextTurn),
+    undoLastAction: () => commit(undoLastActionEngine),
     consumeActivity: (id) => commit((s) => consumeActivityEngine(s, id)),
     resolveEvent: (eventId, choiceId) => commit((s) => resolveEventChoice(s, eventId, choiceId)),
     dismissConsequence: () => commit(dismissConsequence, { allowAfterGameOver: true }),
@@ -146,6 +159,13 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
       commit((s) => interactWithCompetitorEngine(s, compId, type)),
 
     // --- Produkcja ---
+    buyProductionTool: (toolId) => commit((s) => buyProductionToolEngine(s, toolId)),
+    runProductionBatch: (ingredientId, toolId, workersCount, sellNowAmount = 0) =>
+      commit((s) =>
+        runProductionBatchEngine(s, ingredientId, toolId, workersCount, sellNowAmount)
+      ),
+    sellProducedStock: (resId, amount) =>
+      commit((s) => sellProducedStockEngine(s, resId, amount)),
     buyRawMaterials: (supplier, amount, installments = 1) =>
       commit((s) => buyRawMaterialsEngine(s, supplier, amount, installments)),
     produceGoods: (rawResId, amount) =>

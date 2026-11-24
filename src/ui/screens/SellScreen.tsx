@@ -1,6 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { generateTradeBuyers, getRevenueRange } from '../../engine/tradeHelper';
+import { estimateStoredProducedItem } from '../../engine/productionHelper';
+import {
+  getCompanyActivities,
+  canSelfSellProducedGoods,
+} from '../../engine/activityHelper';
 import { calculateInstallmentPrice } from '../../engine/actions';
 import { formatMoneyRange } from '../../engine/currency';
 import { scaleByInflation } from '../../engine/economy';
@@ -16,6 +21,8 @@ export function SellScreen() {
   if (!state) return null;
 
   const accuracy = state.company.reputation.dokladnoscPrzewidywan ?? 50;
+  const companyActivities = getCompanyActivities(state.company);
+  const canSelfSellProduction = canSelfSellProducedGoods(companyActivities);
 
   const buyers = useMemo(() => {
     return generateTradeBuyers(state);
@@ -29,9 +36,20 @@ export function SellScreen() {
     state.competitors,
   ]);
 
-  const stockEntries = Object.entries(state.company.resources || {}).filter(
+  const allNonRawEntries = Object.entries(state.company.resources || {}).filter(
     ([resId, amount]) => !resId.startsWith('raw_') && (amount as number) > 0
   );
+
+  const blockedProducedCount = canSelfSellProduction
+    ? 0
+    : allNonRawEntries
+        .filter(([resId]) => resId.startsWith('prod_'))
+        .reduce((sum, [, amt]) => sum + (amt as number), 0);
+
+  const stockEntries = allNonRawEntries.filter(([resId]) => {
+    if (resId.startsWith('prod_')) return canSelfSellProduction;
+    return true;
+  });
 
   const getInst = (key: string): InstallmentOption => installmentsMap[key] ?? 1;
   const setInst = (key: string, val: InstallmentOption) =>
@@ -41,12 +59,20 @@ export function SellScreen() {
     <div className="p-4 md:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
         <div>
-          <h1 className="text-2xl font-bold">💰 Sprzedawaj Towar i Wyroby (Odbiorcy)</h1>
+          <h1 className="text-2xl font-bold">
+            💰 Sprzedawaj {canSelfSellProduction ? 'Towar i Wyroby Własne' : 'Towar'} (Odbiorcy)
+          </h1>
           <p className="text-sm text-stone-600">
             Przy kontrahentach widnieje orientacyjny przedział przychodu. Warunki ratalne ustalasz osobno dla każdej transakcji.
           </p>
         </div>
       </div>
+
+      {blockedProducedCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-950 rounded-lg p-3.5 mb-6 text-xs sm:text-sm">
+          ℹ W magazynie znajduje się <strong>{blockedProducedCount} szt.</strong> wyrobów z własnej produkcji, ale obecny profil handlowy nie pasuje do profilu produkcyjnego — możesz zbyć je hurtowo na ekranie <b>🏭 Produkcja</b>.
+        </div>
+      )}
 
       {/* TRANSAKCJE W TOKU */}
       {state.pendingSales?.length > 0 && (
@@ -126,22 +152,35 @@ export function SellScreen() {
 
               <div>
                 <div className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide mb-2">
-                  Zmagazynowane towary i wyroby:
+                  {canSelfSellProduction ? 'Towary i wyroby własne w magazynie:' : 'Zmagazynowane towary:'}
                 </div>
 
                 {stockEntries.length === 0 ? (
                   <div className="text-xs text-stone-400 italic bg-stone-50 p-3 rounded text-center border border-dashed border-stone-200">
-                    Twój magazyn jest pusty. Sprowadź towar w zakładce KUPUJ lub wytwórz wyroby w PRODUKCJI.
+                    Brak towarów do sprzedaży. Sprowadź towar w zakładce KUPUJ
+                    {canSelfSellProduction ? ' lub złóż wyroby w magazynie na ekranie PRODUKCJA.' : '.'}
                   </div>
                 ) : (
                   <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                     {stockEntries.map(([resId, amount]) => {
                       const amt = amount as number;
                       const isProduced = resId.startsWith('prod_');
-                      const parts = resId.split('_');
-                      const quality = parseInt(parts[parts.length - 1], 10) || 1;
-                      const rawBaseVal = isProduced ? quality * 150 + 100 : quality * 120 + 80;
-                      const baseVal = Math.max(5, scaleByInflation(rawBaseVal, state));
+
+                      let quality = 1;
+                      let baseVal = 100;
+                      let itemTitle = '';
+
+                      if (isProduced) {
+                        const prodInfo = estimateStoredProducedItem(state, resId);
+                        quality = prodInfo.quality;
+                        baseVal = prodInfo.retailBaseUnitPrice;
+                        itemTitle = `🏭 ${prodInfo.label}`;
+                      } else {
+                        const parts = resId.split('_');
+                        quality = parseInt(parts[parts.length - 1], 10) || 1;
+                        baseVal = Math.max(5, scaleByInflation(quality * 120 + 80, state));
+                        itemTitle = '📦 Towar';
+                      }
 
                       const paymentKey = `${buy.id}_${resId}`;
                       const itemInstallments = getInst(paymentKey);
@@ -160,12 +199,12 @@ export function SellScreen() {
                             isRefused ? 'bg-red-50/40 border-red-200' : 'bg-stone-50 border-stone-200'
                           }`}
                         >
-                          <div className="flex justify-between items-center mb-1">
+                          <div className="flex justify-between items-center mb-1 gap-2">
                             <span className="font-semibold text-stone-800">
-                              {isProduced ? '🏭 Wyrób' : '📦 Towar'} J.{quality}/10 ({amt} szt.)
+                              {itemTitle} · J.{quality}/10 ({amt} szt.)
                             </span>
                             {isRefused && (
-                              <span className="text-[10px] text-red-700 font-bold uppercase bg-red-100 px-1 py-0.5 rounded">
+                              <span className="text-[10px] text-red-700 font-bold uppercase bg-red-100 px-1 py-0.5 rounded shrink-0">
                                 Odrzuca jakość
                               </span>
                             )}

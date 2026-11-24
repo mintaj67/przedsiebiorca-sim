@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../initialState';
 import {
-  applyHire, applyLoan, applyChangeActivity, applyJoinParty,
-  applyLeaveParty, applyEmergencyLoan,
+  applyHire,
+  applyLoan,
+  applyChangeActivity,
+  applyJoinParty,
+  applyLeaveParty,
+  applyEmergencyLoan,
+  undoLastAction,
 } from '../actions';
+import { nextTurn } from '../turn';
 import { WORKER_CONFIG, MAX_PARTY_SWITCHES_PER_PHASE } from '../constants';
 import type { GameState } from '../types';
 import { scaleByInflation } from '../economy';
@@ -21,10 +27,16 @@ function makeState(): GameState {
 }
 
 describe('applyHire', () => {
-  it('zwiększa liczbę pracowników', () => {
+  it('dodaje nowych pracowników do kolejki i wciela ich w kolejnej turze', () => {
     const state = makeState();
-    const result = applyHire(state, 'zlecenie', 3);
-    expect(result.company.employees.zlecenie).toBe(3);
+    const afterHire = applyHire(state, 'zlecenie', 3);
+
+    expect(afterHire.company.employees.zlecenie).toBe(0);
+    expect(afterHire.pendingHires?.reduce((s, h) => s + h.count, 0)).toBe(3);
+
+    const afterTurn = nextTurn(afterHire);
+    expect(afterTurn.company.employees.zlecenie).toBe(3);
+    expect(afterTurn.pendingHires ?? []).toHaveLength(0);
   });
 
   it('nie pozwala zejść poniżej zera', () => {
@@ -77,6 +89,20 @@ describe('applyHire', () => {
   });
 });
 
+describe('undoLastAction', () => {
+  it('cofa ostatni ruch wykonany w bieżącej turze', () => {
+    const state = makeState();
+    const before = state.company.finances.stanKonta;
+
+    const afterLoan = applyLoan(state, 'bank', 20_000);
+    expect(afterLoan.company.finances.stanKonta).toBe(before + 20_000);
+
+    const undone = undoLastAction(afterLoan);
+    expect(undone.company.finances.stanKonta).toBe(before);
+    expect(undone.company.loans).toHaveLength(0);
+  });
+});
+
 describe('applyLoan', () => {
   it('zwiększa stan konta o kwotę kredytu', () => {
     const state = makeState();
@@ -107,7 +133,7 @@ describe('applyLoan', () => {
 describe('applyChangeActivity', () => {
   it('zmienia działalność firmy', () => {
     const state = makeState();
-    state.turn = 10; // minęło dość tur
+    state.turn = 10;
     const result = applyChangeActivity(state, 'it');
     expect(result.company.activity).toBe('it');
   });
@@ -116,8 +142,7 @@ describe('applyChangeActivity', () => {
     const state = makeState();
     state.turn = 10;
     const result = applyChangeActivity(state, 'windykacja');
-    
-    // Zamiast starej stałej, sprawdzamy, czy opinia mafii zmieniła się na wartość z branches.json
+
     expect(result.company.reputation.opiniaMafia).toBeGreaterThan(0);
     expect(result.company.reputation.opiniaMafia).toBeLessThan(100);
   });
@@ -132,24 +157,23 @@ describe('applyChangeActivity', () => {
 });
 
 describe('applyJoinParty / applyLeaveParty', () => {
-  // Testy dla partii przenosimy do 1990 roku, bo w 1989 jest blokada
   it('dołączenie do partii ustawia currentPartyId', () => {
     const state = makeState();
-    state.year = 1990; // <-- Zmieniamy rok!
+    state.year = 1990;
     const result = applyJoinParty(state, 'sld');
     expect(result.ceo.currentPartyId).toBe('sld');
   });
 
   it('dołączenie do partii zwiększa licznik przefarbowań', () => {
     const state = makeState();
-    state.year = 1990; // <-- Zmieniamy rok!
+    state.year = 1990;
     const result = applyJoinParty(state, 'sld');
     expect(result.ceo.partySwitchesByPhase.chaos).toBe(1);
   });
 
   it('nie pozwala przekroczyć limitu przefarbowań', () => {
     const state = makeState();
-    state.year = 1990; // <-- Zmieniamy rok!
+    state.year = 1990;
     state.ceo.partySwitchesByPhase.chaos = MAX_PARTY_SWITCHES_PER_PHASE;
     const result = applyJoinParty(state, 'sld');
     expect(result.ceo.currentPartyId).toBeNull();
@@ -173,15 +197,15 @@ describe('applyJoinParty / applyLeaveParty', () => {
 describe('applyEmergencyLoan', () => {
   it('dodaje 50 000 PLN do konta', () => {
     const state = makeState();
-    state.company.finances.stanKonta = -10000; // <-- Ustawiamy ujemne saldo!
+    state.company.finances.stanKonta = -10000;
     const before = state.company.finances.stanKonta;
     const result = applyEmergencyLoan(state);
-expect(result.company.finances.stanKonta).toBe(before + scaleByInflation(50_000, state));
-    });
+    expect(result.company.finances.stanKonta).toBe(before + scaleByInflation(50_000, state));
+  });
 
   it('resetuje bankruptWarningTurns', () => {
     const state = makeState();
-    state.company.finances.stanKonta = -10000; // <-- Ujemne saldo!
+    state.company.finances.stanKonta = -10000;
     state.bankruptWarningTurns = 2;
     const result = applyEmergencyLoan(state);
     expect(result.bankruptWarningTurns).toBe(0);

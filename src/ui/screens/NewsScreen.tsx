@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import type { NewsCategory, NewsItem } from '../../engine/types';
 
-type Tab = 'news' | 'inbox';
-
 const CATEGORY_COLORS: Record<NewsCategory, string> = {
   rumor: 'bg-purple-100 text-purple-800',
   poll: 'bg-blue-100 text-blue-800',
@@ -16,96 +14,74 @@ const CATEGORY_LABELS: Record<NewsCategory, string> = {
   rumor: 'Plotka',
   poll: 'Sondaż',
   party: 'Partia',
-  economy: 'Gospodarka',
-  custom: 'Ciekawostka',
+  economy: 'Raport',
+  custom: 'Wiadomość',
 };
 
-const NEWS_CATEGORIES: NewsCategory[] = ['poll', 'party', 'economy', 'rumor'];
-const INBOX_CATEGORIES: NewsCategory[] = ['custom'];
+/**
+ * Rozdziela korespondencję prywatną/firmową (Skrzynka odbiorcza w Wiadomościach)
+ * od prasy i doniesień publicznych (Newsy / Periodyki w Globalnych).
+ */
+export function isCompanyInboxItem(item: NewsItem): boolean {
+  if (item.choices && item.choices.length > 0) return true;
+  if (item.category === 'custom') return true;
+  if (
+    item.id.startsWith('sales_report_') ||
+    item.id.startsWith('services_report_') ||
+    item.id.startsWith('hires_joined_') ||
+    item.id.startsWith('debug_msg_')
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export function NewsScreen() {
-    const { state, markNewsRead, resolveNewsChoice, devAddTestNews } = useGameStore();
-  const [tab, setTab] = useState<Tab>('inbox');
+  const { state, markNewsRead, resolveNewsChoice } = useGameStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  if (!state) return null;
-
-  const allItems = state.news;
-  const filtered = allItems.filter(n =>
-    tab === 'news' ? NEWS_CATEGORIES.includes(n.category) : INBOX_CATEGORIES.includes(n.category)
-  );
-
+  const inboxItems = state ? state.news.filter(isCompanyInboxItem) : [];
   const selected: NewsItem | null =
-    filtered.find(n => n.id === selectedId) ?? filtered[0] ?? null;
+    inboxItems.find(n => n.id === selectedId) ?? inboxItems[0] ?? null;
 
-  useEffect(() => {
-    setSelectedId(null);
-  }, [tab]);
-
-  // Auto-mark as read when opened, ale tylko jeśli nie ma pending action
   useEffect(() => {
     if (selected && !selected.read && !(selected.choices && !selected.resolved)) {
       markNewsRead(selected.id);
     }
-  }, [selected?.id]);
+  }, [selected?.id, selected?.read, selected?.resolved, markNewsRead]);
 
-  const handleSelect = (id: string) => {
-    setSelectedId(id);
-  };
-
-  const newsCount = allItems.filter(n => NEWS_CATEGORIES.includes(n.category)).length;
-  const inboxCount = allItems.filter(n => INBOX_CATEGORIES.includes(n.category)).length;
-
-  const unreadNews = allItems.filter(n =>
-    NEWS_CATEGORIES.includes(n.category) &&
-    (!n.read || (n.choices && !n.resolved))
-  ).length;
-  const unreadInbox = allItems.filter(n =>
-    INBOX_CATEGORIES.includes(n.category) &&
-    (!n.read || (n.choices && !n.resolved))
-  ).length;
+  if (!state) return null;
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-1">Korespondencja</h1>
-      <p className="text-sm text-stone-600 mb-4">
-        Doniesienia z ostatnich kwartałów. Wiadomości z akcją wymagają decyzji.
-      </p>
-
-     <button
-      onClick={devAddTestNews}
-      className="mb-4 bg-red-600 text-white px-3 py-1 rounded text-xs"
-     >
-        🧪 DEV: Dodaj testową wiadomość
-     </button>
-
-      <div className="flex gap-2 mb-4">
-        <TabButton active={tab === 'inbox'} onClick={() => setTab('inbox')} unread={unreadInbox}>
-          ✉ Skrzynka odbiorcza {inboxCount > 0 && <span className="opacity-60 ml-1">({inboxCount})</span>}
-        </TabButton>
-        <TabButton active={tab === 'news'} onClick={() => setTab('news')} unread={unreadNews}>
-          📰 Newsy {newsCount > 0 && <span className="opacity-60 ml-1">({newsCount})</span>}
-        </TabButton>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">✉ Skrzynka odbiorcza</h1>
+          <p className="text-sm text-stone-600">
+            Korespondencja firmowa, raporty rozliczeń i sprawy wymagające decyzji. Prasę i plotki znajdziesz w zakładce <b>Globalne → Newsy</b>.
+          </p>
+        </div>
+        <span className="text-xs font-semibold bg-stone-200 text-stone-800 px-3 py-1 rounded-full self-start sm:self-auto">
+          Wiadomości: {inboxItems.length}
+        </span>
       </div>
 
-      {filtered.length === 0 ? (
+      {inboxItems.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center text-stone-500">
-          {tab === 'news'
-            ? 'Brak doniesień. Świat jeszcze nie zauważył twojej firmy.'
-            : 'Skrzynka odbiorcza jest pusta.'}
+          Skrzynka odbiorcza jest pusta.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Lista po lewej */}
           <div className="md:col-span-1 bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="max-h-[600px] overflow-y-auto">
-              {filtered.map(item => {
+              {inboxItems.map(item => {
                 const isSelected = selected?.id === item.id;
                 const hasPendingAction = !!(item.choices && !item.resolved);
                 return (
                   <button
                     key={item.id}
-                    onClick={() => handleSelect(item.id)}
+                    onClick={() => setSelectedId(item.id)}
                     className={`w-full text-left px-3 py-3 border-b border-stone-100 last:border-b-0 transition ${
                       isSelected ? 'bg-stone-100 border-l-4 border-l-stone-900' : 'hover:bg-stone-50'
                     }`}
@@ -202,35 +178,5 @@ export function NewsScreen() {
         </div>
       )}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-  unread,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  unread?: number;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative px-4 py-2 rounded text-sm font-medium transition ${
-        active
-          ? 'bg-stone-900 text-white'
-          : 'bg-white border border-stone-200 hover:bg-stone-50'
-      }`}
-    >
-      {children}
-      {unread !== undefined && unread > 0 && (
-        <span className="ml-2 inline-block bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full align-middle">
-          {unread}
-        </span>
-      )}
-    </button>
   );
 }

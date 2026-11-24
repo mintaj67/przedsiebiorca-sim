@@ -18,7 +18,7 @@
   },
   {
     "id": "produkcja",
-    "name": "Produkcja + Handel",
+    "name": "Produkcja",
     "activities": [
       { "id": "prod_azbest", "name": "Azbest", "rep": 20, "mafia": 30, "synergyGroups": ["przemysl_chemia", "polswiatek_rozrywka"] },
       { "id": "prod_poliester", "name": "Poliester", "rep": 45, "mafia": 20, "synergyGroups": ["tekstylia", "przemysl_chemia"] },

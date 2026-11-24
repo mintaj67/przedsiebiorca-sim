@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { GameState, Difficulty, CompanySize, AppScreen } from '../engine/types';
 import { createInitialState, getEligibleActivities } from '../engine/initialState';
+import { formatCompanyName } from '../engine/activityHelper';
 import { ensureCompetitors } from '../engine/competition';
 import { loadSlotsFromStorage, persistSlots } from './autosave';
 import type { SaveSlots } from './autosave';
@@ -20,8 +21,10 @@ interface NewGameOpts {
   difficulty: Difficulty;
   inPZPR: boolean;
   activity: string;
+  activities?: string[];
   companyName: string;
   suffix: string;
+  usePrefix?: boolean;
   size: CompanySize;
 }
 
@@ -69,7 +72,7 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     const slots = loadSlotsFromStorage();
     slots[slotId] = {
       id: slotId,
-      name: (opts.companyName || 'Firma') + (opts.suffix ?? ''),
+      name: formatCompanyName(s.company) || 'Firma',
       createdAt: Date.now(),
       lastPlayed: Date.now(),
       state: s,
@@ -86,7 +89,7 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     const existing = slots[slotId];
     slots[slotId] = {
       id: slotId,
-      name: existing?.name ?? (s.company.name + s.company.suffix),
+      name: formatCompanyName(s.company) || existing?.name || 'Firma',
       createdAt: existing?.createdAt ?? Date.now(),
       lastPlayed: Date.now(),
       state: s,
@@ -101,7 +104,22 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     if (!slot) return false;
     const migratedState = ensureCompetitors(slot.state);
     migratedState.pace = 'quarter';
+
+    if (!Array.isArray(migratedState.company.ownedTools) || migratedState.company.ownedTools.length === 0) {
+      migratedState.company.ownedTools = ['tool_basic'];
+    }
+    if (typeof migratedState.company.usePrefix !== 'boolean') {
+      migratedState.company.usePrefix = true;
+    }
+    if (!Array.isArray(migratedState.turnActions)) {
+      migratedState.turnActions = [];
+    }
+    if (typeof migratedState.productionWorkersUsedThisTurn !== 'number') {
+      migratedState.productionWorkersUsedThisTurn = 0;
+    }
+
     slot.state = migratedState;
+    slot.name = formatCompanyName(migratedState.company) || slot.name;
     slot.lastPlayed = Date.now();
     persistSlots(slots);
     set({ state: migratedState, currentSlotId: slotId, screen: 'game', savesVersion: Date.now() });

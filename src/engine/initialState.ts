@@ -17,6 +17,7 @@ export function createInitialState(opts: {
   activities?: string[];
   companyName: string;
   suffix: string;
+  usePrefix?: boolean;
   size: CompanySize;
 }): GameState {
   const { startingCash, startingRep } = DIFFICULTY_CONFIG[opts.difficulty];
@@ -61,6 +62,7 @@ export function createInitialState(opts: {
     company: {
       name: opts.companyName,
       suffix: opts.suffix,
+      usePrefix: opts.usePrefix ?? true,
       size: opts.size,
       legalForm: 'cywilna',
       activity: primaryActivity,
@@ -68,6 +70,7 @@ export function createInitialState(opts: {
       employees: { ...sizeCfg.startingEmployees },
       hasAccountant: false,
       inventory: [],
+      ownedTools: ['tool_basic'],
       finances: {
         stanKonta: cash,
         wplywy: {
@@ -146,6 +149,8 @@ export function createInitialState(opts: {
     pendingSales: [],
     pendingComplaints: [],
     activeServiceIds: [],
+    turnActions: [],
+    productionWorkersUsedThisTurn: 0,
     interactionPoints: INTERACTIONS_PER_TURN,
 
     competitors: competitionCategory

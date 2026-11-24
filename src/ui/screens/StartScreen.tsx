@@ -4,6 +4,9 @@ import { DIFFICULTY_DESCRIPTIONS, COMPANY_SIZE_CONFIG } from '../../engine/const
 import {
   computeStartingActivityStats,
   getRequiredWorkers,
+  getCompanyPrefix,
+  formatCompanyName,
+  canSelfSellProducedGoods,
 } from '../../engine/activityHelper';
 import branchesData from '../../data/branches.json';
 import type { Difficulty, CompanySize, ActivityCategory } from '../../engine/types';
@@ -21,6 +24,7 @@ export function StartScreen() {
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [companyName, setCompanyName] = useState('Moja Firma');
   const [suffix, setSuffix] = useState('');
+  const [usePrefix, setUsePrefix] = useState(true);
   const [size, setSize] = useState<CompanySize>('micro');
   const [inPZPR, setInPZPR] = useState(false);
 
@@ -50,13 +54,6 @@ export function StartScreen() {
       const nextValue = !prev[catId];
       const nextState = { ...prev, [catId]: nextValue };
 
-      // Można łączyć wyłącznie Handel z Usługami albo Produkcję + Handel z Usługami
-      if (nextValue && catId === 'handel') {
-        nextState.produkcja = false;
-      } else if (nextValue && catId === 'produkcja') {
-        nextState.handel = false;
-      }
-
       const activeCount = Object.values(nextState).filter(Boolean).length;
       if (activeCount === 0) {
         return prev;
@@ -67,6 +64,18 @@ export function StartScreen() {
 
   const { branza, mafia, related } = computeStartingActivityStats(selectedActivities);
   const requiredWorkers = getRequiredWorkers(size, activeCategoryIds.length);
+  const prefix = getCompanyPrefix(selectedActivities);
+  const fullNamePreview = formatCompanyName({
+    name: companyName.trim() || 'Moja Firma',
+    suffix,
+    usePrefix,
+    activity: selectedActivities[0] ?? '',
+    activities: selectedActivities,
+  });
+
+  const hasBothProdAndTrade =
+    activeCategoryIds.includes('produkcja') && activeCategoryIds.includes('handel');
+  const canSelfSell = hasBothProdAndTrade && canSelfSellProducedGoods(selectedActivities);
 
   return (
     <div className="min-h-screen bg-stone-100 p-6 flex items-center justify-center">
@@ -83,7 +92,12 @@ export function StartScreen() {
 
         {/* Nazwa firmy */}
         <h2 className="font-bold mb-2">Nazwa firmy</h2>
-        <div className="flex flex-row gap-2 mb-6">
+        <div className="flex flex-row gap-2 mb-2">
+          {usePrefix && prefix && (
+            <div className="px-3 py-2 rounded border border-stone-300 bg-stone-100 font-bold text-stone-900 flex items-center shrink-0">
+              {prefix}
+            </div>
+          )}
           <input
             value={companyName}
             onChange={e => setCompanyName(e.target.value)}
@@ -101,11 +115,26 @@ export function StartScreen() {
           </select>
         </div>
 
-        {/* Działalność (Checkboxy + Podkategorie) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 text-xs text-stone-600">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={usePrefix}
+              onChange={e => setUsePrefix(e.target.checked)}
+              className="w-4 h-4 accent-stone-900 cursor-pointer"
+            />
+            <span>Dodawaj automatyczny skrót profilu przed nazwą ({prefix || 'P...'})</span>
+          </label>
+          <span>
+            Podgląd: <strong className="text-stone-900">{fullNamePreview}</strong>
+          </span>
+        </div>
+            
+        {/* Działalność (3 niezależne filary) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-          <h2 className="font-bold">Działalność (Handel lub Produkcja + Handel oraz opcjonalnie Usługi)</h2>
+          <h2 className="font-bold">Działalność (Handel, Produkcja, Usługi)</h2>
           <span className="text-xs text-stone-500">
-            Możesz łączyć wybraną gałąź towarową z usługami
+            Możesz łączyć dowolne filary (od 1 do 3 naraz)
           </span>
         </div>
 
@@ -122,7 +151,7 @@ export function StartScreen() {
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <label className="flex items-center gap-2 font-semibold cursor-pointer min-w-[175px]">
+                  <label className="flex items-center gap-2 font-semibold cursor-pointer min-w-[140px]">
                     <input
                       type="checkbox"
                       checked={isChecked}
@@ -149,9 +178,7 @@ export function StartScreen() {
                     </select>
                   ) : (
                     <span className="text-xs text-stone-400 italic">
-                      {cat.id === 'handel' || cat.id === 'produkcja'
-                        ? `Zaznacz, aby wybrać ${cat.name} (zastąpi drugi filar towarowy)`
-                        : 'Zaznacz, aby prowadzić działalność usługową'}
+                      Zaznacz, aby dodać filar: {cat.name}
                     </span>
                   )}
                 </div>
@@ -162,30 +189,46 @@ export function StartScreen() {
 
         {/* Podsumowanie synergii i wymogów */}
         <div
-          className={`p-3 rounded-lg border text-xs mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${
+          className={`p-3 rounded-lg border text-xs mb-6 space-y-1.5 ${
             related
               ? 'bg-stone-100 border-stone-300 text-stone-800'
               : 'bg-amber-50 border-amber-300 text-amber-900'
           }`}
         >
-          <div>
-            {selectedActivities.length === 1 ? (
-              <span>Wybrano <b>1 filar</b> działalności.</span>
-            ) : related ? (
-              <span>
-                ✓ <b>Spójny profil działalności:</b> wybrane branże są ze sobą powiązane (brak kary do reputacji).
-              </span>
-            ) : (
-              <span>
-                ⚠ <b>Niespójny profil („mydło i powidło”):</b> niepowiązane podkategorie dają <b>-20%</b> do reputacji branżowej i ustawiają startową opinię u mafii na <b>50%</b>.
-              </span>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              {selectedActivities.length === 1 ? (
+                <span>Wybrano <b>1 filar</b> działalności (skrót: <b>{prefix}</b>).</span>
+              ) : related ? (
+                <span>
+                  ✓ <b>Spójny profil działalności ({prefix}):</b> wybrane branże są ze sobą powiązane (brak kary do reputacji).
+                </span>
+              ) : (
+                <span>
+                  ⚠ <b>Niespójny profil ({prefix}):</b> niepowiązane podkategorie dają <b>-20%</b> do reputacji branżowej i ustawiają startową opinię u mafii na <b>50%</b>.
+                </span>
+              )}
+            </div>
+            <div className="flex gap-4 font-semibold shrink-0">
+              <span>Reputacja branży: {branza}%</span>
+              <span>Mafia (start): {mafia}%</span>
+              <span>Wymagani pracownicy: {requiredWorkers}</span>
+            </div>
           </div>
-          <div className="flex gap-4 font-semibold shrink-0">
-            <span>Reputacja branży: {branza}%</span>
-            <span>Mafia (start): {mafia}%</span>
-            <span>Wymagani pracownicy: {requiredWorkers}</span>
-          </div>
+
+          {hasBothProdAndTrade && (
+            <div className={`pt-1 border-t ${related ? 'border-stone-200' : 'border-amber-200'}`}>
+              {canSelfSell ? (
+                <span className="text-emerald-800 font-semibold">
+                  ✓ Profil handlowy pasuje do produkcji — własne wyroby będziesz mógł sprzedawać także samodzielnie w zakładce Sprzedawaj.
+                </span>
+              ) : (
+                <span>
+                  ℹ Wybrany profil handlowy nie pokrywa się branżowo z produkcją — własne wyroby zbędziesz hurtowo na ekranie Produkcja.
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Rozmiar firmy */}
@@ -252,8 +295,10 @@ export function StartScreen() {
                 difficulty,
                 inPZPR,
                 activity: selectedActivities.join(','),
+                activities: selectedActivities,
                 companyName: companyName.trim() || 'Moja Firma',
                 suffix,
+                usePrefix,
                 size,
               },
               pendingSlotId

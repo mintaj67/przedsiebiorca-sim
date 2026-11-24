@@ -9,6 +9,7 @@ import type {
   TradeBuyer,
   InstallmentOption,
   ServiceDefinition,
+  TurnActionEntry,
 } from './types';
 import {
   MAX_PARTY_SWITCHES_PER_PHASE,
@@ -25,12 +26,21 @@ import {
   getCompanyActivities,
   getCategoryIdsForActivities,
   getRequiredWorkers,
+  getActivityFullInfo,
 } from './activityHelper';
 import { recomputeReputation } from './reputation';
 import { makeRng } from './rng';
 import { getInflationRate, getLoanQuarterlyRate, scaleByInflation } from './economy';
 import { formatMoney, formatMoneyRange } from './currency';
-import { getProductionCapacity } from './productionHelper';
+import {
+  getProductionCapacity,
+  getOwnedToolIds,
+  getProductionTools,
+  getProductionIngredients,
+  getAvailableProductionWorkers,
+  estimateProductionBatch,
+  estimateStoredProducedItem,
+} from './productionHelper';
 import { getRevenueRange } from './tradeHelper';
 import {
   getTotalServiceWorkerSlots,
@@ -39,6 +49,56 @@ import {
 } from './servicesHelper';
 
 const clamp = (x: number) => Math.max(0, Math.min(100, x));
+const MAX_UNDO_STEPS = 15;
+
+const CONTRACT_LABELS: Record<ContractType, string> = {
+  bezUmowy: 'bez umowy',
+  zlecenie: 'umowa zlecenie',
+  uop: 'umowa o pracę',
+};
+
+const AD_LABELS: Record<'radio' | 'tv' | 'internet', string> = {
+  radio: 'Reklama radiowa',
+  tv: 'Reklama telewizyjna',
+  internet: 'Reklama internetowa',
+};
+
+/** Zapisuje migawkę stanu przed mutacją, aby gracz mógł cofnąć ruch w bieżącej turze. */
+export function captureUndoSnapshot(state: GameState): GameState {
+  const s = structuredClone(state);
+  const prevStack = Array.isArray(s.undoStack) ? s.undoStack.slice(-(MAX_UNDO_STEPS - 1)) : [];
+  const snapshot = structuredClone(state);
+  delete snapshot.undoStack;
+  s.undoStack = [...prevStack, snapshot];
+  return s;
+}
+
+/** Cofa ostatni odwracalny ruch wykonany w bieżącej turze. */
+export function undoLastAction(state: GameState): GameState {
+  if (state.gameOver) return state;
+  const stack = Array.isArray(state.undoStack) ? state.undoStack : [];
+  if (stack.length === 0) return state;
+
+  const previous = structuredClone(stack[stack.length - 1]);
+  previous.undoStack = stack.slice(0, -1);
+  return previous;
+}
+
+/** Rejestruje akcję wykonaną w bieżącej turze na rozwijanym pasku aktywności. */
+export function recordTurnAction(
+  state: GameState,
+  entry: Omit<TurnActionEntry, 'id'>
+): void {
+  if (!Array.isArray(state.turnActions)) {
+    state.turnActions = [];
+  }
+  state.turnActions.push({
+    id: `ta_${state.turn}_${state.turnActions.length}`,
+    canUndo: true,
+    ...entry,
+  });
+  state.lastTradeNotice = entry.text;
+}
 
 export function calculateInstallmentPrice(price: number, installments: InstallmentOption): number {
   if (installments <= 1) return price;
@@ -54,41 +114,102 @@ export function calculateInstallmentPrice(price: number, installments: Installme
 }
 
 export function applyHire(state: GameState, contract: ContractType, delta: number): GameState {
-  const s = structuredClone(state);
-  const current = s.company.employees[contract];
-  const newCount = Math.max(0, current + delta);
-  const actualDelta = newCount - current;
+  const current = state.company.employees[contract];
+  const pendingForContract = (state.pendingHires ?? [])
+    .filter(h => h.contract === contract)
+    .reduce((sum, h) => sum + h.count, 0);
 
-  if (actualDelta < 0 && contract === 'uop') {
-    const fired = Math.abs(actualDelta);
-    const severance = scaleByInflation(fired * WORKER_CONFIG.uop.severance, s);
-    if (s.company.finances.stanKonta < severance) return s;
-    s.company.finances.stanKonta -= severance;
-  }
-
-  if (actualDelta < 0 && contract !== 'uop') {
-    const fired = Math.abs(actualDelta);
-    s.company.reputation.opiniaPracownicy = Math.max(
-      0,
-      s.company.reputation.opiniaPracownicy - fired * 2
-    );
-  }
-
-  if (actualDelta > 0) {
-    const hired = actualDelta;
+  if (delta > 0) {
+    const s = captureUndoSnapshot(state);
     const repImpact = WORKER_CONFIG[contract].reputationImpact;
     s.company.reputation.opiniaPracownicy = clamp(
-      s.company.reputation.opiniaPracownicy + repImpact * hired
+      s.company.reputation.opiniaPracownicy + repImpact * delta
     );
+    const nextPendingIdx = (s.pendingHires ?? []).length;
+    s.pendingHires = [
+      ...(s.pendingHires ?? []),
+      {
+        id: `hire_${s.turn}_${nextPendingIdx}_${contract}`,
+        contract,
+        count: delta,
+        hiredOnTurn: s.turn,
+      },
+    ];
+    s.company.reputation = recomputeReputation(s);
+
+    recordTurnAction(s, {
+      icon: '👥',
+      category: 'Pracownicy',
+      text: `Zakontraktowano +${delta} os. (${CONTRACT_LABELS[contract]}) — dołączą w kolejnej turze.`,
+      target: 'employees',
+    });
+
+    return s;
   }
 
-  s.company.employees[contract] = newCount;
-  s.company.reputation = recomputeReputation(s);
-  return s;
+  if (delta < 0) {
+    const fireWant = Math.abs(delta);
+
+    // Najpierw możemy anulować zakontraktowanych jeszcze nieobecnych w załodze
+    if (current === 0 && pendingForContract > 0) {
+      const s = captureUndoSnapshot(state);
+      let leftToCancel = Math.min(fireWant, pendingForContract);
+      const nextPending = [];
+      for (const h of s.pendingHires ?? []) {
+        if (h.contract === contract && leftToCancel > 0) {
+          const take = Math.min(h.count, leftToCancel);
+          leftToCancel -= take;
+          if (h.count - take > 0) {
+            nextPending.push({ ...h, count: h.count - take });
+          }
+        } else {
+          nextPending.push(h);
+        }
+      }
+      s.pendingHires = nextPending;
+      recordTurnAction(s, {
+        icon: '👥',
+        category: 'Pracownicy',
+        text: `Anulowano zakontraktowanie ${Math.abs(delta)} os. (${CONTRACT_LABELS[contract]}).`,
+        target: 'employees',
+      });
+      return s;
+    }
+
+    const newCount = Math.max(0, current - fireWant);
+    const fired = current - newCount;
+    if (fired <= 0) return state;
+
+    const s = captureUndoSnapshot(state);
+    if (contract === 'uop') {
+      const severance = scaleByInflation(fired * WORKER_CONFIG.uop.severance, s);
+      if (s.company.finances.stanKonta < severance) return state;
+      s.company.finances.stanKonta -= severance;
+    } else {
+      s.company.reputation.opiniaPracownicy = Math.max(
+        0,
+        s.company.reputation.opiniaPracownicy - fired * 2
+      );
+    }
+
+    s.company.employees[contract] = newCount;
+    s.company.reputation = recomputeReputation(s);
+
+    recordTurnAction(s, {
+      icon: '👥',
+      category: 'Pracownicy',
+      text: `Zwolniono ${fired} os. (${CONTRACT_LABELS[contract]}).`,
+      target: 'employees',
+    });
+
+    return s;
+  }
+
+  return state;
 }
 
 export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amount: number): GameState {
-  const s = structuredClone(state);
+  const s = captureUndoSnapshot(state);
   const rate = getLoanQuarterlyRate(source, getInflationRate(s));
   s.company.loans.push({
     id: `loan_${s.turn}_${s.company.loans.length}`,
@@ -101,19 +222,27 @@ export function applyLoan(state: GameState, source: 'bank' | 'szara_strefa', amo
   s.company.finances.stanKonta += amount;
   if (source === 'bank') s.company.finances.wplywy.srodkiZKredytow += amount;
   else s.company.finances.wplywy.dofinansowaniaSzaraStrefa += amount;
+
+  recordTurnAction(s, {
+    icon: '💰',
+    category: 'Finanse',
+    text: `Zaciągnięto ${source === 'bank' ? 'kredyt bankowy' : 'pożyczkę z szarej strefy'}: ${formatMoney(amount, s)}.`,
+    target: 'statistics',
+  });
+
   return s;
 }
 
 export function applyChangeActivity(state: GameState, activityOrList: string | string[]): GameState {
-  const s = structuredClone(state);
-  if (s.turn - s.company.lastActivityChangeTurn < ACTIVITY_CHANGE_COOLDOWN) return s;
+  if (state.turn - state.company.lastActivityChangeTurn < ACTIVITY_CHANGE_COOLDOWN) return state;
 
   const selectedActivities = Array.isArray(activityOrList)
     ? activityOrList
     : activityOrList.split(',').filter(Boolean);
 
-  if (selectedActivities.length === 0) return s;
+  if (selectedActivities.length === 0) return state;
 
+  const s = captureUndoSnapshot(state);
   const oldBranza = s.company.reputation.branza;
   const { branza, mafia } = computeStartingActivityStats(selectedActivities);
 
@@ -123,7 +252,6 @@ export function applyChangeActivity(state: GameState, activityOrList: string | s
   s.company.reputation.opiniaMafia = mafia;
   s.company.lastActivityChangeTurn = s.turn;
 
-  // Jeśli gracz zrezygnował z usług, czyścimy włączone na stałe usługi
   const hasServices = selectedActivities.some(id => id.startsWith('usl_') || id.startsWith('gast_'));
   if (!hasServices) {
     s.activeServiceIds = [];
@@ -133,30 +261,56 @@ export function applyChangeActivity(state: GameState, activityOrList: string | s
   s.company.reputation.opiniaBranza = clamp(s.company.reputation.opiniaBranza + delta * 0.3);
   s.company.reputation = recomputeReputation(s);
 
+  const info = getActivityFullInfo(selectedActivities);
+  recordTurnAction(s, {
+    icon: '🏢',
+    category: 'Działalność',
+    text: `Zmieniono profil działalności na: ${info.category} (${info.subcategory}).`,
+    target: 'changeActivity',
+  });
+
   return s;
 }
 
 export function applyJoinParty(state: GameState, partyId: string): GameState {
-  const s = structuredClone(state);
-  if (s.year <= 1989) return s;
-  if (s.ceo.partySwitchesByPhase[s.phase] >= MAX_PARTY_SWITCHES_PER_PHASE) return s;
+  if (state.year <= 1989) return state;
+  if (state.ceo.partySwitchesByPhase[state.phase] >= MAX_PARTY_SWITCHES_PER_PHASE) return state;
+
+  const s = captureUndoSnapshot(state);
   s.ceo.currentPartyId = partyId;
   s.ceo.partySwitchesByPhase[s.phase] += 1;
   s.company.reputation.opiniaPolitycy = clamp(s.company.reputation.opiniaPolitycy - 5);
   s.company.reputation = recomputeReputation(s);
+
+  recordTurnAction(s, {
+    icon: '🏛️',
+    category: 'Polityka',
+    text: `Wstąpiono do partii (${partyId.toUpperCase()}).`,
+    target: 'party',
+  });
+
   return s;
 }
 
 export function applyLeaveParty(state: GameState): GameState {
-  const s = structuredClone(state);
+  if (!state.ceo.currentPartyId) return state;
+  const s = captureUndoSnapshot(state);
   s.ceo.currentPartyId = null;
+
+  recordTurnAction(s, {
+    icon: '🏛️',
+    category: 'Polityka',
+    text: 'Opuszczono dotychczasową partię polityczną.',
+    target: 'party',
+  });
+
   return s;
 }
 
 export function applyEmergencyLoan(state: GameState): GameState {
-  const s = structuredClone(state);
-  if (s.company.finances.stanKonta > 0) return s;
+  if (state.company.finances.stanKonta > 0) return state;
 
+  const s = captureUndoSnapshot(state);
   const amount = scaleByInflation(BANKRUPT_EMERGENCY_LOAN.amount, s);
   const rate = Math.max(
     BANKRUPT_EMERGENCY_LOAN.interestRate,
@@ -173,23 +327,41 @@ export function applyEmergencyLoan(state: GameState): GameState {
   });
   s.company.finances.stanKonta += amount;
   s.bankruptWarningTurns = 0;
+
+  recordTurnAction(s, {
+    icon: '🚨',
+    category: 'Finanse',
+    text: `Zaciągnięto kredyt ratunkowy: ${formatMoney(amount, s)}.`,
+    target: 'statistics',
+  });
+
   return s;
 }
 
-export function applySetPace(state: GameState, pace: Pace): GameState {
+/** Tempo gry jest na sztywno ustawione na kwartalne ('quarter'). */
+export function applySetPace(state: GameState, _pace: Pace): GameState {
+  if (state.pace === 'quarter') return state;
   const s = structuredClone(state);
-  s.pace = pace;
+  s.pace = 'quarter';
   return s;
 }
 
 export function buyOfficeItem(state: GameState, itemId: string, price: number): GameState {
-  const s = structuredClone(state);
-  if (s.company.finances.stanKonta < price) return s;
-  if (s.company.inventory.includes(itemId)) return s;
+  if (state.company.finances.stanKonta < price) return state;
+  if (state.company.inventory.includes(itemId)) return state;
 
+  const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= price;
   s.company.inventory.push(itemId);
   s.company.reputation = recomputeReputation(s);
+
+  recordTurnAction(s, {
+    icon: '🪑',
+    category: 'Biuro',
+    text: `Kupiono wyposażenie biura (${itemId}) za ${formatMoney(price, s)}.`,
+    target: 'office',
+  });
+
   return s;
 }
 
@@ -230,7 +402,6 @@ export function applyEffects(state: GameState, e: EventEffects) {
   if (e.setParty) state.ceo.party = e.setParty;
   if (e.setCurrentPartyId) state.ceo.currentPartyId = e.setCurrentPartyId;
   if (e.divideFinances) {
-    // Model 2: bez dzielenia wartości bazowych w silniku — obcinamy 4 zera w wyświetlaniu UI
     state.denominated = true;
   }
   if (e.employeesDelta) {
@@ -251,37 +422,49 @@ export function applyEffects(state: GameState, e: EventEffects) {
 }
 
 export function toggleAccountant(state: GameState): GameState {
-  const s = structuredClone(state);
+  const s = captureUndoSnapshot(state);
   s.company.hasAccountant = !s.company.hasAccountant;
   s.company.reputation = recomputeReputation(s);
+
+  recordTurnAction(s, {
+    icon: '🧮',
+    category: 'Pracownicy',
+    text: s.company.hasAccountant ? 'Zatrudniono księgową.' : 'Zwolniono księgową.',
+    target: 'employees',
+  });
+
   return s;
 }
 
 export function changeCompanySize(state: GameState, direction: 'up' | 'down'): GameState {
-  const s = structuredClone(state);
   const sizes: CompanySize[] = ['micro', 'small', 'medium', 'large', 'very_large', 'corporation'];
-  const currentIndex = sizes.indexOf(s.company.size);
+  const currentIndex = sizes.indexOf(state.company.size);
 
   let newIndex = currentIndex;
   if (direction === 'up' && currentIndex < sizes.length - 1) newIndex++;
   if (direction === 'down' && currentIndex > 0) newIndex--;
-  if (newIndex === currentIndex) return s;
+  if (newIndex === currentIndex) return state;
 
   const newSize = sizes[newIndex];
   const config = COMPANY_EXPANSION_CONFIG[newSize];
 
   if (direction === 'up') {
     const totalWorkers =
-      s.company.employees.bezUmowy +
-      s.company.employees.zlecenie +
-      s.company.employees.uop;
-    const activeCats = getCategoryIdsForActivities(getCompanyActivities(s.company));
+      state.company.employees.bezUmowy +
+      state.company.employees.zlecenie +
+      state.company.employees.uop;
+    const activeCats = getCategoryIdsForActivities(getCompanyActivities(state.company));
     const reqWorkersForNextSize = getRequiredWorkers(newSize, activeCats.length);
+    const expansionCost = scaleByInflation(config.cost, state);
+
+    if (totalWorkers < reqWorkersForNextSize) return state;
+    if (state.company.finances.stanKonta < expansionCost) return state;
+  }
+
+  const s = captureUndoSnapshot(state);
+
+  if (direction === 'up') {
     const expansionCost = scaleByInflation(config.cost, s);
-
-    if (totalWorkers < reqWorkersForNextSize) return s;
-    if (s.company.finances.stanKonta < expansionCost) return s;
-
     s.company.finances.stanKonta -= expansionCost;
     s.company.reputation.opiniaPubliczna += config.repBonus;
     s.company.reputation.opiniaPracownicy += config.repBonus;
@@ -297,24 +480,40 @@ export function changeCompanySize(state: GameState, direction: 'up' | 'down'): G
   s.company.size = newSize;
   s.company.warehouseCapacity = COMPANY_SIZE_CONFIG[newSize].warehouseCapacity;
   s.company.reputation = recomputeReputation(s);
+
+  const label = COMPANY_SIZE_CONFIG[newSize]?.label ?? newSize;
+  recordTurnAction(s, {
+    icon: direction === 'up' ? '📈' : '📉',
+    category: 'Działalność',
+    text: `${direction === 'up' ? 'Rozbudowano' : 'Zmniejszono'} firmę do rozmiaru: ${label}.`,
+    target: 'changeActivity',
+  });
+
   return s;
 }
 
 export function buildBranch(state: GameState): GameState {
-  const s = structuredClone(state);
-  if (!['large', 'very_large', 'corporation'].includes(s.company.size)) return s;
-  const cost = scaleByInflation(BRANCH_COST, s);
-  if (s.company.finances.stanKonta < cost) return s;
+  if (!['large', 'very_large', 'corporation'].includes(state.company.size)) return state;
+  const cost = scaleByInflation(BRANCH_COST, state);
+  if (state.company.finances.stanKonta < cost) return state;
 
+  const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= cost;
   s.company.branches += 1;
   s.company.reputation.opiniaBranza += 5;
   s.company.reputation = recomputeReputation(s);
+
+  recordTurnAction(s, {
+    icon: '🏗️',
+    category: 'Działalność',
+    text: `Otwarto nową filię (łącznie: ${s.company.branches}) za ${formatMoney(cost, s)}.`,
+    target: 'changeActivity',
+  });
+
   return s;
 }
 
 export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): GameState {
-  const s = structuredClone(state);
   let baseCost = 0;
   let repGain = 0;
   let mediaGain = 0;
@@ -323,24 +522,41 @@ export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): Game
   if (type === 'tv') { baseCost = 50000; repGain = 8; mediaGain = 10; }
   if (type === 'internet') { baseCost = 15000; repGain = 4; mediaGain = 5; }
 
-  const cost = scaleByInflation(baseCost, s);
-  if (s.company.finances.stanKonta < cost) return s;
+  const cost = scaleByInflation(baseCost, state);
+  if (state.company.finances.stanKonta < cost) return state;
 
+  const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= cost;
   s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna + repGain);
   s.company.reputation.opiniaMedia = clamp(s.company.reputation.opiniaMedia + mediaGain);
   s.company.reputation = recomputeReputation(s);
 
+  recordTurnAction(s, {
+    icon: '📣',
+    category: 'Marketing',
+    text: `Wykupiono: ${AD_LABELS[type]} za ${formatMoney(cost, s)}.`,
+    target: 'changeActivity',
+  });
+
   return s;
 }
 
 export function rentWarehouse(state: GameState): GameState {
-  const s = structuredClone(state);
-  const cost = scaleByInflation(10000, s);
-  if (s.company.finances.stanKonta < cost) return s;
+  const cost = scaleByInflation(10000, state);
+  if (state.company.finances.stanKonta < cost) return state;
 
+  const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= cost;
   s.company.warehouseCapacity += 50;
+
+  const activeCats = getCategoryIdsForActivities(getCompanyActivities(s.company));
+  recordTurnAction(s, {
+    icon: '🏬',
+    category: 'Magazyn',
+    text: `Powiększono magazyn o +50 szt. (pojemność: ${s.company.warehouseCapacity}) za ${formatMoney(cost, s)}.`,
+    target: activeCats.includes('handel') ? 'buy' : 'production',
+  });
+
   return s;
 }
 
@@ -350,12 +566,11 @@ export function buyGoods(
   amount: number,
   installments: InstallmentOption = 1
 ): GameState {
-  const s = structuredClone(state);
-  if (amount <= 0) return s;
+  if (amount <= 0) return state;
 
-  const currentStock = Object.values(s.company.resources).reduce((a, b) => a + b, 0);
-  const capacity = s.company.warehouseCapacity || COMPANY_SIZE_CONFIG[s.company.size].warehouseCapacity;
-  if (currentStock + amount > capacity) return s;
+  const currentStock = Object.values(state.company.resources).reduce((a, b) => a + b, 0);
+  const capacity = state.company.warehouseCapacity || COMPANY_SIZE_CONFIG[state.company.size].warehouseCapacity;
+  if (currentStock + amount > capacity) return state;
 
   let discount = 0;
   if (amount === 10) discount = 0.10;
@@ -364,13 +579,18 @@ export function buyGoods(
   const baseTotal = Math.round(supplier.price * amount * (1 - discount));
   const finalPrice = calculateInstallmentPrice(baseTotal, installments);
 
+  if (installments <= 1 && state.company.finances.stanKonta < finalPrice) {
+    return state;
+  }
+
+  const s = captureUndoSnapshot(state);
+
   if (installments <= 1) {
-    if (s.company.finances.stanKonta < finalPrice) return s;
     s.company.finances.stanKonta -= finalPrice;
     s.company.finances.wydatki.zakupy += finalPrice;
   } else {
     s.company.loans.push({
-      id: `trade_install_${s.turn}_${Date.now()}`,
+      id: `trade_install_${s.turn}_${s.company.loans.length}`,
       source: 'zakup_raty',
       principal: finalPrice,
       remaining: finalPrice,
@@ -381,7 +601,13 @@ export function buyGoods(
 
   const resId = `${supplier.id}_${supplier.quality}`;
   s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
-  s.lastTradeNotice = `Kupiono: ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}${installments > 1 ? ` w ${installments} ratach` : ''}.`;
+
+  recordTurnAction(s, {
+    icon: '🛒',
+    category: 'Handel',
+    text: `Kupiono ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}${installments > 1 ? ` w ${installments} ratach` : ''}.`,
+    target: 'buy',
+  });
 
   return s;
 }
@@ -394,18 +620,19 @@ export function sellGoods(
   unitPrice: number,
   installments: InstallmentOption = 1
 ): GameState {
-  const s = structuredClone(state);
-  if (amount <= 0) return s;
+  if (amount <= 0) return state;
 
-  const available = s.company.resources[resId] || 0;
-  if (available < amount) return s;
+  const available = state.company.resources[resId] || 0;
+  if (available < amount) return state;
 
   const parts = resId.split('_');
   const quality = parseInt(parts[parts.length - 1], 10) || 1;
 
   if (buyer.req?.minQuality && quality < buyer.req.minQuality) {
-    return s;
+    return state;
   }
+
+  const s = captureUndoSnapshot(state);
 
   s.company.resources[resId] -= amount;
   if (s.company.resources[resId] <= 0) {
@@ -430,7 +657,12 @@ export function sellGoods(
     installments,
   });
 
-  s.lastTradeNotice = `Wysłano: ${amount} szt. do ${buyer.name} (orientacyjny przychód: ${formatMoneyRange(min, max, s)}${installments > 1 ? ` w ${installments} ratach` : ''}).`;
+  recordTurnAction(s, {
+    icon: '📦',
+    category: 'Sprzedaż',
+    text: `Wysłano ${amount} szt. do ${buyer.name} (orientacyjnie: ${formatMoneyRange(min, max, s)}${installments > 1 ? ` w ${installments} ratach` : ''}).`,
+    target: 'sell',
+  });
 
   return s;
 }
@@ -488,7 +720,7 @@ export function resolvePendingSales(state: GameState): void {
       turn: state.turn,
       year: state.year,
       quarter: state.quarter,
-      headline: 'Rozliczenie transakcji handlowych',
+      headline: 'Rozliczenie transakcji handlowych i zbytu',
       body: `Kontrahenci rozliczyli zamówienia z poprzedniego kwartału.\nŁączny wpływ do kasy: ${formatMoney(totalRevenueThisTurn, state)}.\n\nSzczegóły:\n${lines.join('\n')}`,
       category: 'economy',
       read: false,
@@ -501,9 +733,10 @@ export function resolvePendingSales(state: GameState): void {
 }
 
 export function resolveComplaint(state: GameState, id: string, accept: boolean): GameState {
-  const s = structuredClone(state);
-  const comp = s.pendingComplaints.find(c => c.id === id);
-  if (!comp) return s;
+  const comp = state.pendingComplaints.find(c => c.id === id);
+  if (!comp) return state;
+
+  const s = captureUndoSnapshot(state);
 
   if (accept) {
     s.company.finances.stanKonta -= scaleByInflation(5000, s);
@@ -515,8 +748,164 @@ export function resolveComplaint(state: GameState, id: string, accept: boolean):
 
   s.pendingComplaints = s.pendingComplaints.filter(c => c.id !== id);
   s.company.reputation = recomputeReputation(s);
+
+  recordTurnAction(s, {
+    icon: '📋',
+    category: 'Reklamacje',
+    text: `${accept ? 'Uznano' : 'Odrzucono'} reklamację od ${comp.buyerName}.`,
+    target: 'sell',
+  });
+
   return s;
 }
+
+// --- Moduł Produkcji ---
+
+export function buyProductionTool(state: GameState, toolId: string): GameState {
+  const tool = getProductionTools(state).find(t => t.id === toolId);
+  if (!tool || tool.owned || !tool.meetsRequirements) return state;
+  if (state.company.finances.stanKonta < tool.effectiveCost) return state;
+
+  const s = captureUndoSnapshot(state);
+  s.company.finances.stanKonta -= tool.effectiveCost;
+  s.company.finances.wydatki.zakupy += tool.effectiveCost;
+  s.company.ownedTools = [...getOwnedToolIds(s), tool.id];
+
+  recordTurnAction(s, {
+    icon: '🔧',
+    category: 'Produkcja',
+    text: `Kupiono narzędzie na stałe: ${tool.name} (${formatMoney(tool.effectiveCost, s)}).`,
+    target: 'production',
+  });
+
+  return s;
+}
+
+export function runProductionBatch(
+  state: GameState,
+  ingredientId: string,
+  toolId: string,
+  workersCount: number,
+  sellNowAmount = 0
+): GameState {
+  const safeWorkers = Math.floor(workersCount);
+  if (safeWorkers < 1) return state;
+
+  const availableWorkers = getAvailableProductionWorkers(state);
+  if (safeWorkers > availableWorkers) return state;
+
+  const ingredient = getProductionIngredients(state).find(i => i.id === ingredientId);
+  if (!ingredient || !ingredient.meetsRequirements) return state;
+
+  const ownedTools = getOwnedToolIds(state);
+  if (!ownedTools.includes(toolId)) return state;
+
+  const estimate = estimateProductionBatch(state, ingredientId, toolId, safeWorkers);
+  if (!estimate) return state;
+
+  if (state.company.finances.stanKonta < estimate.totalCost) return state;
+
+  const clampedSellNow = Math.max(0, Math.min(estimate.units, Math.floor(sellNowAmount)));
+  const toStore = estimate.units - clampedSellNow;
+
+  if (toStore > 0) {
+    const currentStock = Object.values(state.company.resources).reduce((a, b) => a + b, 0);
+    const capacity = state.company.warehouseCapacity || COMPANY_SIZE_CONFIG[state.company.size].warehouseCapacity;
+    if (currentStock + toStore > capacity) return state;
+  }
+
+  const s = captureUndoSnapshot(state);
+
+  s.company.finances.stanKonta -= estimate.totalCost;
+  s.company.finances.wydatki.zakupy += estimate.totalCost;
+  s.productionWorkersUsedThisTurn = (s.productionWorkersUsedThisTurn ?? 0) + safeWorkers;
+
+  const resId = `prod_${ingredient.id}_${estimate.quality}`;
+
+  if (toStore > 0) {
+    s.company.resources[resId] = (s.company.resources[resId] || 0) + toStore;
+  }
+
+  let saleSummary = '';
+  if (clampedSellNow > 0) {
+    const estimatedRevenue = Math.round(estimate.estimatedUnitPrice * clampedSellNow);
+    const accuracy = s.company.reputation.dokladnoscPrzewidywan ?? 50;
+    const { min, max } = getRevenueRange(estimatedRevenue, accuracy);
+
+    s.pendingSales.push({
+      id: `prod_sale_${s.turn}_${s.pendingSales.length}`,
+      buyerName: 'Zbyt produkcji',
+      resId,
+      amount: clampedSellNow,
+      estimatedRevenue,
+      minRevenue: min,
+      maxRevenue: max,
+      quality: estimate.quality,
+      hasComplaints: false,
+      installments: 1,
+    });
+
+    saleSummary =
+      toStore > 0
+        ? ` Zbyto ${clampedSellNow} szt. (${formatMoneyRange(min, max, s)}), do magazynu: ${toStore} szt.`
+        : ` Zbyto całość (${formatMoneyRange(min, max, s)}).`;
+  } else {
+    saleSummary = ` Całość (${toStore} szt.) złożono w magazynie.`;
+  }
+
+  recordTurnAction(s, {
+    icon: '⚙️',
+    category: 'Produkcja',
+    text: `Wyprodukowano ${estimate.units} szt. (jakość ${estimate.quality}/10, ${safeWorkers} os., koszt ${formatMoney(estimate.totalCost, s)}).${saleSummary}`,
+    target: 'production',
+  });
+
+  return s;
+}
+
+export function sellProducedStock(state: GameState, resId: string, amount: number): GameState {
+  const safeAmount = Math.floor(amount);
+  if (safeAmount <= 0 || !resId.startsWith('prod_')) return state;
+
+  const available = state.company.resources[resId] || 0;
+  if (available < safeAmount) return state;
+
+  const s = captureUndoSnapshot(state);
+
+  const info = estimateStoredProducedItem(s, resId);
+  const estimatedRevenue = Math.round(info.estimatedUnitPrice * safeAmount);
+  const accuracy = s.company.reputation.dokladnoscPrzewidywan ?? 50;
+  const { min, max } = getRevenueRange(estimatedRevenue, accuracy);
+
+  s.company.resources[resId] -= safeAmount;
+  if (s.company.resources[resId] <= 0) {
+    delete s.company.resources[resId];
+  }
+
+  s.pendingSales.push({
+    id: `prod_stock_sale_${s.turn}_${s.pendingSales.length}`,
+    buyerName: 'Zbyt produkcji (magazyn)',
+    resId,
+    amount: safeAmount,
+    estimatedRevenue,
+    minRevenue: min,
+    maxRevenue: max,
+    quality: info.quality,
+    hasComplaints: false,
+    installments: 1,
+  });
+
+  recordTurnAction(s, {
+    icon: '🚛',
+    category: 'Produkcja',
+    text: `Wysłano do zbytu ${safeAmount} szt. (${info.label}, jakość ${info.quality}/10) — ok. ${formatMoneyRange(min, max, s)}.`,
+    target: 'production',
+  });
+
+  return s;
+}
+
+// --- Eksporty zachowane dla kompatybilności ---
 
 export function buyRawMaterials(
   state: GameState,
@@ -524,12 +913,11 @@ export function buyRawMaterials(
   amount: number,
   installments: InstallmentOption = 1
 ): GameState {
-  const s = structuredClone(state);
-  if (amount <= 0) return s;
+  if (amount <= 0) return state;
 
-  const currentStock = Object.values(s.company.resources).reduce((a, b) => a + b, 0);
-  const capacity = s.company.warehouseCapacity || COMPANY_SIZE_CONFIG[s.company.size].warehouseCapacity;
-  if (currentStock + amount > capacity) return s;
+  const currentStock = Object.values(state.company.resources).reduce((a, b) => a + b, 0);
+  const capacity = state.company.warehouseCapacity || COMPANY_SIZE_CONFIG[state.company.size].warehouseCapacity;
+  if (currentStock + amount > capacity) return state;
 
   let discount = 0;
   if (amount === 10) discount = 0.10;
@@ -538,13 +926,18 @@ export function buyRawMaterials(
   const baseTotal = Math.round(supplier.price * amount * (1 - discount));
   const finalPrice = calculateInstallmentPrice(baseTotal, installments);
 
+  if (installments <= 1 && state.company.finances.stanKonta < finalPrice) {
+    return state;
+  }
+
+  const s = captureUndoSnapshot(state);
+
   if (installments <= 1) {
-    if (s.company.finances.stanKonta < finalPrice) return s;
     s.company.finances.stanKonta -= finalPrice;
     s.company.finances.wydatki.zakupy += finalPrice;
   } else {
     s.company.loans.push({
-      id: `raw_install_${s.turn}_${Date.now()}`,
+      id: `raw_install_${s.turn}_${s.company.loans.length}`,
       source: 'zakup_raty',
       principal: finalPrice,
       remaining: finalPrice,
@@ -555,21 +948,28 @@ export function buyRawMaterials(
 
   const resId = `raw_${supplier.id}_${supplier.quality}`;
   s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
-  s.lastTradeNotice = `Surowce: kupiono ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}.`;
+
+  recordTurnAction(s, {
+    icon: '🧱',
+    category: 'Produkcja',
+    text: `Kupiono ${amount} szt. surowców (${supplier.name}) za ${formatMoney(finalPrice, s)}.`,
+    target: 'production',
+  });
 
   return s;
 }
 
 export function produceGoods(state: GameState, rawResId: string, amount: number): GameState {
-  const s = structuredClone(state);
-  if (amount <= 0 || !rawResId.startsWith('raw_')) return s;
+  if (amount <= 0 || !rawResId.startsWith('raw_')) return state;
 
-  const availableRaw = s.company.resources[rawResId] || 0;
-  if (availableRaw < amount) return s;
+  const availableRaw = state.company.resources[rawResId] || 0;
+  if (availableRaw < amount) return state;
 
-  const maxCap = getProductionCapacity(s);
-  const used = s.productionUsedThisTurn ?? 0;
-  if (used + amount > maxCap) return s;
+  const maxCap = getProductionCapacity(state);
+  const used = state.productionUsedThisTurn ?? 0;
+  if (used + amount > maxCap) return state;
+
+  const s = captureUndoSnapshot(state);
 
   const parts = rawResId.split('_');
   const rawQuality = parseInt(parts[parts.length - 1], 10) || 1;
@@ -587,42 +987,57 @@ export function produceGoods(state: GameState, rawResId: string, amount: number)
   const prodResId = `prod_wyrob_${finalQuality}`;
   s.company.resources[prodResId] = (s.company.resources[prodResId] || 0) + amount;
   s.productionUsedThisTurn = used + amount;
-  s.lastTradeNotice = `Produkcja: wytworzono ${amount} szt. wyrobów gotowych (jakość ${finalQuality}/10). Sprzedaj je w zakładce Sprzedawaj.`;
+
+  recordTurnAction(s, {
+    icon: '⚙️',
+    category: 'Produkcja',
+    text: `Wytworzono ${amount} szt. wyrobów gotowych (jakość ${finalQuality}/10).`,
+    target: 'production',
+  });
 
   return s;
 }
 
-/** Włącza lub wyłącza wybraną usługę na stałe. */
 export function toggleService(state: GameState, serviceId: string): GameState {
-  const s = structuredClone(state);
-  const activeIds = s.activeServiceIds ?? [];
+  const activeIds = state.activeServiceIds ?? [];
+  const available = getAvailableServices(state);
+  const target = available.find(srv => srv.id === serviceId);
 
   if (activeIds.includes(serviceId)) {
+    const s = captureUndoSnapshot(state);
     s.activeServiceIds = activeIds.filter(id => id !== serviceId);
-    s.lastTradeNotice = `Wstrzymano świadczenie wybranej usługi.`;
+    recordTurnAction(s, {
+      icon: '🛠️',
+      category: 'Usługi',
+      text: `Wstrzymano stałą usługę: ${target?.title ?? serviceId}.`,
+      target: 'services',
+    });
     return s;
   }
 
-  const available = getAvailableServices(s);
-  const target = available.find(srv => srv.id === serviceId);
-  if (!target || !target.meetsRequirements) return s;
+  if (!target || !target.meetsRequirements) return state;
 
-  const totalSlots = getTotalServiceWorkerSlots(s);
-  const busySlots = getBusyServiceWorkers(s);
-  if (busySlots + target.workersRequired > totalSlots) return s;
+  const totalSlots = getTotalServiceWorkerSlots(state);
+  const busySlots = getBusyServiceWorkers(state);
+  if (busySlots + target.workersRequired > totalSlots) return state;
 
+  const s = captureUndoSnapshot(state);
   s.activeServiceIds = [...activeIds, serviceId];
-  s.lastTradeNotice = `Uruchomiono stałą usługę: "${target.title}" (orientacyjny przychód: ${formatMoneyRange(target.minPayout, target.maxPayout, s)} / kw.).`;
+  recordTurnAction(s, {
+    icon: '🛠️',
+    category: 'Usługi',
+    text: `Uruchomiono stałą usługę: "${target.title}" (${formatMoneyRange(target.minPayout, target.maxPayout, s)} / kw.).`,
+    target: 'services',
+  });
+
   return s;
 }
 
-/** Alias zachowany dla kompatybilności wstecznej */
 export function acceptServiceOrder(state: GameState, order: ServiceDefinition | string): GameState {
   const serviceId = typeof order === 'string' ? order : order.id;
   return toggleService(state, serviceId);
 }
 
-/** Rozlicza aktywne stałe usługi na przełomie tury. */
 export function resolvePendingServices(state: GameState): void {
   const activeIds = state.activeServiceIds ?? [];
   if (activeIds.length === 0) return;

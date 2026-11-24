@@ -10,6 +10,41 @@ export type LegalForm = 'cywilna' | 'zoo' | 'sa' | 'holding';
 export type ContractType = 'bezUmowy' | 'zlecenie' | 'uop';
 export type MainCategoryId = 'handel' | 'produkcja' | 'uslugi';
 
+export interface PendingHire {
+  id: string;
+  contract: ContractType;
+  count: number;
+  hiredOnTurn: number;
+}
+
+export type TurnActionTarget =
+  | 'main'
+  | 'news'
+  | 'changeActivity'
+  | 'buy'
+  | 'sell'
+  | 'production'
+  | 'services'
+  | 'party'
+  | 'competition'
+  | 'employees'
+  | 'office'
+  | 'activity'
+  | 'statistics'
+  | 'mafiaActivity'
+  | 'rankings'
+  | 'achievements'
+  | 'stats';
+
+export interface TurnActionEntry {
+  id: string;
+  icon: string;
+  category: string;
+  text: string;
+  target: TurnActionTarget;
+  canUndo?: boolean;
+}
+
 export interface Reputation {
   branza: number;
   opiniaPubliczna: number;
@@ -68,6 +103,8 @@ export interface Loan {
 export interface Company {
   name: string;
   suffix: string;
+  /** Czy dodawać automatyczny skrót przed nazwą firmy (PP, PH, PU, PPH, PPU, PHU, PPHU) */
+  usePrefix?: boolean;
   size: CompanySize;
   legalForm: LegalForm;
   /** Główna (pierwsza) wybrana podkategoria — dla kompatybilności wstecznej */
@@ -81,6 +118,8 @@ export interface Company {
   lastActivityChangeTurn: number;
   hasAccountant: boolean;
   inventory: string[];
+  /** Narzędzia produkcyjne kupione na stałe */
+  ownedTools?: string[];
   branches: number;
   resources: Record<string, number>;
   warehouseCapacity: number;
@@ -351,6 +390,41 @@ export interface TradeBuyer {
   };
 }
 
+export interface ProductionIngredient {
+  id: string;
+  name: string;
+  desc: string;
+  quality: number;
+  unitCost: number;
+  baseWholesalePrice: number;
+  req?: {
+    minRepBranza?: number;
+    minRepMafia?: number;
+  };
+}
+
+export interface ProductionTool {
+  id: string;
+  name: string;
+  desc: string;
+  cost: number;
+  unitsPerWorker: number;
+  qualityBonus: number;
+  req?: {
+    minSize?: CompanySize;
+    minRepBranza?: number;
+  };
+}
+
+export interface ProductionDataFile {
+  ingredients: ProductionIngredient[];
+  tools: ProductionTool[];
+  default?: {
+    suppliers: TradeSupplier[];
+    buyers: TradeBuyer[];
+  };
+}
+
 export interface Complaint {
   id: string;
   itemName: string;
@@ -468,12 +542,22 @@ export interface GameState {
   profitabilityTrend: 'up2' | 'up1' | 'neutral' | 'down1' | 'down2';
   pendingComplaints: Complaint[];
   pendingSales: PendingSale[];
+  /** Pracownicy zakontraktowani w tej turze — dołączają do załogi w kolejnej turze */
+  pendingHires?: PendingHire[];
   /** Lista ID usług uruchomionych na stałe przez gracza */
   activeServiceIds?: string[];
   /** @deprecated Zastąpione przez activeServiceIds */
   activeServiceContracts?: ActiveServiceContract[];
 
+  /** Lista akcji wykonanych przez gracza w bieżącej turze (zerowana w nextTurn) */
+  turnActions?: TurnActionEntry[];
+  /** Migawki stanu z bieżącej tury umożliwiające cofnięcie ruchu */
+  undoStack?: GameState[];
+  /** @deprecated Zastąpione przez turnActions */
   lastTradeNotice?: string | null;
+  /** Liczba pracowników przydzielonych do produkcji w tej turze */
+  productionWorkersUsedThisTurn?: number;
+  /** @deprecated Poprzedni licznik sztuk mocy przerobowych */
   productionUsedThisTurn?: number;
   interactionPoints: number;
   competitors: Competitor[];

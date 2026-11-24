@@ -126,7 +126,7 @@ export function generateTradeBuyers(state: GameState): TradeBuyer[] {
   const goodsAct = getGoodsActivityId(state);
   const categoryId = getCategoryId(goodsAct) || '';
   const tradeRecord = tradeData as Record<string, TradeDataJson>;
-  const prodRecord = productionData as Record<string, TradeDataJson>;
+  const prodRecord = productionData as unknown as Record<string, TradeDataJson>;
 
   const branchData = goodsAct.startsWith('prod_')
     ? (prodRecord[goodsAct] || tradeRecord[goodsAct] || prodRecord.default || tradeRecord.odziez)

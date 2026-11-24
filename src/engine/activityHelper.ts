@@ -36,6 +36,71 @@ export function getCategoryIdsForActivities(activityIds: string[]): string[] {
 }
 
 /**
+ * Zwraca skrót przed nazwą firmy na podstawie aktywnych filarów:
+ * - Produkcja -> PP
+ * - Handel -> PH
+ * - Usługi -> PU
+ * - Produkcja + Handel -> PPH
+ * - Produkcja + Usługi -> PPU
+ * - Handel + Usługi -> PHU
+ * - Produkcja + Handel + Usługi -> PPHU
+ */
+export function getCompanyPrefix(activityIds: string[]): string {
+  const catIds = getCategoryIdsForActivities(activityIds);
+  const hasProd = catIds.includes('produkcja');
+  const hasTrade = catIds.includes('handel');
+  const hasServices = catIds.includes('uslugi');
+
+  if (!hasProd && !hasTrade && !hasServices) return '';
+
+  return `P${hasProd ? 'P' : ''}${hasTrade ? 'H' : ''}${hasServices ? 'U' : ''}`;
+}
+
+/** Zwraca pełną nazwę firmy ze skrótem (jeśli włączony) i sufiksem. */
+export function formatCompanyName(
+  company: Pick<Company, 'name' | 'suffix' | 'activity' | 'activities' | 'usePrefix'>
+): string {
+  const baseName = `${company.name}${company.suffix}`.trim();
+  if (company.usePrefix === false) return baseName;
+
+  const prefix = getCompanyPrefix(getCompanyActivities(company));
+  if (!prefix) return baseName;
+
+  if (baseName.toUpperCase().startsWith(`${prefix} `)) {
+    return baseName;
+  }
+  return `${prefix} ${baseName}`;
+}
+
+/**
+ * Zwraca listę aktywnych podkategorii handlowych firmy, które pasują do jej profilu produkcyjnego
+ * (współdzielą przynajmniej jedną grupę synergii w `branches.json`).
+ */
+export function getMatchingTradeActivitiesForProduction(activityIds: string[]): ActivityItem[] {
+  const prodCat = categories.find(c => c.id === 'produkcja');
+  const tradeCat = categories.find(c => c.id === 'handel');
+  if (!prodCat || !tradeCat) return [];
+
+  const prodItems = activityIds
+    .map(id => prodCat.activities.find(a => a.id === id))
+    .filter((a): a is ActivityItem => Boolean(a));
+
+  const tradeItems = activityIds
+    .map(id => tradeCat.activities.find(a => a.id === id))
+    .filter((a): a is ActivityItem => Boolean(a));
+
+  if (prodItems.length === 0 || tradeItems.length === 0) return [];
+
+  const prodGroups = new Set<string>(prodItems.flatMap(p => p.synergyGroups ?? []));
+  return tradeItems.filter(t => (t.synergyGroups ?? []).some(g => prodGroups.has(g)));
+}
+
+/** Sprawdza automatycznie, czy firma ma odpowiedni profil handlowy do samodzielnej sprzedaży własnej produkcji. */
+export function canSelfSellProducedGoods(activityIds: string[]): boolean {
+  return getMatchingTradeActivitiesForProduction(activityIds).length > 0;
+}
+
+/**
  * Sprawdza, czy wybrane podkategorie są ze sobą powiązane.
  * Powiązane są wtedy, gdy wybrano tylko 1 podkategorię LUB wszystkie wybrane podkategorie
  * współdzielą przynajmniej jedną grupę synergii (`synergyGroups`).

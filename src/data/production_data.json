@@ -1,4 +1,134 @@
 {
+  "ingredients": [
+    {
+      "id": "ing_odpady",
+      "name": "Surowce z odzysku",
+      "desc": "Najtańsze składniki z demobilu i skupów. Niski koszt, ale słabsza jakość końcowa.",
+      "quality": 2,
+      "unitCost": 40,
+      "baseWholesalePrice": 95,
+      "req": {}
+    },
+    {
+      "id": "ing_pgr_surplus",
+      "name": "Nadwyżki z byłych PGR",
+      "desc": "Surowce przejęte po upadających gospodarstwach. Tania baza do szybkiego przerobu.",
+      "quality": 3,
+      "unitCost": 60,
+      "baseWholesalePrice": 140,
+      "req": {}
+    },
+    {
+      "id": "ing_krajowe",
+      "name": "Składniki krajowe",
+      "desc": "Standardowe komponenty z polskich zakładów. Stabilny stosunek ceny do jakości.",
+      "quality": 5,
+      "unitCost": 110,
+      "baseWholesalePrice": 240,
+      "req": {}
+    },
+    {
+      "id": "ing_komis_przemyslowy",
+      "name": "Towar z komisów przemysłowych",
+      "desc": "Niesprzedane partie z państwowych magazynów. Przyzwoita jakość w rozsądnej cenie.",
+      "quality": 6,
+      "unitCost": 165,
+      "baseWholesalePrice": 360,
+      "req": {}
+    },
+    {
+      "id": "ing_lepsze",
+      "name": "Wyselekcjonowane półprodukty",
+      "desc": "Sprawdzeni dostawcy przemysłowi. Wyższa cena zbytu i lepsza renoma wyrobów.",
+      "quality": 7,
+      "unitCost": 240,
+      "baseWholesalePrice": 520,
+      "req": { "minRepBranza": 35 }
+    },
+    {
+      "id": "ing_polonia_zagraniczna",
+      "name": "Dostawy od Polonii",
+      "desc": "Półprodukty sprowadzane przez znajomych z zagranicy. Dobra jakość poza zwykłym obiegiem.",
+      "quality": 7,
+      "unitCost": 280,
+      "baseWholesalePrice": 610,
+      "req": { "minRepBranza": 30 }
+    },
+    {
+      "id": "ing_specjalne_strefa",
+      "name": "Komponenty ze strefy mroku",
+      "desc": "Towar bez zbędnych pytań i papierologii. Wysoka marża, ale wymaga zaufania półświatka.",
+      "quality": 8,
+      "unitCost": 330,
+      "baseWholesalePrice": 740,
+      "req": { "minRepMafia": 50 }
+    },
+    {
+      "id": "ing_import",
+      "name": "Importowane komponenty (Zachód)",
+      "desc": "Najwyższa klasa surowców zza zachodniej granicy. Maksymalna marża hurtowa i detaliczna.",
+      "quality": 9,
+      "unitCost": 480,
+      "baseWholesalePrice": 1050,
+      "req": { "minRepBranza": 55 }
+    },
+    {
+      "id": "ing_eksport_premium",
+      "name": "Komponenty eksportowe klasy A",
+      "desc": "Wyselekcjonowane materiały pod wymagające rynki. Wysoka cena zbytu dla doświadczonych firm.",
+      "quality": 9,
+      "unitCost": 540,
+      "baseWholesalePrice": 1190,
+      "req": { "minRepBranza": 65 }
+    },
+    {
+      "id": "ing_lorem_proto",
+      "name": "Partia eksperymentalna (Lorem ipsum)",
+      "desc": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.",
+      "quality": 6,
+      "unitCost": 190,
+      "baseWholesalePrice": 420,
+      "req": {}
+    }
+  ],
+  "tools": [
+    {
+      "id": "tool_basic",
+      "name": "Proste narzędzia ręczne",
+      "desc": "Podstawowy zestaw warsztatowy. Masz go na starcie bez dodatkowych kosztów.",
+      "cost": 0,
+      "unitsPerWorker": 4,
+      "qualityBonus": 0,
+      "req": {}
+    },
+    {
+      "id": "tool_used",
+      "name": "Używane maszyny po zakładach państwowych",
+      "desc": "Stary, ale jary sprzęt z likwidowanych fabryk. Podwaja wydajność i poprawia jakość.",
+      "cost": 18000,
+      "unitsPerWorker": 8,
+      "qualityBonus": 1,
+      "req": {}
+    },
+    {
+      "id": "tool_semi",
+      "name": "Półautomatyczna linia produkcyjna",
+      "desc": "Powtarzalna jakość i wyraźny skok mocy przerobowych każdego pracownika.",
+      "cost": 65000,
+      "unitsPerWorker": 15,
+      "qualityBonus": 2,
+      "req": { "minSize": "small" }
+    },
+    {
+      "id": "tool_modern",
+      "name": "Nowoczesna linia z Zachodu",
+      "desc": "Pełna automatyzacja. Najwyższa wydajność i maksymalna klasa wyrobu.",
+      "cost": 220000,
+      "unitsPerWorker": 28,
+      "qualityBonus": 3,
+      "req": { "minSize": "medium", "minRepBranza": 50 }
+    }
+  ],
   "default": {
     "suppliers": [
       { "id": "raw_sup_1", "name": "Dostawca surowców 1", "quality": 2, "price": 50, "desc": "Lorem ipsum dolor sit amet.", "req": {} },
