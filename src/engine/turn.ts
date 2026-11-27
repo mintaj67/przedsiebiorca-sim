@@ -173,6 +173,8 @@ export function nextTurn(state: GameState): GameState {
   processExpiredActions(s);
   checkEmployeeUnrest(s);
 
+  if (s.gameOver) return s;
+
   if (s.skarbowkaVisitTurn !== null && s.turn === s.skarbowkaVisitTurn && !s.activeCombat) {
     startTaxCombat(s);
   }

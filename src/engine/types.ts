@@ -93,11 +93,18 @@ export interface Employees {
 
 export interface Loan {
   id: string;
-  source: 'bank' | 'szara_strefa' | 'zakup_raty';
+  source: 'bank' | 'szara_strefa' | 'zakup_raty' | 'sojusznik';
   principal: number;
   remaining: number;
   interestRate: number;
   quartersLeft: number;
+  lenderId?: string;
+}
+
+export interface ExternalEquityStake {
+  holderId: string;
+  percent: number;
+  acquiredTurn: number;
 }
 
 export interface Company {
@@ -123,6 +130,12 @@ export interface Company {
   branches: number;
   resources: Record<string, number>;
   warehouseCapacity: number;
+  /** Udziały firmy gracza posiadane przez inne firmy */
+  externalEquity?: ExternalEquityStake[];
+  /** ID głównej spółki-matki (gdy udział zewnętrzny >= 25%) */
+  parentCompanyId?: string | null;
+  /** Irytacja spółki-matki (0-100; przy >= 100 i pakiecie >50% odwołanie CEO) */
+  parentDispleasure?: number;
 }
 
 export interface PartySizeSchedule {
@@ -234,6 +247,19 @@ export interface EventEffects {
   divideFinances?: boolean;
   employeesDelta?: { bezUmowy?: number; zlecenie?: number; uop?: number };
   addItem?: string;
+  /** Efekty dyplomatyczne, wojenne i zależności kapitałowej (używane m.in. przez ActionableNews) */
+  parentDispleasureDelta?: number;
+  joinWarAsAlly?: { warId: string; allyId: string };
+  refuseWarCall?: { allyId: string };
+  sellEquityTo?: { holderId: string; percent: number; cashReceived: number };
+  addTribute?: {
+    payerId: 'player' | string;
+    receiverId: 'player' | string;
+    amountPerQuarter: number;
+    quartersLeft: number;
+  };
+  payReparationsTo?: { compId: string; amount: number };
+  startWarWith?: string;
 }
 
 export interface Gamble {
@@ -445,8 +471,12 @@ export interface PendingSale {
   installments?: InstallmentOption;
 }
 
-// --- Konkurencja i rankingi ---
+// --- Konkurencja, dyplomacja, wojny i przejęcia ---
 export type Trend = -1 | 0 | 1;
+export type CompetitorCharacter = 'aggressive' | 'neutral' | 'peaceful';
+export type CompetitorStatus = 'active' | 'bankrupt' | 'acquired';
+export type AcquiredMode = 'branch' | 'liquidated' | 'subsidiary';
+export type WarDemandType = 'reparations' | 'tribute' | 'subjugate' | 'acquire';
 
 export interface CompetitorTrend {
   value: Trend;
@@ -458,6 +488,14 @@ export interface Competitor {
   id: string;
   name: string;
   description: string;
+  /** Wylosowane motto z puli 3 haseł szablonu */
+  motto: string;
+  /** Charakter firmy wpływający na wojny, zdrady i werdykty */
+  character: CompetitorCharacter;
+  /** Branże firmy (np. ['handel'], ['produkcja', 'uslugi']) */
+  categories: string[];
+  /** Status rynkowy firmy */
+  status: CompetitorStatus;
   size: CompanySize;
   reputation: number;
   value: number;
@@ -467,6 +505,69 @@ export interface Competitor {
   baseCondition: number;
   baseOpinion: number;
   trend: CompetitorTrend;
+  /** Zgody z innymi firmami AI (ID firm) */
+  allies: string[];
+  /** Kosy z innymi firmami AI (ID firm) */
+  rivals: string[];
+  /** Formalny sojusz z graczem */
+  isAlliedWithPlayer: boolean;
+  /** Aktywna wojna z graczem */
+  atWarWithPlayer: boolean;
+  /** Czy firma jest uzależniona od gracza (lub innej firmy AI) */
+  dependentOn?: 'player' | string | null;
+  /** Informacje po przejęciu */
+  acquiredBy?: 'player' | string | null;
+  acquiredMode?: AcquiredMode | null;
+  /** Kwartalny dochód pasywny, gdy firma jest spółką zależną gracza */
+  subsidiaryIncome?: number;
+}
+
+export interface WarActionDefinition {
+  id: string;
+  label: string;
+  description: string;
+  baseCost: number;
+  warScoreGain: number;
+  enemyConditionDelta: number;
+  enemyReputationDelta: number;
+  requiresMafia?: boolean;
+  reputationEffects?: Partial<Reputation>;
+}
+
+export interface ActiveWar {
+  id: string;
+  attackerId: 'player' | string;
+  defenderId: 'player' | string;
+  /**
+   * Pasek przewagi wojennej (-100 do +100).
+   * W wojnach z udziałem gracza: > 0 oznacza przewagę gracza, < 0 przewagę wroga.
+   * W wojnach AI-AI: > 0 oznacza przewagę atakującego, < 0 obrońcy.
+   */
+  warScore: number;
+  startedTurn: number;
+  maxTurns: number;
+  attackerAllies: string[];
+  defenderAllies: string[];
+  actionsUsedThisTurn?: string[];
+}
+
+export interface PendingWarResolution {
+  warId: string;
+  loserId: string;
+  loserName: string;
+  reparationsAmount: number;
+  tributePerQuarter: number;
+  tributeQuarters: number;
+  canAcquire: boolean;
+  finalWarScore: number;
+}
+
+export interface TributeObligation {
+  id: string;
+  payerId: 'player' | string;
+  receiverId: 'player' | string;
+  amountPerQuarter: number;
+  quartersLeft: number;
 }
 
 export interface PlayerSnapshot {
@@ -563,6 +664,12 @@ export interface GameState {
   competitors: Competitor[];
   competitionCategory: string;
   playerPrev: PlayerSnapshot | null;
+  /** Aktywne wojny (gracz-AI oraz AI-AI) */
+  activeWars?: ActiveWar[];
+  /** Aktywne daniny kwartalne */
+  tributes?: TributeObligation[];
+  /** Oczekujący wybór warunków zwycięstwa po wygranej wojnie gracza */
+  pendingWarResolution?: PendingWarResolution | null;
 
   macroStats: {
     unemployment: number;

@@ -3,24 +3,328 @@
     "id": "comp_1",
     "name": "Firma Kogucik",
     "baseReputation": 50,
-    "description": "To od głupiej fryzury właściciela."
+    "description": "To od głupiej fryzury właściciela.",
+    "mottos": ["Lorem ipsum motto 1A", "Lorem ipsum motto 1B", "Lorem ipsum motto 1C"],
+    "character": "neutral",
+    "categories": ["handel"],
+    "startYear": 1989
   },
   {
     "id": "comp_2",
     "name": "Uchciok I Syn",
     "baseReputation": 40,
-    "description": "Prowadzona przez Tomasza Uchcioka i Krzysztofa Syna."
+    "description": "Prowadzona przez Tomasza Uchcioka i Krzysztofa Syna.",
+    "mottos": ["Lorem ipsum motto 2A", "Lorem ipsum motto 2B", "Lorem ipsum motto 2C"],
+    "character": "peaceful",
+    "categories": ["uslugi"],
+    "startYear": 1989
   },
   {
     "id": "comp_3",
     "name": "Szara Strefa i Partners",
     "baseReputation": 20,
-    "description": "Może średnio, ale za to drogo."
+    "description": "Może średnio, ale za to drogo.",
+    "mottos": ["Lorem ipsum motto 3A", "Lorem ipsum motto 3B", "Lorem ipsum motto 3C"],
+    "character": "aggressive",
+    "categories": ["handel", "uslugi"],
+    "startYear": 1989
   },
   {
     "id": "comp_4",
     "name": "KGHM",
     "baseReputation": 60,
-    "description": "Tak, to oni."
+    "description": "Tak, to oni.",
+    "mottos": ["Lorem ipsum motto 4A", "Lorem ipsum motto 4B", "Lorem ipsum motto 4C"],
+    "character": "neutral",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_5",
+    "name": "Firma 5 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 5A", "Lorem ipsum 5B", "Lorem ipsum 5C"],
+    "character": "aggressive",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_6",
+    "name": "Firma 6 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 6A", "Lorem ipsum 6B", "Lorem ipsum 6C"],
+    "character": "neutral",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_7",
+    "name": "Firma 7 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 7A", "Lorem ipsum 7B", "Lorem ipsum 7C"],
+    "character": "peaceful",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_8",
+    "name": "Firma 8 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 8A", "Lorem ipsum 8B", "Lorem ipsum 8C"],
+    "character": "aggressive",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_9",
+    "name": "Firma 9 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 9A", "Lorem ipsum 9B", "Lorem ipsum 9C"],
+    "character": "neutral",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_10",
+    "name": "Firma 10 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 10A", "Lorem ipsum 10B", "Lorem ipsum 10C"],
+    "character": "peaceful",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_11",
+    "name": "Firma 11 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 11A", "Lorem ipsum 11B", "Lorem ipsum 11C"],
+    "character": "neutral",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_12",
+    "name": "Firma 12 (Handel)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 12A", "Lorem ipsum 12B", "Lorem ipsum 12C"],
+    "character": "aggressive",
+    "categories": ["handel"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_13",
+    "name": "Firma 13 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 13A", "Lorem ipsum 13B", "Lorem ipsum 13C"],
+    "character": "aggressive",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_14",
+    "name": "Firma 14 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 14A", "Lorem ipsum 14B", "Lorem ipsum 14C"],
+    "character": "neutral",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_15",
+    "name": "Firma 15 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 15A", "Lorem ipsum 15B", "Lorem ipsum 15C"],
+    "character": "peaceful",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_16",
+    "name": "Firma 16 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 16A", "Lorem ipsum 16B", "Lorem ipsum 16C"],
+    "character": "aggressive",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_17",
+    "name": "Firma 17 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 17A", "Lorem ipsum 17B", "Lorem ipsum 17C"],
+    "character": "neutral",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_18",
+    "name": "Firma 18 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 18A", "Lorem ipsum 18B", "Lorem ipsum 18C"],
+    "character": "peaceful",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_19",
+    "name": "Firma 19 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 19A", "Lorem ipsum 19B", "Lorem ipsum 19C"],
+    "character": "neutral",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_20",
+    "name": "Firma 20 (Produkcja)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 20A", "Lorem ipsum 20B", "Lorem ipsum 20C"],
+    "character": "aggressive",
+    "categories": ["produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_21",
+    "name": "Firma 21 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 21A", "Lorem ipsum 21B", "Lorem ipsum 21C"],
+    "character": "aggressive",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_22",
+    "name": "Firma 22 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 22A", "Lorem ipsum 22B", "Lorem ipsum 22C"],
+    "character": "neutral",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_23",
+    "name": "Firma 23 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 23A", "Lorem ipsum 23B", "Lorem ipsum 23C"],
+    "character": "peaceful",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_24",
+    "name": "Firma 24 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 24A", "Lorem ipsum 24B", "Lorem ipsum 24C"],
+    "character": "aggressive",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_25",
+    "name": "Firma 25 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 25A", "Lorem ipsum 25B", "Lorem ipsum 25C"],
+    "character": "neutral",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_26",
+    "name": "Firma 26 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 26A", "Lorem ipsum 26B", "Lorem ipsum 26C"],
+    "character": "peaceful",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_27",
+    "name": "Firma 27 (Usługi)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 27A", "Lorem ipsum 27B", "Lorem ipsum 27C"],
+    "character": "neutral",
+    "categories": ["uslugi"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_28",
+    "name": "Firma 28 (Wielobranżowa)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 28A", "Lorem ipsum 28B", "Lorem ipsum 28C"],
+    "character": "aggressive",
+    "categories": ["handel", "produkcja"],
+    "startYear": 1989
+  },
+  {
+    "id": "comp_29",
+    "name": "Firma 29 (Nowa 1991)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 29A", "Lorem ipsum 29B", "Lorem ipsum 29C"],
+    "character": "aggressive",
+    "categories": ["handel"],
+    "startYear": 1991
+  },
+  {
+    "id": "comp_30",
+    "name": "Firma 30 (Nowa 1992)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 30A", "Lorem ipsum 30B", "Lorem ipsum 30C"],
+    "character": "neutral",
+    "categories": ["uslugi"],
+    "startYear": 1992
+  },
+  {
+    "id": "comp_31",
+    "name": "Firma 31 (Nowa 1994)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 31A", "Lorem ipsum 31B", "Lorem ipsum 31C"],
+    "character": "peaceful",
+    "categories": ["produkcja"],
+    "startYear": 1994
+  },
+  {
+    "id": "comp_32",
+    "name": "Firma 32 (Nowa 1995)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 32A", "Lorem ipsum 32B", "Lorem ipsum 32C"],
+    "character": "aggressive",
+    "categories": ["handel", "uslugi"],
+    "startYear": 1995
+  },
+  {
+    "id": "comp_33",
+    "name": "Firma 33 (Nowa 1997)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 33A", "Lorem ipsum 33B", "Lorem ipsum 33C"],
+    "character": "neutral",
+    "categories": ["produkcja"],
+    "startYear": 1997
+  },
+  {
+    "id": "comp_34",
+    "name": "Firma 34 (Nowa 1998)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 34A", "Lorem ipsum 34B", "Lorem ipsum 34C"],
+    "character": "peaceful",
+    "categories": ["uslugi"],
+    "startYear": 1998
+  },
+  {
+    "id": "comp_35",
+    "name": "Firma 35 (Nowa 2000)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 35A", "Lorem ipsum 35B", "Lorem ipsum 35C"],
+    "character": "aggressive",
+    "categories": ["handel"],
+    "startYear": 2000
+  },
+  {
+    "id": "comp_36",
+    "name": "Firma 36 (Nowa 2002)",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    "mottos": ["Lorem ipsum 36A", "Lorem ipsum 36B", "Lorem ipsum 36C"],
+    "character": "neutral",
+    "categories": ["produkcja", "uslugi"],
+    "startYear": 2002
   }
 ]

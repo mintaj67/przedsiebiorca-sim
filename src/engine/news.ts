@@ -246,7 +246,20 @@ export function checkMafiaInvitation(state: GameState): void {
 
 export function checkTaxOfficeNotice(state: GameState): void {
   if (state.skarbowkaVisitTurn !== null) return;
-  if (state.company.reputation.opiniaSkarbowa >= SKARBOWKA_THRESHOLD) return;
+
+  // Sojusze zmniejszają ryzyko kontroli Skarbówki
+  const allyCount = (state.competitors ?? []).filter(
+    (c) => (c.status ?? 'active') === 'active' && c.isAlliedWithPlayer
+  ).length;
+
+  const effectiveThreshold = Math.max(5, SKARBOWKA_THRESHOLD - allyCount * 3);
+  if (state.company.reputation.opiniaSkarbowa >= effectiveThreshold) return;
+
+  if (allyCount > 0) {
+    const rng = makeRng(state.seed, state.turn * 29 + 11);
+    const blockChance = Math.min(0.45, allyCount * 0.15);
+    if (rng.next() < blockChance) return;
+  }
 
   addActionableNewsItem(state, {
     id: `skarbowka_notice_${state.turn}`,

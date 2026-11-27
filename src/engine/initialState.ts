@@ -110,6 +110,9 @@ export function createInitialState(opts: {
       branches: 0,
       resources: {},
       warehouseCapacity: 50,
+      externalEquity: [],
+      parentCompanyId: null,
+      parentDispleasure: 0,
     },
 
     politics: {
@@ -153,11 +156,12 @@ export function createInitialState(opts: {
     productionWorkersUsedThisTurn: 0,
     interactionPoints: INTERACTIONS_PER_TURN,
 
-    competitors: competitionCategory
-      ? generateCompetitors(competitionCategory, 1989, opts.seed)
-      : [],
+    competitors: generateCompetitors(competitionCategory, 1989, opts.seed),
     competitionCategory,
     playerPrev: null,
+    activeWars: [],
+    tributes: [],
+    pendingWarResolution: null,
 
     macroStats: {
       unemployment: 10,

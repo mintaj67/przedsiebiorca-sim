@@ -21,9 +21,9 @@ import { AchievementsScreen } from './screens/AchievementsScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { ChaseScreen } from './screens/ChaseScreen';
 import { StatsScreen } from './screens/StatsScreen';
-import { CompetitionScreen } from './screens/CompetitionScreen';
 import { MafiaActivityScreen } from './screens/MafiaActivityScreen';
 import { OptionsModal } from './components/OptionsModal';
+import { WarVictoryModal } from './components/WarVictoryModal';
 import { partyLabel } from './ui-labels';
 import { COMPANY_SIZE_CONFIG, BANKRUPT_EMERGENCY_LOAN } from '../engine/constants';
 import { formatMoney } from '../engine/currency';
@@ -50,8 +50,7 @@ type ManagementTab =
   | 'office'
   | 'activity'
   | 'statistics'
-  | 'mafiaActivity'
-  | 'competition';
+  | 'mafiaActivity';
 type GlobalTab = 'rankings' | 'globalNews' | 'achievements' | 'stats';
 
 const TARGET_LABELS: Record<TurnActionTarget, string> = {
@@ -63,7 +62,7 @@ const TARGET_LABELS: Record<TurnActionTarget, string> = {
   production: 'Produkcja',
   services: 'Usługi',
   party: 'Polityka',
-  competition: 'Konkurencja',
+  competition: 'Rankingi',
   employees: 'Pracownicy',
   office: 'Biuro',
   activity: 'Aktywności',
@@ -118,6 +117,8 @@ export function Dashboard() {
     );
   }
 
+  if (state.pendingWarResolution) return <WarVictoryModal />;
+
   const party = partyLabel(state.ceo.currentPartyId);
   const chosenActivityLabel = state.chosenActivityThisTurn ?? 'brak';
 
@@ -165,9 +166,14 @@ export function Dashboard() {
       setMainTab('news');
       return;
     }
-    if (target === 'rankings' || target === 'achievements' || target === 'stats') {
+    if (
+      target === 'rankings' ||
+      target === 'achievements' ||
+      target === 'stats' ||
+      target === 'competition'
+    ) {
       setMainTab('global');
-      setGlobalTab(target);
+      setGlobalTab(target === 'competition' ? 'rankings' : target);
       return;
     }
 
@@ -417,8 +423,8 @@ export function Dashboard() {
               <QuickJumpButton onClick={() => navigateToTarget('employees')}>
                 👥 Pracownicy
               </QuickJumpButton>
-              <QuickJumpButton onClick={() => navigateToTarget('competition')}>
-                🤝 Konkurencja ({state.interactionPoints})
+              <QuickJumpButton onClick={() => navigateToTarget('rankings')}>
+                🏆 Rankingi ({state.interactionPoints} pkt)
               </QuickJumpButton>
             </div>
           </div>
@@ -466,7 +472,6 @@ export function Dashboard() {
           )}
 
           <SubNavButton active={mgmtTab === 'party'} onClick={() => setMgmtTab('party')}>Polityka</SubNavButton>
-          <SubNavButton active={mgmtTab === 'competition'} onClick={() => setMgmtTab('competition')}>Konkurencja</SubNavButton>
           <SubNavButton active={mgmtTab === 'employees'} onClick={() => setMgmtTab('employees')}>Pracownicy</SubNavButton>
           <SubNavButton active={mgmtTab === 'office'} onClick={() => setMgmtTab('office')}>Biuro</SubNavButton>
           <SubNavButton active={mgmtTab === 'activity'} onClick={() => setMgmtTab('activity')}>Aktywności</SubNavButton>
@@ -578,7 +583,6 @@ export function Dashboard() {
             )}
             {mgmtTab === 'services' && hasServices && <ServicesScreen />}
             {mgmtTab === 'party' && <PartyScreen />}
-            {mgmtTab === 'competition' && <CompetitionScreen />}
             {mgmtTab === 'employees' && <EmployeesScreen />}
             {mgmtTab === 'office' && <OfficeScreen />}
             {mgmtTab === 'activity' && <ActivityScreen />}

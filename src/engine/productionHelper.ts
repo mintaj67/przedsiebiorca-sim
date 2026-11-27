@@ -12,7 +12,7 @@ import { makeRng } from './rng';
 import { getCompanyActivities, getActivityName } from './activityHelper';
 import { generateTradeBuyers, getRevenueRange } from './tradeHelper';
 import { getPriceIndex, getInflationRate, scaleByInflation } from './economy';
-import { SIZE_ORDER } from './competition';
+import { SIZE_ORDER, getAllianceTradeDiscount, getPlayerAllies } from './competition';
 import { COMPANY_SIZE_CONFIG } from './constants';
 import productionDataRaw from '../data/production_data.json';
 
@@ -147,15 +147,12 @@ export function getProductionMarketFactors(state: GameState): ProductionMarketFa
     5,
     Math.min(100, Math.round(50 + (dev - 40) * 0.45 - (unemployment - 10) * 0.5 + quarterlySwing))
   );
-  // 0.75 (popyt 0%) -> 1.00 (popyt 50%) -> 1.25 (popyt 100%)
   const demandMultiplier = 0.75 + (demandScore / 100) * 0.5;
 
   const reputationScore = Math.max(0, Math.min(100, Math.round(state.company.reputation.ogolna ?? 50)));
-  // 0.85 (0%) -> 1.00 (50%) -> 1.15 (100%)
   const reputationMultiplier = 0.85 + (reputationScore / 100) * 0.3;
 
   const branchRepScore = Math.max(0, Math.min(100, Math.round(state.company.reputation.opiniaBranza ?? 50)));
-  // 0.85 (0%) -> 1.00 (50%) -> 1.15 (100%)
   const branchRepMultiplier = 0.85 + (branchRepScore / 100) * 0.3;
 
   const priceIndex = getPriceIndex(state);
@@ -180,13 +177,15 @@ export function getProductionMarketFactors(state: GameState): ProductionMarketFa
   };
 }
 
-/** Wycenia pełny katalog składników z JSON (używane m.in. do wyceny zapasów z poprzednich tur). */
+/** Wycenia pełny katalog składników z JSON (uwzględnia reputację branżową oraz rabat sojuszniczy). */
 function evaluateAllCatalogIngredients(state: GameState): EvaluatedIngredient[] {
   const ingredients = productionData.ingredients ?? [];
   const factors = getProductionMarketFactors(state);
   const dev = state.macroStats?.development ?? 40;
   const devFactor = 1 - Math.min(0.15, Math.max(-0.15, (dev - 40) * 0.003));
   const repDiscount = Math.min(0.12, (factors.branchRepScore / 100) * 0.12);
+  const allianceDiscount = getAllianceTradeDiscount(state);
+  const totalDiscount = Math.min(0.35, repDiscount + allianceDiscount);
 
   return ingredients.map((ing) => {
     const missingReasons: string[] = [];
@@ -199,7 +198,7 @@ function evaluateAllCatalogIngredients(state: GameState): EvaluatedIngredient[] 
 
     const effectiveUnitCost = Math.max(
       5,
-      Math.round(ing.unitCost * factors.priceIndex * devFactor * (1 - repDiscount))
+      Math.round(ing.unitCost * factors.priceIndex * devFactor * (1 - totalDiscount))
     );
     const effectiveWholesalePrice = Math.max(
       10,
@@ -217,7 +216,7 @@ function evaluateAllCatalogIngredients(state: GameState): EvaluatedIngredient[] 
   });
 }
 
-/** Zwraca wylosowaną na bieżącą turę pulę składników z katalogu + ofertę od konkurenta. */
+/** Zwraca wylosowaną na bieżącą turę pulę składników z katalogu + ofertę od aktywnej firmy (nie w stanie wojny). */
 export function getProductionIngredients(state: GameState): EvaluatedIngredient[] {
   const allCatalog = evaluateAllCatalogIngredients(state);
   const factors = getProductionMarketFactors(state);
@@ -232,7 +231,6 @@ export function getProductionIngredients(state: GameState): EvaluatedIngredient[
     poolRng
   );
 
-  // Zawsze gwarantujemy co najmniej 3 dostępne oferty (o ile tyle istnieje), a resztę dobieramy z pełnej puli
   const guaranteedUnlocked = unlocked.slice(0, Math.min(3, INGREDIENTS_PER_TURN));
   const remainingPool = shuffleWithRng(
     [...unlocked.slice(guaranteedUnlocked.length), ...locked],
@@ -246,9 +244,22 @@ export function getProductionIngredients(state: GameState): EvaluatedIngredient[
 
   const list: EvaluatedIngredient[] = [...pickedCatalog];
 
-  if (state.competitors && state.competitors.length > 0) {
+  const eligibleComps = (state.competitors ?? []).filter(
+    c => (c.status ?? 'active') === 'active' && !c.atWarWithPlayer
+  );
+
+  if (eligibleComps.length > 0) {
     const compRng = makeRng(`${state.seed}:prod-comp-ing`, state.turn * 37 + 19);
-    const comp: Competitor | undefined = compRng.pick([...state.competitors]);
+    const allies = getPlayerAllies(state);
+    const friendsOfAllies = new Set<string>();
+    for (const a of allies) {
+      for (const fId of a.allies ?? []) friendsOfAllies.add(fId);
+    }
+
+    // Jeśli gracz ma sojuszników, mają większą szansę wystawić korzystną nadwyżkę
+    const preferredPool =
+      allies.length > 0 && compRng.next() < 0.55 ? allies : eligibleComps;
+    const comp: Competitor | undefined = compRng.pick([...preferredPool]);
 
     if (comp) {
       const compQuality = Math.min(
@@ -259,11 +270,20 @@ export function getProductionIngredients(state: GameState): EvaluatedIngredient[
       const baseWholesale = BASE_WHOLESALE_BY_QUALITY[compQuality] ?? 240;
 
       let compUnitCost = Math.round(baseCost * factors.priceIndex);
-      if (comp.opinionOfPlayer < 40) {
+      let relationNote = `Opinia o Tobie: ${Math.round(comp.opinionOfPlayer)}%.`;
+
+      if (comp.isAlliedWithPlayer) {
+        compUnitCost = Math.round(compUnitCost * 0.78);
+        relationNote = 'Cena sojusznicza (-22%).';
+      } else if (friendsOfAllies.has(comp.id)) {
+        compUnitCost = Math.round(compUnitCost * 0.88);
+        relationNote = 'Zniżka po znajomości przez sojusznika (-12%).';
+      } else if (comp.opinionOfPlayer < 40) {
         compUnitCost = Math.round(compUnitCost * (1 + (40 - comp.opinionOfPlayer) * 0.01));
       } else if (comp.opinionOfPlayer > 60) {
-        compUnitCost = Math.round(compUnitCost * 0.88);
+        compUnitCost = Math.round(compUnitCost * 0.9);
       }
+
       if (comp.condition < 35) {
         compUnitCost = Math.round(compUnitCost * 0.8);
       }
@@ -276,7 +296,7 @@ export function getProductionIngredients(state: GameState): EvaluatedIngredient[
       list.push({
         id: `comp_ing_${comp.id}`,
         name: `${comp.name}`,
-        desc: `Nadwyżki magazynowe składników od konkurencji. Opinia o Tobie: ${comp.opinionOfPlayer}%.`,
+        desc: `Nadwyżki magazynowe składników. ${relationNote}`,
         quality: compQuality,
         unitCost: baseCost,
         baseWholesalePrice: baseWholesale,
@@ -382,7 +402,6 @@ export function estimateStoredProducedItem(
   const parts = resId.split('_');
   const quality = Math.min(10, Math.max(1, parseInt(parts[parts.length - 1], 10) || 1));
 
-  // Klucz formatu: prod_ing_krajowe_6 albo prod_comp_ing_<id>_7
   const middleId = parts.slice(1, -1).join('_');
   const allIngredients = evaluateAllCatalogIngredients(state);
   const matchedIng = allIngredients.find(i => i.id === middleId);
@@ -414,8 +433,6 @@ export function estimateStoredProducedItem(
 
   const accuracy = state.company.reputation.dokladnoscPrzewidywan ?? 50;
   const unitRange = getRevenueRange(estimatedUnitPrice, accuracy);
-
-  // Baza cenowa do SellScreen.tsx (tam cena jest mnożona przez buyer.multiplier kontrahenta)
   const retailBaseUnitPrice = Math.max(10, Math.round(estimatedUnitPrice * 0.65));
 
   return {
@@ -449,6 +466,8 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
   const devFactor = 1 - Math.min(0.15, Math.max(-0.15, (dev - 40) * 0.003));
   const repBranza = state.company.reputation.opiniaBranza;
   const repDiscount = Math.min(0.12, (repBranza / 100) * 0.12);
+  const allianceDiscount = getAllianceTradeDiscount(state);
+  const totalDiscount = Math.min(0.35, repDiscount + allianceDiscount);
 
   if (branchData?.suppliers) {
     const valid = branchData.suppliers.filter(s => {
@@ -458,7 +477,7 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
     });
 
     for (const sup of valid) {
-      const calculatedPrice = Math.round(sup.price * priceIndex * devFactor * (1 - repDiscount));
+      const calculatedPrice = Math.round(sup.price * priceIndex * devFactor * (1 - totalDiscount));
       result.push({
         id: sup.id,
         name: sup.name,
@@ -470,12 +489,17 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
     }
   }
 
-  if (state.competitors && state.competitors.length > 0) {
-    const comp: Competitor = rng.pick([...state.competitors]);
+  const eligibleComps = (state.competitors ?? []).filter(
+    c => (c.status ?? 'active') === 'active' && !c.atWarWithPlayer
+  );
+  if (eligibleComps.length > 0) {
+    const comp: Competitor = rng.pick([...eligibleComps]);
     if (comp) {
       const compQuality = Math.min(10, Math.max(2, Math.round((comp.reputation * 0.6 + comp.condition * 0.4) / 10)));
       let baseCompPrice = Math.round((compQuality * 110 + 70) * priceIndex);
-      if (comp.opinionOfPlayer < 40) {
+      if (comp.isAlliedWithPlayer) {
+        baseCompPrice = Math.round(baseCompPrice * 0.78);
+      } else if (comp.opinionOfPlayer < 40) {
         baseCompPrice = Math.round(baseCompPrice * (1 + (40 - comp.opinionOfPlayer) * 0.01));
       } else if (comp.opinionOfPlayer > 60) {
         baseCompPrice = Math.round(baseCompPrice * 0.9);
@@ -487,7 +511,7 @@ export function generateProductionSuppliers(state: GameState): TradeSupplier[] {
       result.push({
         id: `comp_${comp.id}`,
         name: `${comp.name} (Surowce / Konkurent)`,
-        desc: `Nadwyżki magazynowe półproduktów od konkurencji. Opinia o Tobie: ${comp.opinionOfPlayer}%.`,
+        desc: `Nadwyżki magazynowe półproduktów. Opinia o Tobie: ${Math.round(comp.opinionOfPlayer)}%.`,
         quality: compQuality,
         price: Math.max(5, baseCompPrice),
       });

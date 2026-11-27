@@ -8,6 +8,8 @@ import type {
   TradeBuyer,
   ServiceOrder,
   NewsItem,
+  WarDemandType,
+  AcquiredMode,
 } from '../../engine/types';
 import { MAX_NEWS } from '../../engine/constants';
 import {
@@ -42,7 +44,19 @@ import {
   toggleService as toggleServiceEngine,
   acceptServiceOrder as acceptServiceOrderEngine,
 } from '../../engine/actions';
-import { interactWithCompetitor as interactWithCompetitorEngine } from '../../engine/competition';
+import {
+  interactWithCompetitor as interactWithCompetitorEngine,
+  proposeAlliance as proposeAllianceEngine,
+  breakAlliance as breakAllianceEngine,
+  takeAllyLoan as takeAllyLoanEngine,
+  declareWar as declareWarEngine,
+  performWarAction as performWarActionEngine,
+  surrenderWar as surrenderWarEngine,
+  resolvePlayerWarVictory as resolvePlayerWarVictoryEngine,
+  acquireCompetitor as acquireCompetitorEngine,
+  buyBackEquity as buyBackEquityEngine,
+  requestParentBailout as requestParentBailoutEngine,
+} from '../../engine/competition';
 import { startTaxCombat } from '../../engine/combat';
 import { startChase } from '../../engine/chase';
 import { autosave } from '../autosave';
@@ -78,7 +92,23 @@ export interface GameSlice {
     installments?: InstallmentOption
   ) => void;
   resolveComplaint: (id: string, accept: boolean) => void;
+  // --- Konkurencja, sojusze, wojny i przejęcia ---
   interactCompetitor: (compId: string, type: 'positive' | 'negative') => void;
+  proposeAlliance: (compId: string) => void;
+  breakAlliance: (compId: string) => void;
+  takeAllyLoan: (compId: string, amount: number) => void;
+  declareWar: (compId: string) => void;
+  performWarAction: (compId: string, warActionId: string) => void;
+  surrenderWar: (compId: string) => void;
+  resolvePlayerWarVictory: (
+    warId: string,
+    demands: WarDemandType[],
+    acquisitionMode?: AcquiredMode
+  ) => void;
+  acquireCompetitor: (compId: string, postMode: AcquiredMode) => void;
+  buyBackEquity: (holderId: string, percent: number) => void;
+  requestParentBailout: () => void;
+  // --- Produkcja ---
   buyProductionTool: (toolId: string) => void;
   runProductionBatch: (
     ingredientId: string,
@@ -89,8 +119,10 @@ export interface GameSlice {
   sellProducedStock: (resId: string, amount: number) => void;
   buyRawMaterials: (supplier: TradeSupplier, amount: number, installments?: InstallmentOption) => void;
   produceGoods: (rawResId: string, amount: number) => void;
+  // --- Usługi ---
   toggleService: (serviceId: string) => void;
   acceptServiceOrder: (order: ServiceOrder) => void;
+  // --- Debug ---
   debugSendTestMessage: () => void;
   debugStartTaxCombat: () => void;
   debugStartChase: () => void;
@@ -149,14 +181,30 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     takeEmergencyLoan: () => commit(applyEmergencyLoan),
     takeLoan: (source, amount) => commit((s) => applyLoan(s, source, amount)),
 
-    // --- Handel i Konkurencja ---
+    // --- Handel ---
     buyGoods: (supplier, amount, installments = 1) =>
       commit((s) => buyGoodsEngine(s, supplier, amount, installments)),
     sellGoods: (buyer, resId, amount, unitPrice, installments = 1) =>
       commit((s) => sellGoodsEngine(s, buyer, resId, amount, unitPrice, installments)),
     resolveComplaint: (id, accept) => commit((s) => resolveComplaintEngine(s, id, accept)),
+
+    // --- Konkurencja, sojusze, wojny i przejęcia ---
     interactCompetitor: (compId, type) =>
       commit((s) => interactWithCompetitorEngine(s, compId, type)),
+    proposeAlliance: (compId) => commit((s) => proposeAllianceEngine(s, compId)),
+    breakAlliance: (compId) => commit((s) => breakAllianceEngine(s, compId)),
+    takeAllyLoan: (compId, amount) => commit((s) => takeAllyLoanEngine(s, compId, amount)),
+    declareWar: (compId) => commit((s) => declareWarEngine(s, compId)),
+    performWarAction: (compId, warActionId) =>
+      commit((s) => performWarActionEngine(s, compId, warActionId)),
+    surrenderWar: (compId) => commit((s) => surrenderWarEngine(s, compId)),
+    resolvePlayerWarVictory: (warId, demands, acquisitionMode = 'subsidiary') =>
+      commit((s) => resolvePlayerWarVictoryEngine(s, warId, demands, acquisitionMode)),
+    acquireCompetitor: (compId, postMode) =>
+      commit((s) => acquireCompetitorEngine(s, compId, postMode)),
+    buyBackEquity: (holderId, percent) =>
+      commit((s) => buyBackEquityEngine(s, holderId, percent)),
+    requestParentBailout: () => commit(requestParentBailoutEngine),
 
     // --- Produkcja ---
     buyProductionTool: (toolId) => commit((s) => buyProductionToolEngine(s, toolId)),

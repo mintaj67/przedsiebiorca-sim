@@ -12,6 +12,15 @@ import type {
   TurnActionEntry,
 } from './types';
 import {
+  ensureBranchCompetitors,
+  getAllianceTradeDiscount,
+  getPlayerParentInfo,
+  grantEquityToCompetitor,
+  joinAllyWarInState,
+  openWarInState,
+  refuseAllyWarInState,
+} from './competition';
+import {
   MAX_PARTY_SWITCHES_PER_PHASE,
   ACTIVITY_CHANGE_COOLDOWN,
   BANKRUPT_EMERGENCY_LOAN,
@@ -259,6 +268,15 @@ export function applyChangeActivity(state: GameState, activityOrList: string | s
 
   const delta = s.company.reputation.branza - oldBranza;
   s.company.reputation.opiniaBranza = clamp(s.company.reputation.opiniaBranza + delta * 0.3);
+
+  // Samowolna zmiana branży pod kontrolą spółki-matki irytuje centralę
+  const parentInfo = getPlayerParentInfo(s);
+  if (parentInfo?.isControlling) {
+    s.company.parentDispleasure = clamp((s.company.parentDispleasure ?? 0) + 20);
+  }
+
+  // Stały świat: nie resetujemy ligi — dociągamy tylko z rezerwy, jeśli w nowej branży jest < 3 firm
+  ensureBranchCompetitors(s, true);
   s.company.reputation = recomputeReputation(s);
 
   const info = getActivityFullInfo(selectedActivities);
@@ -418,6 +436,50 @@ export function applyEffects(state: GameState, e: EventEffects) {
   if (e.addItem && !state.company.inventory.includes(e.addItem)) {
     state.company.inventory.push(e.addItem);
   }
+
+  // --- Efekty dyplomacji, wojen i spółki-matki ---
+  if (typeof e.parentDispleasureDelta === 'number') {
+    state.company.parentDispleasure = clamp(
+      (state.company.parentDispleasure ?? 0) + e.parentDispleasureDelta
+    );
+    const parentInfo = getPlayerParentInfo(state);
+    if (parentInfo?.isControlling && state.company.parentDispleasure >= 100) {
+      state.gameOver = {
+        reason: `Odwołanie ze stanowiska CEO — spółka-matka (${parentInfo.parent.name}) straciła do Ciebie cierpliwość.`,
+      };
+    }
+  }
+  if (e.joinWarAsAlly) {
+    joinAllyWarInState(state, e.joinWarAsAlly.warId, e.joinWarAsAlly.allyId);
+  }
+  if (e.refuseWarCall) {
+    refuseAllyWarInState(state, e.refuseWarCall.allyId);
+  }
+  if (e.sellEquityTo) {
+    grantEquityToCompetitor(
+      state,
+      e.sellEquityTo.holderId,
+      e.sellEquityTo.percent,
+      e.sellEquityTo.cashReceived
+    );
+  }
+  if (e.addTribute) {
+    if (!Array.isArray(state.tributes)) state.tributes = [];
+    state.tributes.push({
+      id: `trib_fx_${state.turn}_${state.tributes.length}`,
+      ...e.addTribute,
+    });
+  }
+  if (e.payReparationsTo) {
+    state.company.finances.stanKonta -= e.payReparationsTo.amount;
+    state.company.finances.wydatki.kary += e.payReparationsTo.amount;
+    const comp = (state.competitors ?? []).find(c => c.id === e.payReparationsTo!.compId);
+    if (comp) comp.value += e.payReparationsTo.amount;
+  }
+  if (e.startWarWith) {
+    openWarInState(state, 'player', e.startWarWith, false);
+  }
+
   state.company.reputation = recomputeReputation(state);
 }
 
@@ -576,7 +638,10 @@ export function buyGoods(
   if (amount === 10) discount = 0.10;
   if (amount === 50 || amount === 100) discount = 0.25;
 
-  const baseTotal = Math.round(supplier.price * amount * (1 - discount));
+  const allianceDiscount = getAllianceTradeDiscount(state);
+  const totalDiscount = Math.min(0.45, discount + allianceDiscount);
+
+  const baseTotal = Math.round(supplier.price * amount * (1 - totalDiscount));
   const finalPrice = calculateInstallmentPrice(baseTotal, installments);
 
   if (installments <= 1 && state.company.finances.stanKonta < finalPrice) {
@@ -605,7 +670,7 @@ export function buyGoods(
   recordTurnAction(s, {
     icon: '🛒',
     category: 'Handel',
-    text: `Kupiono ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}${installments > 1 ? ` w ${installments} ratach` : ''}.`,
+    text: `Kupiono ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}${allianceDiscount > 0 ? ` (rabat sojuszniczy -${Math.round(allianceDiscount * 100)}%)` : ''}${installments > 1 ? ` w ${installments} ratach` : ''}.`,
     target: 'buy',
   });
 
@@ -923,7 +988,10 @@ export function buyRawMaterials(
   if (amount === 10) discount = 0.10;
   if (amount === 50 || amount === 100) discount = 0.25;
 
-  const baseTotal = Math.round(supplier.price * amount * (1 - discount));
+  const allianceDiscount = getAllianceTradeDiscount(state);
+  const totalDiscount = Math.min(0.45, discount + allianceDiscount);
+
+  const baseTotal = Math.round(supplier.price * amount * (1 - totalDiscount));
   const finalPrice = calculateInstallmentPrice(baseTotal, installments);
 
   if (installments <= 1 && state.company.finances.stanKonta < finalPrice) {
@@ -952,7 +1020,7 @@ export function buyRawMaterials(
   recordTurnAction(s, {
     icon: '🧱',
     category: 'Produkcja',
-    text: `Kupiono ${amount} szt. surowców (${supplier.name}) za ${formatMoney(finalPrice, s)}.`,
+    text: `Kupiono ${amount} szt. surowców (${supplier.name}) za ${formatMoney(finalPrice, s)}${allianceDiscount > 0 ? ` (rabat sojuszniczy -${Math.round(allianceDiscount * 100)}%)` : ''}.`,
     target: 'production',
   });
 

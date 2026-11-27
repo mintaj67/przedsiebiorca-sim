@@ -52,7 +52,7 @@ export function recomputeReputation(state: GameState): Reputation {
     r.opiniaPubliczna = clamp(r.opiniaPubliczna - overshoot * 0.3);
   }
 
-  // Dynamiczne wyliczanie Dokładności Przewidywań (baza z eventów + pracownicy + księgowa + rozmiar + branża)
+  // Dynamiczne wyliczanie Dokładności Przewidywań (baza + pracownicy + księgowa + rozmiar + branża + biuro + cynk rynkowy od sojuszników)
   const emp = state.company.employees;
   const uopBonus = Math.min(15, emp.uop * 1.5);
   const zlecenieBonus = Math.min(6, emp.zlecenie * 0.5);
@@ -61,6 +61,15 @@ export function recomputeReputation(state: GameState): Reputation {
   const sizeBonus = SIZE_ACCURACY_BONUS[state.company.size] ?? 0;
   const branzaMod = (r.opiniaBranza - 50) * 0.25;
   const inventoryBonus = Math.min(10, (state.company.inventory?.length ?? 0) * 2);
+
+  // Cynk rynkowy: im wyższa reputacja konkretnego sojusznika, tym dokładniejsze informacje (0..6 pkt na sojusznika, max 18)
+  const activeAllies = (state.competitors ?? []).filter(
+    (c) => (c.status ?? 'active') === 'active' && c.isAlliedWithPlayer
+  );
+  const allyIntelBonus = Math.min(
+    18,
+    activeAllies.reduce((sum, ally) => sum + Math.round((clamp(ally.reputation) / 100) * 6), 0)
+  );
 
   r.dokladnoscPrzewidywan = clamp(
     Math.round(
@@ -71,7 +80,8 @@ export function recomputeReputation(state: GameState): Reputation {
       accountantBonus +
       sizeBonus +
       branzaMod +
-      inventoryBonus
+      inventoryBonus +
+      allyIntelBonus
     )
   );
 

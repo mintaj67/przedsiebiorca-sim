@@ -1,0 +1,189 @@
+{
+  "warActions": [
+    {
+      "id": "war_black_pr",
+      "label": "Lorem ipsum — Akcja PR",
+      "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Uderza w reputację rywala kosztem opinii w mediach.",
+      "baseCost": 12000,
+      "warScoreGain": 18,
+      "enemyConditionDelta": -4,
+      "enemyReputationDelta": -6,
+      "reputationEffects": {
+        "opiniaMedia": -4,
+        "opiniaBranza": -2
+      }
+    },
+    {
+      "id": "war_price_dump",
+      "label": "Lorem ipsum — Presja cenowa",
+      "description": "Lorem ipsum dolor sit amet, sed do eiusmod tempor. Kosztowna, ale czysta wizerunkowo zagrywka rynkowa.",
+      "baseCost": 25000,
+      "warScoreGain": 24,
+      "enemyConditionDelta": -8,
+      "enemyReputationDelta": -2,
+      "reputationEffects": {
+        "opiniaBranza": -3,
+        "opiniaPubliczna": 2
+      }
+    },
+    {
+      "id": "war_tax_tip",
+      "label": "Lorem ipsum — Donos do urzędu",
+      "description": "Lorem ipsum dolor sit amet, ut labore et dolore magna aliqua. Mocno bije w kondycję celu, psuje opinię wśród firm.",
+      "baseCost": 8000,
+      "warScoreGain": 20,
+      "enemyConditionDelta": -10,
+      "enemyReputationDelta": -5,
+      "reputationEffects": {
+        "opiniaBranza": -7,
+        "opiniaPubliczna": -3
+      }
+    },
+    {
+      "id": "war_poach_staff",
+      "label": "Lorem ipsum — Podkupienie kadry",
+      "description": "Lorem ipsum dolor sit amet, quis nostrud exercitation ullamco. Droga akcja osłabiająca potencjał przeciwnika.",
+      "baseCost": 35000,
+      "warScoreGain": 30,
+      "enemyConditionDelta": -12,
+      "enemyReputationDelta": -4,
+      "reputationEffects": {
+        "opiniaBranza": -5,
+        "opiniaMedia": -2
+      }
+    },
+    {
+      "id": "war_mafia_visit",
+      "label": "Lorem ipsum — Wizyta znajomych (Mafia)",
+      "description": "Lorem ipsum dolor sit amet, duis aute irure dolor in reprehenderit. Wymaga przynależności do mafii.",
+      "baseCost": 18000,
+      "warScoreGain": 35,
+      "enemyConditionDelta": -15,
+      "enemyReputationDelta": -8,
+      "requiresMafia": true,
+      "reputationEffects": {
+        "opiniaPubliczna": -8,
+        "opiniaMedia": -6,
+        "opiniaBranza": -6
+      }
+    }
+  ],
+  "subsidiaryTasks": [
+    {
+      "id": "sub_task_1",
+      "headline": "Lorem ipsum — Żądanie centrali #1 ({parent})",
+      "body": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Spółka-matka {parent} domaga się wykonania kompromitującego polecenia.",
+      "acceptLabel": "Lorem ipsum — Wykonuję polecenie",
+      "acceptDescription": "Utrzymujesz przychylność centrali kosztem reputacji publicznej.",
+      "refuseLabel": "Lorem ipsum — Odmawiam",
+      "refuseDescription": "Ratujesz twarz, ale rośnie irytacja spółki-matki.",
+      "acceptEffects": {
+        "reputation": {
+          "opiniaPubliczna": -8,
+          "opiniaMedia": -5
+        }
+      },
+      "displeasureOnAccept": -15,
+      "displeasureOnRefuse": 30
+    },
+    {
+      "id": "sub_task_2",
+      "headline": "Lorem ipsum — Żądanie centrali #2 ({parent})",
+      "body": "Lorem ipsum dolor sit amet, sed do eiusmod tempor incididunt ut labore. {parent} przysyła kolejne absurdalne wytyczne.",
+      "acceptLabel": "Lorem ipsum — Zgadzam się",
+      "acceptDescription": "Pracownicy i branża patrzą na to krzywo, ale centrala jest zadowolona.",
+      "refuseLabel": "Lorem ipsum — Stawiam się",
+      "refuseDescription": "Centrala zapamięta ten brak pokory.",
+      "acceptEffects": {
+        "reputation": {
+          "opiniaPracownicy": -10,
+          "opiniaBranza": -6
+        }
+      },
+      "displeasureOnAccept": -15,
+      "displeasureOnRefuse": 35
+    },
+    {
+      "id": "sub_task_3",
+      "headline": "Lorem ipsum — Żądanie centrali #3 ({parent})",
+      "body": "Lorem ipsum dolor sit amet, ut enim ad minim veniam. Prezes {parent} oczekuje publicznego gestu uległości.",
+      "acceptLabel": "Lorem ipsum — Spełniam zachciankę",
+      "acceptDescription": "Kosztuje Cię to pieniądze i śmieszność w mediach.",
+      "refuseLabel": "Lorem ipsum — Ignoruję",
+      "refuseDescription": "Ryzykujesz utratę zaufania właściciela.",
+      "acceptEffects": {
+        "stanKonta": -10000,
+        "reputation": {
+          "opiniaMedia": -9,
+          "opiniaPubliczna": -5
+        }
+      },
+      "displeasureOnAccept": -20,
+      "displeasureOnRefuse": 30
+    },
+    {
+      "id": "sub_task_4",
+      "headline": "Lorem ipsum — Żądanie centrali #4 ({parent})",
+      "body": "Lorem ipsum dolor sit amet, quis nostrud exercitation ullamco laboris. {parent} żąda dziwnej operacji na Twoich księgach.",
+      "acceptLabel": "Lorem ipsum — Podpisuję bez pytań",
+      "acceptDescription": "Pogarsza relacje ze Skarbówką i branżą.",
+      "refuseLabel": "Lorem ipsum — Nie podpisuję",
+      "refuseDescription": "Centrala będzie wściekła.",
+      "acceptEffects": {
+        "reputation": {
+          "opiniaSkarbowa": -10,
+          "opiniaBranza": -5
+        }
+      },
+      "displeasureOnAccept": -15,
+      "displeasureOnRefuse": 35
+    },
+    {
+      "id": "sub_task_5",
+      "headline": "Lorem ipsum — Żądanie centrali #5 ({parent})",
+      "body": "Lorem ipsum dolor sit amet, excepteur sint occaecat cupidatat non proident. {parent} wymyśliło nową, upokarzającą inicjatywę.",
+      "acceptLabel": "Lorem ipsum — Biorę to na klatę",
+      "acceptDescription": "Mocny cios w wizerunek, ale zyskujesz spokój na górze.",
+      "refuseLabel": "Lorem ipsum — Odmawiam udziału",
+      "refuseDescription": "Zwiększasz ryzyko odwołania ze stanowiska.",
+      "acceptEffects": {
+        "reputation": {
+          "opiniaPubliczna": -7,
+          "opiniaPracownicy": -7
+        }
+      },
+      "displeasureOnAccept": -20,
+      "displeasureOnRefuse": 30
+    }
+  ],
+  "pressTemplates": {
+    "aiWarStarted": {
+      "headline": "Wojna biznesowa: {attacker} przeciwko {defender}",
+      "body": "Lorem ipsum — Na rynku zawrzało. {attacker} otwarcie zaatakowało {defender}. Branża obserwuje rozwój wydarzeń."
+    },
+    "aiBetrayal": {
+      "headline": "Nagły rozłam! {attacker} zrywa zgodę z {defender}",
+      "body": "Lorem ipsum — Dotychczasowa współpraca przeszła do historii. {attacker} niespodziewanie wypowiedziało wojnę swojemu dawnemu partnerowi {defender}."
+    },
+    "playerBetrayed": {
+      "headline": "Zdrada na rynku! {attacker} zrywa z Tobą zgodę",
+      "body": "Lorem ipsum — {attacker} niespodziewanie zerwało przyjazne relacje i wypowiedziało wojnę Twojej firmie."
+    },
+    "aiWarEnded": {
+      "headline": "Koniec starcia: {winner} pokonuje {loser}",
+      "body": "Lorem ipsum — Zakończyła się wojna biznesowa. {winner} narzuciło swoje warunki firmie {loser}: {outcome}."
+    },
+    "companyBankrupt": {
+      "headline": "Upadek firmy: {company} ogłasza bankructwo",
+      "body": "Lorem ipsum — {company} nie przetrwało realiów rynku i znika z tabeli."
+    },
+    "companyAcquired": {
+      "headline": "Przejęcie na rynku: {winner} wchłania {loser}",
+      "body": "Lorem ipsum — {winner} przejęło firmę {loser}, która znika z niezależnego rankingu."
+    },
+    "newEntrant": {
+      "headline": "Nowy gracz na rynku: {company}",
+      "body": "Lorem ipsum — W tabeli pojawia się nowy podmiot: {company}."
+    }
+  }
+}
