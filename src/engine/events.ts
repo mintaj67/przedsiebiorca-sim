@@ -4,6 +4,10 @@ import eventsData from '../data/events.json';
 
 const ALL_EVENTS: GameEvent[] = eventsData as GameEvent[];
 
+const MIN_FIRST_EVENT_TURN = 3;
+const MIN_QUIET_TURNS = 2;
+const EVENT_CHANCE = 0.35;
+
 export function matchesConditions(state: GameState, c: EventConditions): boolean {
   if (c.yearMin !== undefined && state.year < c.yearMin) return false;
   if (c.yearMax !== undefined && state.year > c.yearMax) return false;
@@ -43,6 +47,21 @@ export function rollEvents(state: GameState): GameEvent[] {
     return matchesConditions(state, e.conditions);
   });
   if (eligible.length === 0) return [];
+
+  // Eventy historyczne z kończącym się w tym roku oknem (np. denominacja) nie mogą przepaść przez cooldown
+  const urgentHistorical = eligible.filter(
+    e => e.conditions.yearMax !== undefined && e.conditions.yearMax === state.year && state.quarter >= 3
+  );
+  if (urgentHistorical.length > 0) {
+    return [rng.weighted(urgentHistorical)];
+  }
+
+  if (state.turn < MIN_FIRST_EVENT_TURN) return [];
+
+  const lastTurn = state.lastEventTurn ?? -999;
+  if (state.turn - lastTurn <= MIN_QUIET_TURNS) return [];
+
+  if (rng.next() >= EVENT_CHANCE) return [];
 
   const picked = rng.weighted(eligible);
   return [picked];

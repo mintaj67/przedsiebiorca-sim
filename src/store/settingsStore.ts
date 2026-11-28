@@ -3,8 +3,17 @@ import { create } from 'zustand';
 const SETTINGS_KEY = 'pp-settings-v1';
 const DEBUG_PASSWORD = 'BALCEROWICZ';
 
-export type ThemeId = 'default' | 'teletext' | 'newspaper' | 'gg' | 'brat';
-
+export type ThemeId =
+  | 'default'
+  | 'teletext'
+  | 'newspaper'
+  | 'gg'
+  | 'brat'
+  | 'futbol_czempion'
+  | 'substancja_87'
+  | 'miasto_nierzadu'
+  | 'miasto_leonida';
+  
 export interface Settings {
   autosave: boolean;
   debugMode: boolean;

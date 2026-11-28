@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../initialState';
 import { tickEconomy, scaleByInflation } from '../economy';
-import { WORKER_CONFIG, COMPANY_SIZE_CONFIG, BELOW_REQUIRED_WORKERS_PENALTY } from '../constants';
+import { WORKER_CONFIG } from '../constants';
 import type { GameState } from '../types';
 
 function makeState(overrides: Partial<Parameters<typeof createInitialState>[0]> = {}): GameState {
@@ -18,19 +18,21 @@ function makeState(overrides: Partial<Parameters<typeof createInitialState>[0]> 
 }
 
 describe('tickEconomy', () => {
-  it('generuje przychód z działalności nawet bez pracowników (CEO sam pracuje)', () => {
+  it('nie generuje darmowego przychodu z działalności przy bezczynności', () => {
     const state = makeState();
     const result = tickEconomy(state);
-    expect(result.company.finances.wplywy.przychodyZDzialalnosci).toBeGreaterThan(0);
+    expect(result.company.finances.wplywy.przychodyZDzialalnosci).toBe(0);
   });
 
-  it('pobiera czynsz co turę', () => {
+  it('pobiera czynsz co turę i obniża stan konta przy braku sprzedaży', () => {
     const state = makeState();
+    const before = state.company.finances.stanKonta;
     const result = tickEconomy(state);
     expect(result.company.finances.wydatki.czynsz).toBeGreaterThan(0);
+    expect(result.company.finances.stanKonta).toBe(before - result.company.finances.wydatki.czynsz);
   });
 
-it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
+  it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
     const state = makeState();
     state.company.employees.bezUmowy = 2;
     state.company.employees.zlecenie = 3;
@@ -48,36 +50,19 @@ it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
     expect(result.company.finances.wydatki.pracownicy).toBe(expected);
   });
 
-  it('pracownik UOP zarabia więcej niż kosztuje (netto na plus)', () => {
+  it('nie nalicza podatku gdy przychód z działalności wynosi 0', () => {
     const state = makeState();
-    state.company.employees.uop = 1;
-
     const result = tickEconomy(state);
-
-    const revenue = result.company.finances.wplywy.przychodyZDzialalnosci;
-    const wages = result.company.finances.wydatki.pracownicy;
-
-    expect(revenue).toBeGreaterThan(wages);
-    expect(WORKER_CONFIG.uop.revenue).toBeGreaterThan(WORKER_CONFIG.uop.wage);
+    expect(result.company.finances.wydatki.podatki).toBe(0);
   });
 
-  it('pracownik bez umowy zarabia więcej niż kosztuje (netto na plus)', () => {
+  it('nalicza 15% podatku od faktycznych przychodów z działalności w kwartale', () => {
     const state = makeState();
-    state.company.employees.bezUmowy = 1;
+    state.company.finances.wplywy.przychodyZDzialalnosci = 10_000;
 
     const result = tickEconomy(state);
 
-    expect(WORKER_CONFIG.bezUmowy.revenue).toBeGreaterThan(WORKER_CONFIG.bezUmowy.wage);
-    expect(result.company.finances.wplywy.przychodyZDzialalnosci).toBeGreaterThan(0);
-  });
-
-  it('po turze z dodatnim saldem stanKonta rośnie', () => {
-    const state = makeState();
-    const before = state.company.finances.stanKonta;
-
-    const result = tickEconomy(state);
-
-    expect(result.company.finances.stanKonta).toBeGreaterThan(before);
+    expect(result.company.finances.wydatki.podatki).toBe(1500);
   });
 
   it('resetuje bankruptWarningTurns gdy saldo dodatnie', () => {
@@ -97,26 +82,5 @@ it('koszt pracowników = suma stawek wg WORKER_CONFIG', () => {
     const result = tickEconomy(state);
 
     expect(result.bankruptWarningTurns).toBe(1);
-  });
-
-  it('kara reputacyjna gdy firma ma mniej pracowników niż wymaga rozmiar', () => {
-    const state = makeState({ size: 'medium' });
-    // medium wymaga 10 pracowników, a startowy stan ma 10 - obniżamy
-    state.company.employees.zlecenie = 0;
-    state.company.employees.uop = 0;
-    state.company.employees.bezUmowy = 0;
-    const repBefore = state.company.reputation.opiniaBranza;
-
-    const result = tickEconomy(state);
-
-    expect(COMPANY_SIZE_CONFIG.medium.requiredWorkers).toBeGreaterThan(0);
-    expect(result.company.reputation.opiniaBranza).toBeLessThan(repBefore);
-    expect(repBefore - result.company.reputation.opiniaBranza).toBe(BELOW_REQUIRED_WORKERS_PENALTY);
-  });
-
-  it('podatki są dodatnie gdy przychód dodatni', () => {
-    const state = makeState();
-    const result = tickEconomy(state);
-    expect(result.company.finances.wydatki.podatki).toBeGreaterThan(0);
   });
 });

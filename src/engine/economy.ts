@@ -1,6 +1,5 @@
 import type { GameState, Wplywy, Wydatki } from './types';
 import {
-  BELOW_REQUIRED_WORKERS_PENALTY,
   WORKER_CONFIG,
   SKARBOWKA_DECAY_BEZ_UMOWY,
   SKARBOWKA_DECAY_ZLECENIE,
@@ -8,14 +7,8 @@ import {
   ACCOUNTANT_COST,
   ACCOUNTANT_BONUS,
 } from './constants';
-import {
-  getCompanyActivities,
-  getCategoryIdsForActivities,
-  getRequiredWorkers,
-} from './activityHelper';
 import { makeRng } from './rng';
 
-const BASE_REVENUE = 5000;
 const CZYNSZ = 2500;
 const TAX_RATE = 0.15;
 
@@ -216,22 +209,14 @@ function getTargetInflationForYear(year: number): number {
   return 3.0;
 }
 
-function calculateWorkerRevenue(count: number, baseRevenue: number): number {
-  let total = 0;
-  for (let i = 0; i < count; i++) {
-    const efficiency = Math.max(0.2, 1 - i * 0.05);
-    total += baseRevenue * efficiency;
-  }
-  return total;
-}
-
 export function tickEconomy(state: GameState): GameState {
   const oldProfitability = state.profitabilityScore;
   const c = structuredClone(state.company);
   const f = c.finances;
   const priceIndex = getPriceIndex(state);
 
-  const baseRevenue = Math.round(estimateRevenue(c) * priceIndex);
+  // Zero darmowej kasy: podatek naliczany wyłącznie od realnego przychodu z działalności w tym kwartale
+  const quarterlyRevenue = Math.max(0, f.wplywy.przychodyZDzialalnosci);
 
   const rawWages =
     c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.wage +
@@ -240,7 +225,7 @@ export function tickEconomy(state: GameState): GameState {
 
   const wages = Math.round(rawWages * priceIndex);
   const rent = Math.round(CZYNSZ * priceIndex);
-  const taxes = Math.max(0, Math.round(baseRevenue * TAX_RATE));
+  const taxes = Math.max(0, Math.round(quarterlyRevenue * TAX_RATE));
 
   // Raty zaciągniętych kredytów pozostają nominalne (inflacja realnie zmniejsza stare długi)
   let loanPayments = 0;
@@ -266,26 +251,16 @@ export function tickEconomy(state: GameState): GameState {
 
   c.reputation.opiniaSkarbowa = Math.max(0, Math.min(100, c.reputation.opiniaSkarbowa + skarbowkaDelta));
 
-  // Dopisujemy pozycje cykliczne do bieżącego kwartału (nie nadpisując transakcji z tej tury)
-  f.wplywy.przychodyZDzialalnosci += baseRevenue;
+  // Dopisujemy koszty cykliczne do bieżącego kwartału
   f.wydatki.pracownicy += wages;
   f.wydatki.czynsz += rent;
   f.wydatki.podatki += taxes;
   f.wydatki.splacaneKredyty += loanPayments;
   f.wydatki.inne += accountantCost;
 
-  // Na stanKonta nakładamy WYŁĄCZNIE pozycje cykliczne z tego ticku
-  // (wszystkie zakupy, kredyty, sprzedaże i usługi aktualizują stanKonta w momencie zajścia)
+  // Na stanKonta nakładamy wyłącznie koszty cykliczne z tego ticku
   const periodicOutflow = wages + rent + taxes + loanPayments + accountantCost;
-  f.stanKonta = Math.round(f.stanKonta + baseRevenue - periodicOutflow);
-
-  const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
-  const activeCategories = getCategoryIdsForActivities(getCompanyActivities(c));
-  const requiredWorkers = getRequiredWorkers(c.size, activeCategories.length);
-
-  if (totalWorkers < requiredWorkers) {
-    c.reputation.opiniaBranza = Math.max(0, c.reputation.opiniaBranza - BELOW_REQUIRED_WORKERS_PENALTY);
-  }
+  f.stanKonta = Math.round(f.stanKonta - periodicOutflow);
 
   if (state.ceo.flags.includes('hipnoza_dziala')) {
     const bonus = Math.round(5000 * priceIndex);
@@ -306,6 +281,7 @@ export function tickEconomy(state: GameState): GameState {
     state.bankruptWarningTurns = 0;
   }
 
+  // --- Kondycja / rentowność ---
   let score = 50;
 
   if (c.size === 'micro') score += 10;
@@ -315,9 +291,10 @@ export function tickEconomy(state: GameState): GameState {
   else if (c.size === 'very_large') score -= 15;
   else if (c.size === 'corporation') score -= 20;
 
-  if (f.wydatki.pracownicy > 0) {
-    const ratio = f.wplywy.przychodyZDzialalnosci / f.wydatki.pracownicy;
-    score += Math.min(20, (ratio - 1) * 10);
+  const operatingCosts = wages + rent;
+  if (operatingCosts > 0) {
+    const ratio = quarterlyRevenue / operatingCosts;
+    score += Math.max(-20, Math.min(20, (ratio - 1) * 10));
   }
 
   const avgRep = (c.reputation.opiniaBranza + c.reputation.opiniaPubliczna) / 2;
@@ -366,16 +343,6 @@ export function tickEconomy(state: GameState): GameState {
   }
 
   return state;
-}
-
-function estimateRevenue(c: GameState['company']): number {
-  const workerRevenue =
-    calculateWorkerRevenue(c.employees.bezUmowy, WORKER_CONFIG.bezUmowy.revenue) +
-    calculateWorkerRevenue(c.employees.zlecenie, WORKER_CONFIG.zlecenie.revenue) +
-    calculateWorkerRevenue(c.employees.uop, WORKER_CONFIG.uop.revenue);
-
-  const activityMultiplier = 1 + (c.reputation.branza - 50) / 200;
-  return (BASE_REVENUE + workerRevenue) * activityMultiplier;
 }
 
 function sum(obj: Wplywy | Wydatki): number {

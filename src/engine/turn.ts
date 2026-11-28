@@ -163,6 +163,9 @@ export function nextTurn(state: GameState): GameState {
   // 3. POLITYKA I EVENTY
   s = tickPolitics(s);
   s.pendingEvents = rollEvents(s);
+    if (s.pendingEvents.length > 0) {
+      s.lastEventTurn = s.turn;
+  }  
   s.company.reputation = recomputeReputation(s);
 
   if (s.bankruptWarningTurns >= BANKRUPT_GRACE_TURNS && s.company.finances.stanKonta < 0) {

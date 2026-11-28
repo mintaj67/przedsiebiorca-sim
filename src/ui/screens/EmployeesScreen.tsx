@@ -5,6 +5,12 @@ import { scaleByInflation } from '../../engine/economy';
 import { formatMoney } from '../../engine/currency';
 import { TRADE_THROUGHPUT_CONFIG, getTradeThroughputLimit } from '../../engine/tradeHelper';
 
+const CONTRACT_PERKS: Record<ContractType, string> = {
+  bezUmowy: 'Najniższy koszt, ale pogarsza opinię w Skarbówce i dokładność wycen.',
+  zlecenie: 'Średni koszt i umiarkowany wpływ na Skarbówkę. Bez odprawy przy zwolnieniu.',
+  uop: 'Największa przepustowość handlowa, poprawia opinię w Skarbówce i jakość w produkcji. Wymaga odprawy przy zwolnieniu.',
+};
+
 export function EmployeesScreen() {
   const { state, hireWorker, toggleAccountant } = useGameStore();
   if (!state) return null;
@@ -13,8 +19,6 @@ export function EmployeesScreen() {
   const pendingHires = state.pendingHires ?? [];
   const accountantCost = scaleByInflation(ACCOUNTANT_COST, state);
   const tradeLimit = getTradeThroughputLimit(state);
-
-  const getEfficiency = (count: number) => Math.max(20, Math.round((1 - count * 0.05) * 100));
 
   const getPendingCount = (contract: ContractType) =>
     pendingHires
@@ -38,7 +42,7 @@ export function EmployeesScreen() {
       </div>
 
       <p className="text-sm text-stone-600 mb-6">
-        Każdy kolejny pracownik w danej grupie pracuje z mniejszą wydajnością (prawo malejących przychodów). Pracownicy zwiększają też limit obrotu towarowego w handlu, obsadzają usługi i moce produkcyjne. Nowo zakontraktowani dołączają do załogi w <b>kolejnej turze</b>.
+        Pracownicy nie zarabiają pieniędzy z powietrza — zwiększają limit obrotu w handlu, obsadzają usługi i przydzielasz ich do produkcji. Nowo zakontraktowani dołączają do załogi w <b>kolejnej turze</b>.
       </p>
 
       {totalPending > 0 && (
@@ -82,9 +86,7 @@ export function EmployeesScreen() {
         {(['bezUmowy', 'zlecenie', 'uop'] as ContractType[]).map(c => {
           const count = workers[c];
           const pending = getPendingCount(c);
-          const nextWorkerEff = getEfficiency(count + pending);
           const scaledWage = scaleByInflation(WORKER_CONFIG[c].wage, state);
-          const scaledRevenue = scaleByInflation(WORKER_CONFIG[c].revenue, state);
           const throughputBonus = TRADE_THROUGHPUT_CONFIG[c];
 
           return (
@@ -100,11 +102,11 @@ export function EmployeesScreen() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-stone-600">
-                  Koszt: {formatMoney(scaledWage, state)} | Baza: {formatMoney(scaledRevenue, state)} | Handel: +{throughputBonus} szt./kw.
+                <div className="text-xs text-stone-700 font-medium mt-0.5">
+                  Pensja: <span className="font-mono">{formatMoney(scaledWage, state)}</span> / kw. · Handel: <b>+{throughputBonus} szt./kw.</b> · Produkcja/Usługi: <b>+1 etat</b>
                 </div>
-                <div className={`text-xs font-semibold mt-1 ${nextWorkerEff < 50 ? 'text-red-600' : 'text-green-700'}`}>
-                  Wydajność kolejnego: {nextWorkerEff}%
+                <div className="text-[11px] text-stone-500 mt-1">
+                  {CONTRACT_PERKS[c]}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">

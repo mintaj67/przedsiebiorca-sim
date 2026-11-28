@@ -694,6 +694,7 @@ export interface GameState {
   company: Company;
   politics: PoliticsState;
   pendingEvents: GameEvent[];
+  lastEventTurn?: number | null;
   currentActivities: string[];
   history: string[];
   bankruptWarningTurns: number;

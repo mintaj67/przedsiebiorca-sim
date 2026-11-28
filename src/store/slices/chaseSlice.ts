@@ -1,20 +1,27 @@
 import type { StateCreator } from 'zustand';
-import { movePlayer, dismissChase as dismissChaseEngine } from '../../engine/chase';
+import {
+  finishChase as finishChaseEngine,
+  dismissChase as dismissChaseEngine,
+} from '../../engine/chase';
 import { autosave } from '../autosave';
 
 export interface ChaseSlice {
-  chaseMove: (dx: number, dy: number) => void;
+  chaseFinish: (result: 'escaped' | 'caught') => void;
   dismissChase: () => void;
 }
 
 export const createChaseSlice: StateCreator<any, [], [], ChaseSlice> = (set, get) => ({
-  chaseMove: (dx, dy) => {
+  chaseFinish: (result) => {
     const s = get().state;
-    if (!s || !s.activeChase) return;
+    if (!s || !s.activeChase || s.activeChase.finished) return;
     const next = structuredClone(s);
-    movePlayer(next, dx, dy);
+    finishChaseEngine(next, result);
     set({ state: next, savesVersion: Date.now() });
-    autosave(next, get().currentSlotId);
+    try {
+      autosave(next, get().currentSlotId);
+    } catch (err) {
+      console.error('[autosave] zapis nie powiódł się:', err);
+    }
   },
   dismissChase: () => {
     const s = get().state;
@@ -22,6 +29,10 @@ export const createChaseSlice: StateCreator<any, [], [], ChaseSlice> = (set, get
     const next = structuredClone(s);
     dismissChaseEngine(next);
     set({ state: next, savesVersion: Date.now() });
-    autosave(next, get().currentSlotId);
+    try {
+      autosave(next, get().currentSlotId);
+    } catch (err) {
+      console.error('[autosave] zapis nie powiódł się:', err);
+    }
   },
 });
