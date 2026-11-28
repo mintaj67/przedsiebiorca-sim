@@ -131,10 +131,6 @@ function shuffleWithRng<T>(items: T[], rng: ReturnType<typeof makeRng>): T[] {
   return copy;
 }
 
-/**
- * Wylicza bieżące czynniki wpływające na jedną orientacyjną kwotę zbytu produkcji:
- * popyt (rozwój, bezrobocie, koniunktura kwartalna), reputacja ogólna, reputacja w branży oraz inflacja.
- */
 export function getProductionMarketFactors(state: GameState): ProductionMarketFactors {
   const prodActId = getProductionActivityId(state);
   const rng = makeRng(`${state.seed}:prod-demand:${prodActId}`, state.turn * 17 + 5);
@@ -177,7 +173,6 @@ export function getProductionMarketFactors(state: GameState): ProductionMarketFa
   };
 }
 
-/** Wycenia pełny katalog składników z JSON (uwzględnia reputację branżową oraz rabat sojuszniczy). */
 function evaluateAllCatalogIngredients(state: GameState): EvaluatedIngredient[] {
   const ingredients = productionData.ingredients ?? [];
   const factors = getProductionMarketFactors(state);
@@ -216,7 +211,6 @@ function evaluateAllCatalogIngredients(state: GameState): EvaluatedIngredient[] 
   });
 }
 
-/** Zwraca wylosowaną na bieżącą turę pulę składników z katalogu + ofertę od aktywnej firmy (nie w stanie wojny). */
 export function getProductionIngredients(state: GameState): EvaluatedIngredient[] {
   const allCatalog = evaluateAllCatalogIngredients(state);
   const factors = getProductionMarketFactors(state);
@@ -256,7 +250,6 @@ export function getProductionIngredients(state: GameState): EvaluatedIngredient[
       for (const fId of a.allies ?? []) friendsOfAllies.add(fId);
     }
 
-    // Jeśli gracz ma sojuszników, mają większą szansę wystawić korzystną nadwyżkę
     const preferredPool =
       allies.length > 0 && compRng.next() < 0.55 ? allies : eligibleComps;
     const comp: Competitor | undefined = compRng.pick([...preferredPool]);
@@ -312,7 +305,6 @@ export function getProductionIngredients(state: GameState): EvaluatedIngredient[
   return list;
 }
 
-/** Zwraca katalog narzędzi produkcyjnych (kupowanych na stałe) z cenami i statusem wymagań. */
 export function getProductionTools(state: GameState): EvaluatedTool[] {
   const tools = productionData.tools ?? [];
   const ownedIds = getOwnedToolIds(state);
@@ -344,7 +336,6 @@ export function getProductionTools(state: GameState): EvaluatedTool[] {
   });
 }
 
-/** Wylicza podgląd partii (liczba sztuk, koszt, jakość i orientacyjna kwota za sztukę). */
 export function estimateProductionBatch(
   state: GameState,
   ingredientId: string,
@@ -393,7 +384,6 @@ export function estimateProductionBatch(
   };
 }
 
-/** Wycenia gotowy wyrób składowany w magazynie (`prod_*`) do zbytu lub samodzielnego handlu. */
 export function estimateStoredProducedItem(
   state: GameState,
   resId: string
@@ -433,7 +423,8 @@ export function estimateStoredProducedItem(
 
   const accuracy = state.company.reputation.dokladnoscPrzewidywan ?? 50;
   const unitRange = getRevenueRange(estimatedUnitPrice, accuracy);
-  const retailBaseUnitPrice = Math.max(10, Math.round(estimatedUnitPrice * 0.65));
+  // Bez mnożnika x2–x4 w handlu: baza do SellScreen to 100% wartości rynkowej wyrobu
+  const retailBaseUnitPrice = estimatedUnitPrice;
 
   return {
     resId,

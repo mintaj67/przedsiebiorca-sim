@@ -7,6 +7,8 @@ import type {
   NewsItem,
   TradeSupplier,
   TradeBuyer,
+  TradeProductOffer,
+  TradeSpecialCategory,
   InstallmentOption,
   ServiceDefinition,
   TurnActionEntry,
@@ -50,7 +52,13 @@ import {
   estimateProductionBatch,
   estimateStoredProducedItem,
 } from './productionHelper';
-import { getRevenueRange } from './tradeHelper';
+import {
+  getRevenueRange,
+  getRemainingTradeBuyLimit,
+  getRemainingTradeSellLimit,
+  getRemainingOfferStock,
+  estimateStoredTradeItem,
+} from './tradeHelper';
 import {
   getTotalServiceWorkerSlots,
   getBusyServiceWorkers,
@@ -159,7 +167,6 @@ export function applyHire(state: GameState, contract: ContractType, delta: numbe
   if (delta < 0) {
     const fireWant = Math.abs(delta);
 
-    // Najpierw możemy anulować zakontraktowanych jeszcze nieobecnych w załodze
     if (current === 0 && pendingForContract > 0) {
       const s = captureUndoSnapshot(state);
       let leftToCancel = Math.min(fireWant, pendingForContract);
@@ -194,6 +201,7 @@ export function applyHire(state: GameState, contract: ContractType, delta: numbe
       const severance = scaleByInflation(fired * WORKER_CONFIG.uop.severance, s);
       if (s.company.finances.stanKonta < severance) return state;
       s.company.finances.stanKonta -= severance;
+      s.company.finances.wydatki.pracownicy += severance;
     } else {
       s.company.reputation.opiniaPracownicy = Math.max(
         0,
@@ -269,13 +277,11 @@ export function applyChangeActivity(state: GameState, activityOrList: string | s
   const delta = s.company.reputation.branza - oldBranza;
   s.company.reputation.opiniaBranza = clamp(s.company.reputation.opiniaBranza + delta * 0.3);
 
-  // Samowolna zmiana branży pod kontrolą spółki-matki irytuje centralę
   const parentInfo = getPlayerParentInfo(s);
   if (parentInfo?.isControlling) {
     s.company.parentDispleasure = clamp((s.company.parentDispleasure ?? 0) + 20);
   }
 
-  // Stały świat: nie resetujemy ligi — dociągamy tylko z rezerwy, jeśli w nowej branży jest < 3 firm
   ensureBranchCompetitors(s, true);
   s.company.reputation = recomputeReputation(s);
 
@@ -344,6 +350,7 @@ export function applyEmergencyLoan(state: GameState): GameState {
     quartersLeft: BANKRUPT_EMERGENCY_LOAN.quartersLeft,
   });
   s.company.finances.stanKonta += amount;
+  s.company.finances.wplywy.srodkiZKredytow += amount;
   s.bankruptWarningTurns = 0;
 
   recordTurnAction(s, {
@@ -356,7 +363,6 @@ export function applyEmergencyLoan(state: GameState): GameState {
   return s;
 }
 
-/** Tempo gry jest na sztywno ustawione na kwartalne ('quarter'). */
 export function applySetPace(state: GameState, _pace: Pace): GameState {
   if (state.pace === 'quarter') return state;
   const s = structuredClone(state);
@@ -370,6 +376,7 @@ export function buyOfficeItem(state: GameState, itemId: string, price: number): 
 
   const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= price;
+  s.company.finances.wydatki.zakupy += price;
   s.company.inventory.push(itemId);
   s.company.reputation = recomputeReputation(s);
 
@@ -395,7 +402,13 @@ export function applyEffects(state: GameState, e: EventEffects) {
     }
   }
   if (e.stanKonta) {
-    state.company.finances.stanKonta += scaleByInflation(e.stanKonta, state);
+    const scaled = scaleByInflation(e.stanKonta, state);
+    state.company.finances.stanKonta += scaled;
+    if (scaled > 0 && !e.wplywy) {
+      state.company.finances.wplywy.dofinansowania += scaled;
+    } else if (scaled < 0 && !e.wydatki) {
+      state.company.finances.wydatki.wydatkiNieplanowane += Math.abs(scaled);
+    }
   }
   if (e.wplywy) {
     for (const [k, v] of Object.entries(e.wplywy)) {
@@ -437,7 +450,6 @@ export function applyEffects(state: GameState, e: EventEffects) {
     state.company.inventory.push(e.addItem);
   }
 
-  // --- Efekty dyplomacji, wojen i spółki-matki ---
   if (typeof e.parentDispleasureDelta === 'number') {
     state.company.parentDispleasure = clamp(
       (state.company.parentDispleasure ?? 0) + e.parentDispleasureDelta
@@ -491,7 +503,7 @@ export function toggleAccountant(state: GameState): GameState {
   recordTurnAction(s, {
     icon: '🧮',
     category: 'Pracownicy',
-    text: s.company.hasAccountant ? 'Zatrudniono księgową.' : 'Zwolniono księgową.',
+    text: s.company.hasAccountant ? 'Zatrudniono Panią Grażynę (księgową).' : 'Zwolniono Panią Grażynę (księgową).',
     target: 'employees',
   });
 
@@ -528,6 +540,7 @@ export function changeCompanySize(state: GameState, direction: 'up' | 'down'): G
   if (direction === 'up') {
     const expansionCost = scaleByInflation(config.cost, s);
     s.company.finances.stanKonta -= expansionCost;
+    s.company.finances.wydatki.inne += expansionCost;
     s.company.reputation.opiniaPubliczna += config.repBonus;
     s.company.reputation.opiniaPracownicy += config.repBonus;
     s.company.reputation.opiniaBranza += config.repBonus;
@@ -561,6 +574,7 @@ export function buildBranch(state: GameState): GameState {
 
   const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= cost;
+  s.company.finances.wydatki.inne += cost;
   s.company.branches += 1;
   s.company.reputation.opiniaBranza += 5;
   s.company.reputation = recomputeReputation(s);
@@ -589,6 +603,7 @@ export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): Game
 
   const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= cost;
+  s.company.finances.wydatki.inne += cost;
   s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna + repGain);
   s.company.reputation.opiniaMedia = clamp(s.company.reputation.opiniaMedia + mediaGain);
   s.company.reputation = recomputeReputation(s);
@@ -597,7 +612,7 @@ export function buyAd(state: GameState, type: 'radio' | 'tv' | 'internet'): Game
     icon: '📣',
     category: 'Marketing',
     text: `Wykupiono: ${AD_LABELS[type]} za ${formatMoney(cost, s)}.`,
-    target: 'changeActivity',
+    target: 'marketing',
   });
 
   return s;
@@ -609,6 +624,7 @@ export function rentWarehouse(state: GameState): GameState {
 
   const s = captureUndoSnapshot(state);
   s.company.finances.stanKonta -= cost;
+  s.company.finances.wydatki.czynsz += cost;
   s.company.warehouseCapacity += 50;
 
   const activeCats = getCategoryIdsForActivities(getCompanyActivities(s.company));
@@ -625,23 +641,28 @@ export function rentWarehouse(state: GameState): GameState {
 export function buyGoods(
   state: GameState,
   supplier: TradeSupplier,
+  offer: TradeProductOffer,
   amount: number,
   installments: InstallmentOption = 1
 ): GameState {
   if (amount <= 0) return state;
+  if (amount > getRemainingTradeBuyLimit(state)) return state;
+
+  const remainingOfferStock = getRemainingOfferStock(state, offer);
+  if (remainingOfferStock !== null && amount > remainingOfferStock) return state;
 
   const currentStock = Object.values(state.company.resources).reduce((a, b) => a + b, 0);
   const capacity = state.company.warehouseCapacity || COMPANY_SIZE_CONFIG[state.company.size].warehouseCapacity;
   if (currentStock + amount > capacity) return state;
 
   let discount = 0;
-  if (amount === 10) discount = 0.10;
-  if (amount === 50 || amount === 100) discount = 0.25;
+  if (amount >= 50) discount = 0.25;
+  else if (amount >= 10) discount = 0.10;
 
   const allianceDiscount = getAllianceTradeDiscount(state);
   const totalDiscount = Math.min(0.45, discount + allianceDiscount);
 
-  const baseTotal = Math.round(supplier.price * amount * (1 - totalDiscount));
+  const baseTotal = Math.round(offer.buyPrice * amount * (1 - totalDiscount));
   const finalPrice = calculateInstallmentPrice(baseTotal, installments);
 
   if (installments <= 1 && state.company.finances.stanKonta < finalPrice) {
@@ -664,13 +685,20 @@ export function buyGoods(
     });
   }
 
-  const resId = `${supplier.id}_${supplier.quality}`;
+  const resId = `item__${offer.productId}__q${offer.quality}`;
   s.company.resources[resId] = (s.company.resources[resId] || 0) + amount;
+  s.tradeBoughtThisTurn = (s.tradeBoughtThisTurn ?? 0) + amount;
+
+  if (offer.availableStock !== null) {
+    if (!s.tradeOfferPurchasedThisTurn) s.tradeOfferPurchasedThisTurn = {};
+    s.tradeOfferPurchasedThisTurn[offer.offerKey] =
+      (s.tradeOfferPurchasedThisTurn[offer.offerKey] ?? 0) + amount;
+  }
 
   recordTurnAction(s, {
     icon: '🛒',
     category: 'Handel',
-    text: `Kupiono ${amount} szt. (${supplier.name}) za ${formatMoney(finalPrice, s)}${allianceDiscount > 0 ? ` (rabat sojuszniczy -${Math.round(allianceDiscount * 100)}%)` : ''}${installments > 1 ? ` w ${installments} ratach` : ''}.`,
+    text: `Kupiono ${amount} szt. "${offer.name}" (${supplier.name}) za ${formatMoney(finalPrice, s)}${allianceDiscount > 0 ? ` (rabat sojuszniczy -${Math.round(allianceDiscount * 100)}%)` : ''}${installments > 1 ? ` w ${installments} ratach` : ''}.`,
     target: 'buy',
   });
 
@@ -682,16 +710,33 @@ export function sellGoods(
   buyer: TradeBuyer,
   resId: string,
   amount: number,
-  unitPrice: number,
-  installments: InstallmentOption = 1
+  offeredUnitPrice: number,
+  installments: InstallmentOption = 1,
+  productName?: string,
+  specialCategory?: TradeSpecialCategory | null
 ): GameState {
   if (amount <= 0) return state;
+  if (amount > getRemainingTradeSellLimit(state)) return state;
 
   const available = state.company.resources[resId] || 0;
   if (available < amount) return state;
 
-  const parts = resId.split('_');
-  const quality = parseInt(parts[parts.length - 1], 10) || 1;
+  let quality = 1;
+  let resolvedName = productName ?? 'Towar';
+  let resolvedSpecial: TradeSpecialCategory | null = specialCategory ?? null;
+
+  if (resId.startsWith('prod_')) {
+    const prodInfo = estimateStoredProducedItem(state, resId);
+    quality = prodInfo.quality;
+    resolvedName = productName ?? prodInfo.label;
+  } else {
+    const tradeInfo = estimateStoredTradeItem(state, resId);
+    quality = tradeInfo.quality;
+    resolvedName = productName ?? tradeInfo.name;
+    if (specialCategory === undefined) {
+      resolvedSpecial = tradeInfo.specialCategory;
+    }
+  }
 
   if (buyer.req?.minQuality && quality < buyer.req.minQuality) {
     return state;
@@ -703,8 +748,9 @@ export function sellGoods(
   if (s.company.resources[resId] <= 0) {
     delete s.company.resources[resId];
   }
+  s.tradeSoldThisTurn = (s.tradeSoldThisTurn ?? 0) + amount;
 
-  const baseEstimated = Math.round(unitPrice * buyer.multiplier * amount);
+  const baseEstimated = Math.round(offeredUnitPrice * amount);
   const estimatedRevenue = calculateInstallmentPrice(baseEstimated, installments);
   const accuracy = s.company.reputation.dokladnoscPrzewidywan ?? 50;
   const { min, max } = getRevenueRange(estimatedRevenue, accuracy);
@@ -713,6 +759,8 @@ export function sellGoods(
     id: `sale_${s.turn}_${s.pendingSales.length}`,
     buyerName: buyer.name,
     resId,
+    productName: resolvedName,
+    specialCategory: resolvedSpecial,
     amount,
     estimatedRevenue,
     minRevenue: min,
@@ -725,7 +773,7 @@ export function sellGoods(
   recordTurnAction(s, {
     icon: '📦',
     category: 'Sprzedaż',
-    text: `Wysłano ${amount} szt. do ${buyer.name} (orientacyjnie: ${formatMoneyRange(min, max, s)}${installments > 1 ? ` w ${installments} ratach` : ''}).`,
+    text: `Wysłano ${amount} szt. "${resolvedName}" do ${buyer.name} (orientacyjnie: ${formatMoneyRange(min, max, s)}${installments > 1 ? ` w ${installments} ratach` : ''}).`,
     target: 'sell',
   });
 
@@ -737,6 +785,7 @@ export function resolvePendingSales(state: GameState): void {
 
   const rng = makeRng(state.seed, state.turn * 13 + 9);
   let totalRevenueThisTurn = 0;
+  let prestigeRepGain = 0;
   const lines: string[] = [];
 
   for (let i = 0; i < state.pendingSales.length; i++) {
@@ -748,13 +797,19 @@ export function resolvePendingSales(state: GameState): void {
 
     const finalRevenue = Math.round(minRev + rng.next() * (maxRev - minRev));
     const installments = sale.installments || 1;
+    const itemLabel = sale.productName ? `„${sale.productName}” ` : '';
+    const whiteRavenBonus = sale.specialCategory === 'bialy_kruk' ? ' (+2 rep. w branży za białego kruka!)' : '';
+
+    if (sale.specialCategory === 'bialy_kruk') {
+      prestigeRepGain += 2;
+    }
 
     if (installments <= 1) {
       totalRevenueThisTurn += finalRevenue;
       state.company.finances.stanKonta += finalRevenue;
       state.company.finances.wplywy.przychodyZDzialalnosci += finalRevenue;
       lines.push(
-        `• ${sale.buyerName}: ${sale.amount} szt. (jakość ${sale.quality}) → ostateczny utarg: ${formatMoney(finalRevenue, state)} (szacowano ${formatMoneyRange(minRev, maxRev, state)}).`
+        `• ${sale.buyerName}: ${sale.amount} szt. ${itemLabel}(jakość ${sale.quality}/10) → ostateczny utarg: ${formatMoney(finalRevenue, state)} (szacowano ${formatMoneyRange(minRev, maxRev, state)}).${whiteRavenBonus}`
       );
     } else {
       const quarterlyPayment = Math.round(finalRevenue / installments);
@@ -762,7 +817,7 @@ export function resolvePendingSales(state: GameState): void {
       state.company.finances.stanKonta += quarterlyPayment;
       state.company.finances.wplywy.przychodyZDzialalnosci += quarterlyPayment;
       lines.push(
-        `• ${sale.buyerName}: ${sale.amount} szt. (jakość ${sale.quality}) → rata 1/${installments}: +${formatMoney(quarterlyPayment, state)} (ostateczna wartość kontraktu: ${formatMoney(finalRevenue, state)}).`
+        `• ${sale.buyerName}: ${sale.amount} szt. ${itemLabel}(jakość ${sale.quality}/10) → rata 1/${installments}: +${formatMoney(quarterlyPayment, state)} (ostateczna wartość kontraktu: ${formatMoney(finalRevenue, state)}).${whiteRavenBonus}`
       );
     }
 
@@ -771,12 +826,17 @@ export function resolvePendingSales(state: GameState): void {
       if (rng.next() < chance) {
         state.pendingComplaints.push({
           id: `comp_${state.turn}_${i}_${state.pendingComplaints.length}`,
-          itemName: sale.resId.split('_')[0],
+          itemName: sale.productName ?? sale.resId.split('_')[0],
           buyerName: sale.buyerName,
           penalty: 10 - sale.quality,
         });
       }
     }
+  }
+
+  if (prestigeRepGain > 0) {
+    state.company.reputation.opiniaBranza = clamp(state.company.reputation.opiniaBranza + prestigeRepGain);
+    state.company.reputation = recomputeReputation(state);
   }
 
   if (totalRevenueThisTurn > 0 || state.pendingComplaints.length > 0) {
@@ -804,7 +864,9 @@ export function resolveComplaint(state: GameState, id: string, accept: boolean):
   const s = captureUndoSnapshot(state);
 
   if (accept) {
-    s.company.finances.stanKonta -= scaleByInflation(5000, s);
+    const cost = scaleByInflation(5000, s);
+    s.company.finances.stanKonta -= cost;
+    s.company.finances.wydatki.kary += cost;
     s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna + 2);
   } else {
     s.company.reputation.opiniaPubliczna = clamp(s.company.reputation.opiniaPubliczna - comp.penalty);
@@ -901,6 +963,7 @@ export function runProductionBatch(
       id: `prod_sale_${s.turn}_${s.pendingSales.length}`,
       buyerName: 'Zbyt produkcji',
       resId,
+      productName: estimate.ingredient.name,
       amount: clampedSellNow,
       estimatedRevenue,
       minRevenue: min,
@@ -951,6 +1014,7 @@ export function sellProducedStock(state: GameState, resId: string, amount: numbe
     id: `prod_stock_sale_${s.turn}_${s.pendingSales.length}`,
     buyerName: 'Zbyt produkcji (magazyn)',
     resId,
+    productName: info.label,
     amount: safeAmount,
     estimatedRevenue,
     minRevenue: min,
@@ -985,8 +1049,8 @@ export function buyRawMaterials(
   if (currentStock + amount > capacity) return state;
 
   let discount = 0;
-  if (amount === 10) discount = 0.10;
-  if (amount === 50 || amount === 100) discount = 0.25;
+  if (amount >= 50) discount = 0.25;
+  else if (amount >= 10) discount = 0.10;
 
   const allianceDiscount = getAllianceTradeDiscount(state);
   const totalDiscount = Math.min(0.45, discount + allianceDiscount);

@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { StatisticsScreen } from './screens/StatisticsScreen';
 import { PartyScreen } from './screens/PartyScreen';
-import { ActivityScreen } from './screens/ActivityScreen';
+import { MarketingScreen } from './screens/MarketingScreen';
 import { EventScreen } from './screens/EventScreen';
 import { ConsequenceScreen } from './screens/ConsequenceScreen';
 import { ElectionScreen } from './screens/ElectionScreen';
@@ -45,10 +45,10 @@ type ManagementTab =
   | 'sell'
   | 'production'
   | 'services'
+  | 'marketing'
   | 'party'
   | 'employees'
   | 'office'
-  | 'activity'
   | 'statistics'
   | 'mafiaActivity';
 type GlobalTab = 'rankings' | 'globalNews' | 'achievements' | 'stats';
@@ -61,11 +61,12 @@ const TARGET_LABELS: Record<TurnActionTarget, string> = {
   sell: 'Sprzedawaj',
   production: 'Produkcja',
   services: 'Usługi',
+  marketing: 'Marketing',
   party: 'Polityka',
   competition: 'Rankingi',
   employees: 'Pracownicy',
   office: 'Biuro',
-  activity: 'Aktywności',
+  activity: 'Marketing',
   statistics: 'Statystyki',
   mafiaActivity: 'Mafia',
   rankings: 'Rankingi',
@@ -120,7 +121,13 @@ export function Dashboard() {
   if (state.pendingWarResolution) return <WarVictoryModal />;
 
   const party = partyLabel(state.ceo.currentPartyId);
-  const chosenActivityLabel = state.chosenActivityThisTurn ?? 'brak';
+  const totalWorkers =
+    state.company.employees.bezUmowy +
+    state.company.employees.zlecenie +
+    state.company.employees.uop;
+  const staffSummary = state.company.hasAccountant
+    ? `${totalWorkers} os. + księgowa`
+    : `${totalWorkers} os.`;
 
   const inboxItems = state.news.filter(isCompanyInboxItem);
   const unreadInboxCount = inboxItems.filter(
@@ -178,6 +185,10 @@ export function Dashboard() {
     }
 
     setMainTab('management');
+    if (target === 'activity') {
+      setMgmtTab('marketing');
+      return;
+    }
     if ((target === 'buy' || target === 'sell') && !hasTrade) {
       setMgmtTab('changeActivity');
       return;
@@ -278,7 +289,7 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Rozwijany pasek aktywności w bieżącej rundzie + Cofnij ruch */}
+      {/* Rozwijany dziennik rundy + Cofnij ruch */}
       <div className="w-full bg-emerald-50 border border-emerald-300 text-emerald-950 rounded-lg mb-3 shadow-sm overflow-hidden">
         <div className="w-full px-3 py-2.5 flex flex-wrap items-center justify-between gap-2">
           <button
@@ -291,16 +302,7 @@ export function Dashboard() {
               Dziennik rundy
             </span>
             <span className="text-[11px] font-bold bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded-full shrink-0">
-              Aktywności: {turnActions.length}
-            </span>
-            <span
-              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                state.chosenActivityThisTurn
-                  ? 'bg-emerald-700 text-white'
-                  : 'bg-white border border-emerald-300 text-emerald-800'
-              }`}
-            >
-              Aktywność kwartalna: {state.chosenActivityThisTurn ? '1/1' : '0/1'}
+              Ruchy: {turnActions.length}
             </span>
             {latestAction && !turnBarExpanded && (
               <span className="hidden md:inline text-xs text-emerald-900/80 truncate ml-1">
@@ -346,10 +348,10 @@ export function Dashboard() {
                 <span>W tej rundzie nie wykonano jeszcze żadnych działań.</span>
                 <button
                   type="button"
-                  onClick={() => navigateToTarget('activity')}
+                  onClick={() => navigateToTarget('changeActivity')}
                   className="self-start sm:self-auto px-2.5 py-1 bg-stone-900 text-white rounded text-xs font-semibold hover:bg-stone-800"
                 >
-                  Przejdź do Aktywności →
+                  Przejdź do Działalności →
                 </button>
               </div>
             ) : (
@@ -395,11 +397,6 @@ export function Dashboard() {
             {/* Szybkie skróty do głównych ekranów rundy */}
             <div className="mt-2.5 pt-2 border-t border-emerald-100 flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] text-stone-500 font-semibold mr-1">Szybki skok:</span>
-              {!state.chosenActivityThisTurn && (
-                <QuickJumpButton onClick={() => navigateToTarget('activity')}>
-                  ⚡ Aktywności (0/1)
-                </QuickJumpButton>
-              )}
               {hasProduction && (
                 <QuickJumpButton onClick={() => navigateToTarget('production')}>
                   🏭 Produkcja
@@ -420,6 +417,9 @@ export function Dashboard() {
                   🛎️ Usługi
                 </QuickJumpButton>
               )}
+              <QuickJumpButton onClick={() => navigateToTarget('marketing')}>
+                📣 Marketing
+              </QuickJumpButton>
               <QuickJumpButton onClick={() => navigateToTarget('employees')}>
                 👥 Pracownicy
               </QuickJumpButton>
@@ -471,10 +471,10 @@ export function Dashboard() {
             </SubNavButton>
           )}
 
+          <SubNavButton active={mgmtTab === 'marketing'} onClick={() => setMgmtTab('marketing')}>Marketing</SubNavButton>
           <SubNavButton active={mgmtTab === 'party'} onClick={() => setMgmtTab('party')}>Polityka</SubNavButton>
           <SubNavButton active={mgmtTab === 'employees'} onClick={() => setMgmtTab('employees')}>Pracownicy</SubNavButton>
           <SubNavButton active={mgmtTab === 'office'} onClick={() => setMgmtTab('office')}>Biuro</SubNavButton>
-          <SubNavButton active={mgmtTab === 'activity'} onClick={() => setMgmtTab('activity')}>Aktywności</SubNavButton>
           <SubNavButton active={mgmtTab === 'statistics'} onClick={() => setMgmtTab('statistics')}>Statystyki</SubNavButton>
 
           {state.ceo.inMafia && (
@@ -534,7 +534,7 @@ export function Dashboard() {
             />
             <div className="flex flex-col md:flex-row gap-3 items-stretch mt-2">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-                <InfoCard label="Aktywność w tej turze" value={chosenActivityLabel} muted={!state.chosenActivityThisTurn} />
+                <InfoCard label="Załoga" value={staffSummary} muted={totalWorkers === 0 && !state.company.hasAccountant} />
                 <InfoCard label="Partia" value={party} />
                 <InfoCard label="Mafia" value={state.ceo.inMafia ? 'Członek' : 'Brak'} muted={!state.ceo.inMafia} />
               </div>
@@ -582,10 +582,10 @@ export function Dashboard() {
               />
             )}
             {mgmtTab === 'services' && hasServices && <ServicesScreen />}
+            {mgmtTab === 'marketing' && <MarketingScreen />}
             {mgmtTab === 'party' && <PartyScreen />}
             {mgmtTab === 'employees' && <EmployeesScreen />}
             {mgmtTab === 'office' && <OfficeScreen />}
-            {mgmtTab === 'activity' && <ActivityScreen />}
             {mgmtTab === 'statistics' && <StatisticsScreen />}
             {mgmtTab === 'mafiaActivity' && <MafiaActivityScreen />}
           </>

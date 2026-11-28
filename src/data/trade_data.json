@@ -1,20 +1,199 @@
 {
   "odziez": {
     "suppliers": [
-      { "id": "azjata", "name": "Podejrzany Azjata", "quality": 1, "price": 50, "desc": "Oferuje ubrania bez metek z podejrzanej walizki.", "req": {} },
-      { "id": "spod_bramy", "name": "Podejrzany mężczyzna spod bramy", "quality": 2, "price": 100, "desc": "Twierdzi, że to 'oryginały z transportu'.", "req": {} },
-      { "id": "firma_polonijna", "name": "Firma Polonijna", "quality": 4, "price": 300, "desc": "Sprowadzane z Chicago ubrania z drugiej ręki.", "req": {} },
-      { "id": "marynarze", "name": "Marynarze", "quality": 5, "price": 500, "desc": "Przemyt z Tajwanu. Podobno nie przemokło.", "req": {} },
-      { "id": "lumpeks", "name": "Lumpeks z Niemiec", "quality": 7, "price": 1000, "desc": "Sortowany towar z zachodnich kontenerów.", "req": {} },
-      { "id": "importer", "name": "Importer z zagranicy", "quality": 9, "price": 3000, "desc": "Legalny towar, wysokiej jakości podróbki znanych marek.", "req": { "minRepBranza": 50 } },
-      { "id": "mafia", "name": "Mafia", "quality": 6, "price": 200, "desc": "Towar z 'wpadki'. Nie zadawaj pytań.", "req": { "minRepMafia": 31 } }
+      {
+        "id": "azjata",
+        "name": "Podejrzany Azjata",
+        "quality": 1,
+        "qualityDesc": "Bazarowa tandeta bez metek",
+        "priceBias": 0.86,
+        "desc": "Oferuje ubrania bez metek z podejrzanej walizki.",
+        "req": {}
+      },
+      {
+        "id": "spod_bramy",
+        "name": "Podejrzany mężczyzna spod bramy",
+        "quality": 2,
+        "qualityDesc": "Bardzo niska, wątpliwe pochodzenie",
+        "priceBias": 0.89,
+        "desc": "Twierdzi, że to 'oryginały z transportu'.",
+        "req": {}
+      },
+      {
+        "id": "firma_polonijna",
+        "name": "Firma Polonijna",
+        "quality": 4,
+        "qualityDesc": "Przyzwoity towar z drugiej ręki",
+        "priceBias": 0.94,
+        "desc": "Sprowadzane z Chicago ubrania z drugiej ręki.",
+        "req": {}
+      },
+      {
+        "id": "marynarze",
+        "name": "Marynarze",
+        "quality": 5,
+        "qualityDesc": "Nierówna, typowy import portowy",
+        "priceBias": 0.96,
+        "desc": "Przemyt z Tajwanu. Podobno nie przemokło.",
+        "req": {}
+      },
+      {
+        "id": "lumpeks",
+        "name": "Lumpeks z Niemiec",
+        "quality": 7,
+        "qualityDesc": "Solidna, sortowana jakość z Zachodu",
+        "priceBias": 1.0,
+        "desc": "Sortowany towar z zachodnich kontenerów.",
+        "req": {}
+      },
+      {
+        "id": "importer",
+        "name": "Importer z zagranicy",
+        "quality": 9,
+        "qualityDesc": "Najwyższa półka, towar pierwszorzędny",
+        "priceBias": 1.06,
+        "desc": "Legalny towar, wysokiej jakości podróbki znanych marek.",
+        "req": { "minRepBranza": 50 }
+      },
+      {
+        "id": "mafia",
+        "name": "Mafia",
+        "quality": 6,
+        "qualityDesc": "Zaskakująco dobra, towar z 'wpadki'",
+        "priceBias": 0.84,
+        "desc": "Towar z 'wpadki'. Nie zadawaj pytań.",
+        "req": { "minRepMafia": 31 }
+      }
     ],
     "buyers": [
-      { "id": "podejrzani", "name": "Podejrzani handlarze bazarowi", "multiplier": 1.5, "desc": "Kupią wszystko, byle tanio.", "req": {}, "complaints": false },
-      { "id": "przecietni", "name": "Przeciętni handlarze bazarowi", "multiplier": 2.0, "desc": "Wymagają, żeby towar jakoś wyglądał.", "req": {}, "complaints": true },
-      { "id": "obrotni", "name": "Obrótni handlarze bazarowi", "multiplier": 2.5, "desc": "Odbiorą każdą ilość, jeśli cena jest dobra.", "req": {}, "complaints": true },
-      { "id": "sklepy_odziezowe", "name": "Sklepy odzieżowe", "multiplier": 3.5, "desc": "Płacą najwięcej, ale nienawidzą podróbek.", "req": { "minRepPubliczna": 40 }, "complaints": true },
-      { "id": "sklepy_uzywane", "name": "Sklepy z używaną odzieżą", "multiplier": 1.8, "desc": "Skupują hurtowo.", "req": {}, "complaints": false }
+      {
+        "id": "podejrzani",
+        "name": "Podejrzani handlarze bazarowi",
+        "priceBias": 0.88,
+        "priceTierDesc": "Płacą skromnie",
+        "minQualityDesc": "Biorą wszystko jak leci",
+        "desc": "Kupią wszystko, byle tanio.",
+        "req": { "minQuality": 1 },
+        "complaints": false
+      },
+      {
+        "id": "przecietni",
+        "name": "Przeciętni handlarze bazarowi",
+        "priceBias": 0.98,
+        "priceTierDesc": "Płacą przeciętnie",
+        "minQualityDesc": "Oczekują podstawowej jakości",
+        "desc": "Wymagają, żeby towar jakoś wyglądał.",
+        "req": { "minQuality": 3 },
+        "complaints": true
+      },
+      {
+        "id": "obrotni",
+        "name": "Obrótni handlarze bazarowi",
+        "priceBias": 1.09,
+        "priceTierDesc": "Płacą uczciwie",
+        "minQualityDesc": "Wymagają solidnego towaru",
+        "desc": "Odbiorą każdą ilość, jeśli cena jest dobra.",
+        "req": { "minQuality": 4 },
+        "complaints": true
+      },
+      {
+        "id": "sklepy_odziezowe",
+        "name": "Sklepy odzieżowe",
+        "priceBias": 1.22,
+        "priceTierDesc": "Płacą bardzo dobrze",
+        "minQualityDesc": "Tylko wysoka półka",
+        "desc": "Płacą najwięcej, ale nienawidzą podróbek.",
+        "req": { "minRepPubliczna": 40, "minQuality": 6 },
+        "complaints": true
+      },
+      {
+        "id": "sklepy_uzywane",
+        "name": "Sklepy z używaną odzieżą",
+        "priceBias": 1.02,
+        "priceTierDesc": "Płacą rynkowo",
+        "minQualityDesc": "Akceptują słabszy towar",
+        "desc": "Skupują hurtowo.",
+        "req": { "minQuality": 2 },
+        "complaints": false
+      }
+    ],
+    "products": [
+      {
+        "id": "prod_placeholder_1",
+        "name": "Produkt 1 (Lorem ipsum)",
+        "desc": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        "basePrice": 80,
+        "quality": 2,
+        "seasonalDemand": [1.0, 1.35, 0.9, 0.7],
+        "supplierIds": ["azjata", "spod_bramy", "marynarze"]
+      },
+      {
+        "id": "prod_placeholder_2",
+        "name": "Produkt 2 (Lorem ipsum)",
+        "desc": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        "basePrice": 140,
+        "quality": 3,
+        "seasonalDemand": [0.8, 0.7, 1.15, 1.35],
+        "supplierIds": ["azjata", "spod_bramy", "firma_polonijna"]
+      },
+      {
+        "id": "prod_placeholder_3",
+        "name": "Produkt 3 (Lorem ipsum)",
+        "desc": "Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
+        "basePrice": 260,
+        "quality": 5,
+        "seasonalDemand": [1.25, 1.0, 1.1, 0.85],
+        "supplierIds": ["firma_polonijna", "marynarze", "lumpeks"]
+      },
+      {
+        "id": "prod_placeholder_4",
+        "name": "Produkt 4 — Ekskluzywny (Lorem ipsum)",
+        "desc": "Duis aute irure dolor in reprehenderit in voluptate velit esse.",
+        "basePrice": 420,
+        "quality": 6,
+        "seasonalDemand": [0.95, 1.3, 1.0, 0.8],
+        "exclusiveSupplierId": "marynarze"
+      },
+      {
+        "id": "prod_placeholder_5",
+        "name": "Produkt 5 (Lorem ipsum)",
+        "desc": "Excepteur sint occaecat cupidatat non proident, sunt in culpa.",
+        "basePrice": 620,
+        "quality": 7,
+        "seasonalDemand": [1.0, 0.85, 1.25, 1.15],
+        "supplierIds": ["lumpeks", "importer", "firma_polonijna"]
+      },
+      {
+        "id": "prod_placeholder_6",
+        "name": "Produkt 6 — Reputacja (Lorem ipsum)",
+        "desc": "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit.",
+        "basePrice": 1150,
+        "quality": 9,
+        "seasonalDemand": [1.1, 1.1, 1.05, 1.2],
+        "exclusiveSupplierId": "importer",
+        "req": { "minRepBranza": 45 }
+      },
+      {
+        "id": "prod_placeholder_7",
+        "name": "Produkt 7 — Półświatek (Lorem ipsum)",
+        "desc": "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.",
+        "basePrice": 500,
+        "quality": 7,
+        "seasonalDemand": [1.0, 1.0, 1.1, 1.15],
+        "exclusiveSupplierId": "mafia",
+        "req": { "minRepMafia": 30 }
+      },
+      {
+        "id": "prod_placeholder_8",
+        "name": "Produkt 8 — Biały kruk (Lorem ipsum)",
+        "desc": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit.",
+        "basePrice": 1800,
+        "quality": 10,
+        "seasonalDemand": [1.1, 1.15, 1.1, 1.25],
+        "supplierIds": ["lumpeks", "importer", "mafia"],
+        "alwaysSpecial": "bialy_kruk",
+        "req": { "minRepBranza": 35 }
+      }
     ]
   }
 }

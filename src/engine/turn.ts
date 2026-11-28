@@ -1,6 +1,6 @@
 import type { GameState, EventEffects, Activity, ChoiceResult } from './types';
 import { makeRng } from './rng';
-import { tickEconomy } from './economy';
+import { tickEconomy, createEmptyWplywy, createEmptyWydatki } from './economy';
 import { tickPolitics } from './politics';
 import { rollEvents, matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
@@ -97,10 +97,12 @@ export function nextTurn(state: GameState): GameState {
   s.pace = 'quarter';
   const oldPhase = s.phase;
 
-  // Zdjęcie statystyk gracza przed nową turą (do wyliczania trendów w rankingu)
+  const closingYear = s.year;
+  const closingQuarter = s.quarter;
+
   s.playerPrev = snapshotPlayer(s);
 
-  // 1. AKTUALIZACJA CZASU (przed ekonomią i eventami!)
+  // 1. AKTUALIZACJA CZASU
   s.turn += 1;
   const totalQuarters = s.year * 4 + (s.quarter - 1) + quarters;
   s.year = Math.floor(totalQuarters / 4);
@@ -130,7 +132,7 @@ export function nextTurn(state: GameState): GameState {
         year: s.year,
         quarter: s.quarter,
         headline: 'Nowi pracownicy rozpoczęli pracę',
-        body: `Do załogi dołączyli zakontraktowani wcześniej pracownicy: ${summaryParts.join(', ')}. Są już dostępni do pracy i produkcji.`,
+        body: `Do załogi dołączyli zakontraktowani wcześniej pracownicy: ${summaryParts.join(', ')}. Są już dostępni do pracy, handlu i produkcji.`,
         category: 'economy',
         read: false,
       });
@@ -142,6 +144,21 @@ export function nextTurn(state: GameState): GameState {
   resolvePendingServices(s);
   s = tickEconomy(s);
   s = tickCompetitors(s, 0);
+
+  // 2b. ARCHIWIZACJA ZAMKNIĘTEGO KWARTAŁU I RESET BIEŻĄCEJ TURY
+  if (!Array.isArray(s.company.finances.history)) {
+    s.company.finances.history = [];
+  }
+  s.company.finances.history.push({
+    turn: s.turn,
+    year: closingYear,
+    quarter: closingQuarter,
+    stanKonta: s.company.finances.stanKonta,
+    wplywy: structuredClone(s.company.finances.wplywy),
+    wydatki: structuredClone(s.company.finances.wydatki),
+  });
+  s.company.finances.wplywy = createEmptyWplywy();
+  s.company.finances.wydatki = createEmptyWydatki();
 
   // 3. POLITYKA I EVENTY
   s = tickPolitics(s);
@@ -156,11 +173,14 @@ export function nextTurn(state: GameState): GameState {
   }
   if (s.gameOver) return s;
 
-  // 4. AKTYWNOŚCI, REJESTR RUNDY I POWIADOMIENIA
+  // 4. REJESTR RUNDY, LIMITY TURY I POWIADOMIENIA
   s.currentActivities = rollActivities(s, rng);
   s.chosenActivityThisTurn = null;
   s.productionWorkersUsedThisTurn = 0;
   s.productionUsedThisTurn = 0;
+  s.tradeBoughtThisTurn = 0;
+  s.tradeSoldThisTurn = 0;
+  s.tradeOfferPurchasedThisTurn = {};
   s.turnActions = [];
   s.undoStack = [];
   s.lastTradeNotice = null;

@@ -1,17 +1,32 @@
+import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { formatMoney } from '../../engine/currency';
-import { getInflationRate, getLoanQuarterlyRate, scaleByInflation } from '../../engine/economy';
+import {
+  getInflationRate,
+  getLoanQuarterlyRate,
+  scaleByInflation,
+  getAggregatedFinances,
+  type FinancePeriod,
+} from '../../engine/economy';
 import { StatBar } from '../components/StatBar';
 import { WPLYWY_LABELS, WYDATKI_LABELS, REPUTATION_LABELS, REPUTATION_DESCRIPTIONS } from '../ui-labels';
+
+const PERIOD_TABS: { id: FinancePeriod; label: string }[] = [
+  { id: 'quarter', label: 'Kwartał' },
+  { id: 'year', label: 'Rok (4 kw.)' },
+  { id: 'all', label: 'Całokształt' },
+];
 
 export function StatisticsScreen() {
   const { state, takeLoan } = useGameStore();
   const showHidden = useSettingsStore(s => s.showHiddenStats);
+  const [period, setPeriod] = useState<FinancePeriod>('quarter');
 
   if (!state) return null;
   const f = state.company.finances;
   const r = state.company.reputation;
+  const agg = getAggregatedFinances(state, period);
 
   const inflationRate = getInflationRate(state);
   const bankRatePct = (getLoanQuarterlyRate('bank', inflationRate) * 100).toFixed(1);
@@ -38,23 +53,96 @@ export function StatisticsScreen() {
 
       {/* FINANSE */}
       <section className="mb-8">
-        <h2 className="text-xl font-bold mb-1">Finanse</h2>
-        <p className="text-2xl font-mono mb-4">{formatMoney(f.stanKonta, state)}</p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-xl font-bold mb-1">Finanse</h2>
+            <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">Bieżący stan konta</p>
+            <p className="text-2xl font-mono font-bold">{formatMoney(f.stanKonta, state)}</p>
+          </div>
+
+          <div className="flex flex-col sm:items-end gap-1.5">
+            <div className="inline-flex bg-white border border-stone-300 rounded-lg p-1 shadow-sm">
+              {PERIOD_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setPeriod(tab.id)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                    period === tab.id
+                      ? 'bg-stone-900 text-white'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-stone-500">{agg.periodLabel}</span>
+          </div>
+        </div>
+
+        {/* Podsumowanie wybranego przedziału */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-3.5">
+            <div className="text-[11px] uppercase font-semibold text-stone-500">Suma wpływów</div>
+            <div className="text-lg font-mono font-bold text-green-800">
+              {formatMoney(agg.totalWplywy, state)}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-3.5">
+            <div className="text-[11px] uppercase font-semibold text-stone-500">Suma wydatków</div>
+            <div className="text-lg font-mono font-bold text-red-800">
+              {formatMoney(agg.totalWydatki, state)}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-3.5">
+            <div className="text-[11px] uppercase font-semibold text-stone-500">Bilans okresu</div>
+            <div
+              className={`text-lg font-mono font-bold ${
+                agg.netBalance > 0
+                  ? 'text-green-700'
+                  : agg.netBalance < 0
+                    ? 'text-red-700'
+                    : 'text-stone-700'
+              }`}
+            >
+              {formatMoney(agg.netBalance, state, { signed: true })}
+            </div>
+          </div>
+        </div>
+
+        {period !== 'all' && agg.hasCurrentTurnActivity && (f.history?.length ?? 0) > 0 && (
+          <p className="text-xs text-stone-500 mb-4">
+            ℹ Operacje z trwającej tury ({state.year} Q{state.quarter}: wpływy{' '}
+            <span className="font-mono">{formatMoney(agg.currentTurnWplywy, state)}</span>, wydatki{' '}
+            <span className="font-mono">{formatMoney(agg.currentTurnWydatki, state)}</span>) trafią do raportu po zamknięciu kwartału (widoczne od razu w zakładce <b>Całokształt</b>).
+          </p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-bold mb-3 text-green-800">Wpływy</h3>
-            {Object.entries(f.wplywy).map(([k, v]) => (
-              <div key={k} className="flex justify-between text-sm border-b border-stone-100 py-1.5">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-green-800">Wpływy</h3>
+              <span className="text-xs font-mono font-bold text-green-800">
+                {formatMoney(agg.totalWplywy, state)}
+              </span>
+            </div>
+            {Object.entries(agg.wplywy).map(([k, v]) => (
+              <div key={k} className="flex justify-between text-sm border-b border-stone-100 py-1.5 last:border-b-0">
                 <span className="text-stone-700">{WPLYWY_LABELS[k] ?? k}</span>
                 <span className="font-mono">{formatMoney(v as number, state)}</span>
               </div>
             ))}
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-bold mb-3 text-red-800">Wydatki</h3>
-            {Object.entries(f.wydatki).map(([k, v]) => (
-              <div key={k} className="flex justify-between text-sm border-b border-stone-100 py-1.5">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-red-800">Wydatki</h3>
+              <span className="text-xs font-mono font-bold text-red-800">
+                {formatMoney(agg.totalWydatki, state)}
+              </span>
+            </div>
+            {Object.entries(agg.wydatki).map(([k, v]) => (
+              <div key={k} className="flex justify-between text-sm border-b border-stone-100 py-1.5 last:border-b-0">
                 <span className="text-stone-700">{WYDATKI_LABELS[k] ?? k}</span>
                 <span className="font-mono">{formatMoney(v as number, state)}</span>
               </div>
@@ -90,7 +178,9 @@ export function StatisticsScreen() {
                     ? 'Bank'
                     : loan.source === 'zakup_raty'
                       ? 'Zakup na raty'
-                      : 'Szara strefa'}
+                      : loan.source === 'sojusznik'
+                        ? 'Pożyczka od sojusznika'
+                        : 'Szara strefa'}
                   {loan.interestRate > 0 ? ` (${(loan.interestRate * 100).toFixed(1)}%/kw.)` : ''}
                 </span>
                 <span className="font-mono">

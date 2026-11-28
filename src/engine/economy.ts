@@ -22,6 +22,153 @@ const TAX_RATE = 0.15;
 export const INITIAL_INFLATION_RATE = 36;
 export const INITIAL_PRICE_INDEX = 0.25;
 
+export type FinancePeriod = 'quarter' | 'year' | 'all';
+
+export interface AggregatedFinances {
+  wplywy: Wplywy;
+  wydatki: Wydatki;
+  totalWplywy: number;
+  totalWydatki: number;
+  netBalance: number;
+  quartersCount: number;
+  periodLabel: string;
+  hasCurrentTurnActivity: boolean;
+  currentTurnWplywy: number;
+  currentTurnWydatki: number;
+}
+
+export function createEmptyWplywy(): Wplywy {
+  return {
+    przychodyZDzialalnosci: 0,
+    srodkiZKredytow: 0,
+    dofinansowania: 0,
+    dofinansowaniaSzaraStrefa: 0,
+    dochodPasywny: 0,
+    splatyZobowiazan: 0,
+  };
+}
+
+export function createEmptyWydatki(): Wydatki {
+  return {
+    splacaneKredyty: 0,
+    pracownicy: 0,
+    czynsz: 0,
+    podatki: 0,
+    kary: 0,
+    wydatkiNieplanowane: 0,
+    zakupy: 0,
+    inne: 0,
+  };
+}
+
+function addWplywy(target: Wplywy, src?: Partial<Wplywy>): void {
+  if (!src) return;
+  target.przychodyZDzialalnosci += src.przychodyZDzialalnosci ?? 0;
+  target.srodkiZKredytow += src.srodkiZKredytow ?? 0;
+  target.dofinansowania += src.dofinansowania ?? 0;
+  target.dofinansowaniaSzaraStrefa += src.dofinansowaniaSzaraStrefa ?? 0;
+  target.dochodPasywny += src.dochodPasywny ?? 0;
+  target.splatyZobowiazan += src.splatyZobowiazan ?? 0;
+}
+
+function addWydatki(target: Wydatki, src?: Partial<Wydatki>): void {
+  if (!src) return;
+  target.splacaneKredyty += src.splacaneKredyty ?? 0;
+  target.pracownicy += src.pracownicy ?? 0;
+  target.czynsz += src.czynsz ?? 0;
+  target.podatki += src.podatki ?? 0;
+  target.kary += src.kary ?? 0;
+  target.wydatkiNieplanowane += src.wydatkiNieplanowane ?? 0;
+  target.zakupy += src.zakupy ?? 0;
+  target.inne += src.inne ?? 0;
+}
+
+/**
+ * Zwraca zagregowane wpływy i wydatki dla wybranego przedziału:
+ * - 'quarter': ostatni rozliczony kwartał (lub bieżący, jeśli jeszcze nie zamknięto żadnego),
+ * - 'year': ostatnie 4 rozliczone kwartały krocząco,
+ * - 'all': całokształt (wszystkie rozliczone kwartały + bieżąca tura).
+ */
+export function getAggregatedFinances(
+  state: GameState,
+  period: FinancePeriod
+): AggregatedFinances {
+  const f = state.company.finances;
+  const history = Array.isArray(f.history) ? f.history : [];
+
+  const currentTurnWplywy = sum(f.wplywy);
+  const currentTurnWydatki = sum(f.wydatki);
+  const hasCurrentTurnActivity = currentTurnWplywy > 0 || currentTurnWydatki > 0;
+
+  const wplywy = createEmptyWplywy();
+  const wydatki = createEmptyWydatki();
+  let quartersCount = 0;
+  let periodLabel = '';
+
+  if (period === 'quarter') {
+    if (history.length === 0) {
+      addWplywy(wplywy, f.wplywy);
+      addWydatki(wydatki, f.wydatki);
+      quartersCount = 1;
+      periodLabel = `${state.year} Q${state.quarter} (w trakcie)`;
+    } else {
+      const last = history[history.length - 1];
+      addWplywy(wplywy, last.wplywy);
+      addWydatki(wydatki, last.wydatki);
+      quartersCount = 1;
+      periodLabel = `${last.year} Q${last.quarter} (ostatni rozliczony kwartał)`;
+    }
+  } else if (period === 'year') {
+    if (history.length === 0) {
+      addWplywy(wplywy, f.wplywy);
+      addWydatki(wydatki, f.wydatki);
+      quartersCount = 1;
+      periodLabel = `Ostatnie 4 kwartały (${state.year} Q${state.quarter} — w trakcie)`;
+    } else {
+      const slice = history.slice(-4);
+      for (const entry of slice) {
+        addWplywy(wplywy, entry.wplywy);
+        addWydatki(wydatki, entry.wydatki);
+      }
+      quartersCount = slice.length;
+      const first = slice[0];
+      const last = slice[slice.length - 1];
+      periodLabel =
+        slice.length === 1
+          ? `${last.year} Q${last.quarter} (1 z 4 kwartałów)`
+          : `${first.year} Q${first.quarter} – ${last.year} Q${last.quarter} (${slice.length} kw.)`;
+    }
+  } else {
+    for (const entry of history) {
+      addWplywy(wplywy, entry.wplywy);
+      addWydatki(wydatki, entry.wydatki);
+    }
+    addWplywy(wplywy, f.wplywy);
+    addWydatki(wydatki, f.wydatki);
+    quartersCount = history.length + (hasCurrentTurnActivity || history.length === 0 ? 1 : 0);
+    periodLabel =
+      history.length === 0
+        ? `Od początku działalności (${state.year} Q${state.quarter})`
+        : `Od początku działalności (${history.length} rozliczonych kw.${hasCurrentTurnActivity ? ' + bieżąca tura' : ''})`;
+  }
+
+  const totalWplywy = sum(wplywy);
+  const totalWydatki = sum(wydatki);
+
+  return {
+    wplywy,
+    wydatki,
+    totalWplywy,
+    totalWydatki,
+    netBalance: totalWplywy - totalWydatki,
+    quartersCount,
+    periodLabel,
+    hasCurrentTurnActivity,
+    currentTurnWplywy,
+    currentTurnWydatki,
+  };
+}
+
 export function getPriceIndex(state: GameState): number {
   const idx = state.macroStats?.priceIndex;
   return typeof idx === 'number' && Number.isFinite(idx) && idx > 0 ? idx : 1;
@@ -85,24 +232,23 @@ export function tickEconomy(state: GameState): GameState {
   const priceIndex = getPriceIndex(state);
 
   const baseRevenue = Math.round(estimateRevenue(c) * priceIndex);
-  f.wplywy.przychodyZDzialalnosci = baseRevenue;
 
   const rawWages =
     c.employees.bezUmowy * WORKER_CONFIG.bezUmowy.wage +
     c.employees.zlecenie * WORKER_CONFIG.zlecenie.wage +
     c.employees.uop      * WORKER_CONFIG.uop.wage;
 
-  f.wydatki.pracownicy = Math.round(rawWages * priceIndex);
-  f.wydatki.czynsz = Math.round(CZYNSZ * priceIndex);
-  f.wydatki.podatki = Math.max(0, Math.round(baseRevenue * TAX_RATE));
+  const wages = Math.round(rawWages * priceIndex);
+  const rent = Math.round(CZYNSZ * priceIndex);
+  const taxes = Math.max(0, Math.round(baseRevenue * TAX_RATE));
 
   // Raty zaciągniętych kredytów pozostają nominalne (inflacja realnie zmniejsza stare długi)
-  f.wydatki.splacaneKredyty = 0;
+  let loanPayments = 0;
   for (const loan of c.loans) {
     if (loan.remaining <= 0) continue;
     const installment = loan.remaining / Math.max(1, loan.quartersLeft);
     const interest = loan.remaining * loan.interestRate;
-    f.wydatki.splacaneKredyty += Math.round(installment + interest);
+    loanPayments += Math.round(installment + interest);
     loan.remaining = Math.max(0, Math.round(loan.remaining - installment));
     loan.quartersLeft -= 1;
   }
@@ -112,18 +258,26 @@ export function tickEconomy(state: GameState): GameState {
     c.employees.zlecenie * SKARBOWKA_DECAY_ZLECENIE +
     c.employees.uop      * SKARBOWKA_GAIN_UOP;
 
+  let accountantCost = 0;
   if (c.hasAccountant) {
     skarbowkaDelta += ACCOUNTANT_BONUS;
-    f.wydatki.inne = Math.round(ACCOUNTANT_COST * priceIndex);
-  } else {
-    f.wydatki.inne = 0;
+    accountantCost = Math.round(ACCOUNTANT_COST * priceIndex);
   }
 
   c.reputation.opiniaSkarbowa = Math.max(0, Math.min(100, c.reputation.opiniaSkarbowa + skarbowkaDelta));
 
-  const inflow = sum(f.wplywy) - f.wplywy.srodkiZKredytow - f.wplywy.dofinansowaniaSzaraStrefa;
-  const outflow = sum(f.wydatki);
-  f.stanKonta = Math.round(f.stanKonta + inflow - outflow);
+  // Dopisujemy pozycje cykliczne do bieżącego kwartału (nie nadpisując transakcji z tej tury)
+  f.wplywy.przychodyZDzialalnosci += baseRevenue;
+  f.wydatki.pracownicy += wages;
+  f.wydatki.czynsz += rent;
+  f.wydatki.podatki += taxes;
+  f.wydatki.splacaneKredyty += loanPayments;
+  f.wydatki.inne += accountantCost;
+
+  // Na stanKonta nakładamy WYŁĄCZNIE pozycje cykliczne z tego ticku
+  // (wszystkie zakupy, kredyty, sprzedaże i usługi aktualizują stanKonta w momencie zajścia)
+  const periodicOutflow = wages + rent + taxes + loanPayments + accountantCost;
+  f.stanKonta = Math.round(f.stanKonta + baseRevenue - periodicOutflow);
 
   const totalWorkers = c.employees.bezUmowy + c.employees.zlecenie + c.employees.uop;
   const activeCategories = getCategoryIdsForActivities(getCompanyActivities(c));
@@ -134,10 +288,14 @@ export function tickEconomy(state: GameState): GameState {
   }
 
   if (state.ceo.flags.includes('hipnoza_dziala')) {
-    c.finances.stanKonta += Math.round(5000 * priceIndex);
+    const bonus = Math.round(5000 * priceIndex);
+    c.finances.stanKonta += bonus;
+    c.finances.wplywy.dochodPasywny += bonus;
   }
   if (state.ceo.flags.includes('hipnoza_nie_dziala')) {
-    c.finances.stanKonta -= Math.round(5000 * priceIndex);
+    const penalty = Math.round(5000 * priceIndex);
+    c.finances.stanKonta -= penalty;
+    c.finances.wydatki.wydatkiNieplanowane += penalty;
   }
 
   state.company = c;

@@ -40,7 +40,6 @@ export function ChangeActivityScreen({
     changeCompanySize,
     buildBranch,
     resolveComplaint,
-    buyAd,
   } = useGameStore();
 
   if (!state) return null;
@@ -57,7 +56,6 @@ export function ChangeActivityScreen({
     state.company.employees.bezUmowy +
     state.company.employees.zlecenie +
     state.company.employees.uop;
-  const currentRequiredWorkers = getRequiredWorkers(state.company.size, activeCategories.length);
 
   const availableCategories = useMemo(() => {
     return RAW_CATEGORIES.map(cat => ({
@@ -117,7 +115,6 @@ export function ChangeActivityScreen({
   };
 
   const draftStats = computeStartingActivityStats(draftActivities);
-  const draftRequiredWorkers = getRequiredWorkers(state.company.size, draftCategoryIds.length);
   const draftPrefix = getCompanyPrefix(draftActivities);
   const draftHasBothProdAndTrade =
     draftCategoryIds.includes('produkcja') && draftCategoryIds.includes('handel');
@@ -137,9 +134,6 @@ export function ChangeActivityScreen({
 
   const branchCost = scaleByInflation(BRANCH_COST, state);
   const complaintCost = scaleByInflation(5000, state);
-  const radioAdCost = scaleByInflation(5000, state);
-  const internetAdCost = scaleByInflation(15000, state);
-  const tvAdCost = scaleByInflation(50000, state);
 
   const turnsSinceChange = state.turn - state.company.lastActivityChangeTurn;
   const canChange = turnsSinceChange >= ACTIVITY_CHANGE_COOLDOWN;
@@ -155,16 +149,6 @@ export function ChangeActivityScreen({
     <div className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <h1 className="text-2xl font-bold">Zarządzanie Działalnością</h1>
-        <div
-          className={`text-xs px-3 py-1.5 rounded font-semibold ${
-            totalWorkers >= currentRequiredWorkers
-              ? 'bg-emerald-100 text-emerald-900'
-              : 'bg-red-100 text-red-900'
-          }`}
-        >
-          Pracownicy: {totalWorkers} / {currentRequiredWorkers} wymaganych ({activeCategories.length}{' '}
-          {activeCategories.length === 1 ? 'filar' : 'filary'})
-        </div>
       </div>
 
       {/* 1. ROZMIAR FIRMY I FILIE */}
@@ -317,38 +301,7 @@ export function ChangeActivityScreen({
         )}
       </div>
 
-      {/* 3. REKLAMY */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-lg font-bold mb-4">Kampanie Reklamowe</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <button
-            onClick={() => buyAd('radio')}
-            disabled={state.company.finances.stanKonta < radioAdCost}
-            className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"
-          >
-            <span className="text-lg">📻 Radio</span>
-            <span className="text-xs text-stone-500">{formatMoney(radioAdCost, state)}</span>
-          </button>
-          <button
-            onClick={() => buyAd('internet')}
-            disabled={state.company.finances.stanKonta < internetAdCost}
-            className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"
-          >
-            <span className="text-lg">🌐 Internet</span>
-            <span className="text-xs text-stone-500">{formatMoney(internetAdCost, state)}</span>
-          </button>
-          <button
-            onClick={() => buyAd('tv')}
-            disabled={state.company.finances.stanKonta < tvAdCost}
-            className="bg-stone-100 hover:bg-stone-200 px-3 py-3 rounded text-sm font-semibold text-left flex flex-col disabled:opacity-50"
-          >
-            <span className="text-lg">📺 Telewizja</span>
-            <span className="text-xs text-stone-500">{formatMoney(tvAdCost, state)}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4. ZMIANA PROFILU DZIAŁALNOŚCI */}
+      {/* 3. ZMIANA PROFILU DZIAŁALNOŚCI */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <div>
@@ -438,7 +391,6 @@ export function ChangeActivityScreen({
             <div className="flex flex-wrap gap-4 font-semibold shrink-0">
               <span>Nowa rep. branży: {draftStats.branza}%</span>
               <span>Mafia: {draftStats.mafia}%</span>
-              <span>Wymagani pracownicy: {draftRequiredWorkers}</span>
             </div>
           </div>
 

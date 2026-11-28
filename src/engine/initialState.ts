@@ -4,7 +4,12 @@ import { computeStartingActivityStats } from './activityHelper';
 import { matchesConditions } from './events';
 import { recomputeReputation } from './reputation';
 import { makeRng } from './rng';
-import { INITIAL_INFLATION_RATE, INITIAL_PRICE_INDEX } from './economy';
+import {
+  INITIAL_INFLATION_RATE,
+  INITIAL_PRICE_INDEX,
+  createEmptyWplywy,
+  createEmptyWydatki,
+} from './economy';
 import activitiesData from '../data/activities.json';
 import partiesData from '../data/parties.json';
 import { generateCompetitors, getCategoryKey, INTERACTIONS_PER_TURN } from './competition';
@@ -33,7 +38,6 @@ export function createInitialState(opts: {
   const primaryActivity = selectedActivities[0] ?? opts.activity;
   const { branza, mafia } = computeStartingActivityStats(selectedActivities);
 
-  // Kapitał startowy w skali 1989 r. (Model 2: priceIndex = 0.25 -> UI mnoży ×10 000 przed 1995)
   const cash = Math.round(startingCash * sizeCfg.cashMultiplier * INITIAL_PRICE_INDEX);
   const rng = makeRng(opts.seed, 999);
   const pslAvailable = rng.next() < PSL_AVAILABILITY_CHANCE;
@@ -73,24 +77,9 @@ export function createInitialState(opts: {
       ownedTools: ['tool_basic'],
       finances: {
         stanKonta: cash,
-        wplywy: {
-          przychodyZDzialalnosci: 0,
-          srodkiZKredytow: 0,
-          dofinansowania: 0,
-          dofinansowaniaSzaraStrefa: 0,
-          dochodPasywny: 0,
-          splatyZobowiazan: 0,
-        },
-        wydatki: {
-          splacaneKredyty: 0,
-          pracownicy: 0,
-          czynsz: 0,
-          podatki: 0,
-          kary: 0,
-          wydatkiNieplanowane: 0,
-          zakupy: 0,
-          inne: 0,
-        },
+        wplywy: createEmptyWplywy(),
+        wydatki: createEmptyWydatki(),
+        history: [],
       },
       reputation: {
         branza,
@@ -109,7 +98,7 @@ export function createInitialState(opts: {
       lastActivityChangeTurn: -999,
       branches: 0,
       resources: {},
-      warehouseCapacity: 50,
+      warehouseCapacity: sizeCfg.warehouseCapacity,
       externalEquity: [],
       parentCompanyId: null,
       parentDispleasure: 0,
@@ -154,6 +143,9 @@ export function createInitialState(opts: {
     activeServiceIds: [],
     turnActions: [],
     productionWorkersUsedThisTurn: 0,
+    tradeBoughtThisTurn: 0,
+    tradeSoldThisTurn: 0,
+    tradeOfferPurchasedThisTurn: {},
     interactionPoints: INTERACTIONS_PER_TURN,
 
     competitors: generateCompetitors(competitionCategory, 1989, opts.seed),

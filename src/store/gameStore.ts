@@ -111,11 +111,23 @@ export const useGameStore = create<GameStore>()((set, get, store) => ({
     if (typeof migratedState.company.usePrefix !== 'boolean') {
       migratedState.company.usePrefix = true;
     }
+    if (!Array.isArray(migratedState.company.finances.history)) {
+      migratedState.company.finances.history = [];
+    }
     if (!Array.isArray(migratedState.turnActions)) {
       migratedState.turnActions = [];
     }
     if (typeof migratedState.productionWorkersUsedThisTurn !== 'number') {
       migratedState.productionWorkersUsedThisTurn = 0;
+    }
+    if (typeof migratedState.tradeBoughtThisTurn !== 'number') {
+      migratedState.tradeBoughtThisTurn = 0;
+    }
+    if (typeof migratedState.tradeSoldThisTurn !== 'number') {
+      migratedState.tradeSoldThisTurn = 0;
+    }
+    if (!migratedState.tradeOfferPurchasedThisTurn || typeof migratedState.tradeOfferPurchasedThisTurn !== 'object') {
+      migratedState.tradeOfferPurchasedThisTurn = {};
     }
 
     slot.state = migratedState;

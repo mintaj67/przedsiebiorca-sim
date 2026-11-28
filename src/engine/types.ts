@@ -25,6 +25,7 @@ export type TurnActionTarget =
   | 'sell'
   | 'production'
   | 'services'
+  | 'marketing'
   | 'party'
   | 'competition'
   | 'employees'
@@ -79,10 +80,21 @@ export interface Wydatki {
   inne: number;
 }
 
+export interface FinanceHistoryEntry {
+  turn: number;
+  year: number;
+  quarter: 1 | 2 | 3 | 4;
+  stanKonta: number;
+  wplywy: Wplywy;
+  wydatki: Wydatki;
+}
+
 export interface Finances {
   stanKonta: number;
   wplywy: Wplywy;
   wydatki: Wydatki;
+  /** Historia zamkniętych kwartałów (do podglądu Kwartał / Ostatnie 4 kwartały / Całokształt) */
+  history?: FinanceHistoryEntry[];
 }
 
 export interface Employees {
@@ -391,13 +403,59 @@ export interface ChaseState {
 
 // --- Handel i Produkcja ---
 export type InstallmentOption = 1 | 2 | 6 | 12 | 24;
+export type TradeSpecialCategory = 'hit_sezonu' | 'deficytowy' | 'bialy_kruk';
+
+export interface TradeProductDefinition {
+  id: string;
+  name: string;
+  desc: string;
+  basePrice: number;
+  quality: number;
+  /** Popyt sezonowy dla [Q1 Wiosna, Q2 Lato, Q3 Jesień, Q4 Zima], np. [1.0, 1.35, 0.9, 0.7] */
+  seasonalDemand?: [number, number, number, number];
+  /** Lista dostawców, u których ten produkt może się pojawić */
+  supplierIds?: string[];
+  /** Jeśli podano, produkt występuje ekskluzywnie u tego jednego dostawcy */
+  exclusiveSupplierId?: string;
+  /** Jeśli produkt z natury należy do kategorii specjalnej (np. zawsze biały kruk) */
+  alwaysSpecial?: TradeSpecialCategory;
+  req?: {
+    minRepBranza?: number;
+    minRepPubliczna?: number;
+    minRepMafia?: number;
+  };
+}
+
+export interface TradeProductOffer {
+  offerKey: string;
+  productId: string;
+  name: string;
+  desc: string;
+  quality: number;
+  /** Cena zakupu 1 szt. u tego dostawcy (już po inflacji i sezonie) */
+  buyPrice: number;
+  /** Bieżący popyt sezonowy w % (np. 135 oznacza 135%) */
+  demandPercent: number;
+  /** Specjalna kategoria wylosowana lub przypisana w tym kwartale */
+  specialCategory: TradeSpecialCategory | null;
+  /** Czy produkt jest ekskluzywny dla tego sprzedawcy */
+  isExclusive: boolean;
+  /** Limit sztuk dostępnych u dostawcy w tym kwartale (null = brak twardego limitu u dostawcy) */
+  availableStock: number | null;
+}
 
 export interface TradeSupplier {
   id: string;
   name: string;
   desc: string;
+  /** Słowne określenie jakości asortymentu tego dostawcy */
+  qualityDesc?: string;
+  /** @deprecated Zachowane wyłącznie dla kompatybilności starszych pomocników */
   quality: number;
+  /** @deprecated Zachowane wyłącznie dla kompatybilności starszych pomocników */
   price: number;
+  /** Konkretne produkty dostępne u tego dostawcy w bieżącej turze */
+  products?: TradeProductOffer[];
   req?: {
     minRepBranza?: number;
     minRepMafia?: number;
@@ -408,7 +466,14 @@ export interface TradeBuyer {
   id: string;
   name: string;
   desc: string;
-  multiplier: number;
+  /** Wewnętrzny profil cenowy odbiorcy (np. 0.88–1.22; bez mnożników x2–x4, niewyświetlany jako liczba) */
+  priceBias?: number;
+  /** Słowny opis hojności cenowej odbiorcy */
+  priceTierDesc?: string;
+  /** Słowny opis wymagań jakościowych odbiorcy */
+  minQualityDesc?: string;
+  /** @deprecated Zastąpione przez priceBias — zachowane opcjonalnie dla kompatybilności */
+  multiplier?: number;
   complaints: boolean;
   req?: {
     minRepPubliczna?: number;
@@ -462,6 +527,8 @@ export interface PendingSale {
   id: string;
   buyerName: string;
   resId: string;
+  productName?: string;
+  specialCategory?: TradeSpecialCategory | null;
   amount: number;
   estimatedRevenue: number;
   minRevenue?: number;
@@ -660,6 +727,12 @@ export interface GameState {
   productionWorkersUsedThisTurn?: number;
   /** @deprecated Poprzedni licznik sztuk mocy przerobowych */
   productionUsedThisTurn?: number;
+  /** Liczba sztuk towaru kupionych w tej turze (oddzielny limit przepustowości handlowej) */
+  tradeBoughtThisTurn?: number;
+  /** Liczba sztuk towaru sprzedanych w tej turze (oddzielny limit przepustowości handlowej) */
+  tradeSoldThisTurn?: number;
+  /** Ile sztuk z danej limitowanej oferty (deficyt / biały kruk) kupiono w tej turze */
+  tradeOfferPurchasedThisTurn?: Record<string, number>;
   interactionPoints: number;
   competitors: Competitor[];
   competitionCategory: string;

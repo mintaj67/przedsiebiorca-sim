@@ -6,6 +6,8 @@ import type {
   InstallmentOption,
   TradeSupplier,
   TradeBuyer,
+  TradeProductOffer,
+  TradeSpecialCategory,
   ServiceOrder,
   NewsItem,
   WarDemandType,
@@ -83,13 +85,20 @@ export interface GameSlice {
   buildBranch: () => void;
   buyAd: (type: 'radio' | 'tv' | 'internet') => void;
   rentWarehouse: () => void;
-  buyGoods: (supplier: TradeSupplier, amount: number, installments?: InstallmentOption) => void;
+  buyGoods: (
+    supplier: TradeSupplier,
+    offer: TradeProductOffer,
+    amount: number,
+    installments?: InstallmentOption
+  ) => void;
   sellGoods: (
     buyer: TradeBuyer,
     resId: string,
     amount: number,
     unitPrice: number,
-    installments?: InstallmentOption
+    installments?: InstallmentOption,
+    productName?: string,
+    specialCategory?: TradeSpecialCategory | null
   ) => void;
   resolveComplaint: (id: string, accept: boolean) => void;
   // --- Konkurencja, sojusze, wojny i przejęcia ---
@@ -182,10 +191,12 @@ export const createGameSlice: StateCreator<any, [], [], GameSlice> = (set, get) 
     takeLoan: (source, amount) => commit((s) => applyLoan(s, source, amount)),
 
     // --- Handel ---
-    buyGoods: (supplier, amount, installments = 1) =>
-      commit((s) => buyGoodsEngine(s, supplier, amount, installments)),
-    sellGoods: (buyer, resId, amount, unitPrice, installments = 1) =>
-      commit((s) => sellGoodsEngine(s, buyer, resId, amount, unitPrice, installments)),
+    buyGoods: (supplier, offer, amount, installments = 1) =>
+      commit((s) => buyGoodsEngine(s, supplier, offer, amount, installments)),
+    sellGoods: (buyer, resId, amount, unitPrice, installments = 1, productName, specialCategory) =>
+      commit((s) =>
+        sellGoodsEngine(s, buyer, resId, amount, unitPrice, installments, productName, specialCategory)
+      ),
     resolveComplaint: (id, accept) => commit((s) => resolveComplaintEngine(s, id, accept)),
 
     // --- Konkurencja, sojusze, wojny i przejęcia ---
